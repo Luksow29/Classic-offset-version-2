@@ -1,73 +1,5 @@
-  // Sorting state
-  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
-
-  // Sorting handler
-  const handleSort = (key: string) => {
-    setSortConfig((prev) => {
-      if (prev && prev.key === key) {
-        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
-      }
-      return { key, direction: 'asc' };
-    });
-    setCurrentPage(1);
-  };
-
-  // Sorting logic
-  const getSortedData = (data: any[]) => {
-    if (!sortConfig || !tableHeaders.length) return data;
-    const { key, direction } = sortConfig;
-    const colIdx = tableHeaders.findIndex((h) => h === key);
-    if (colIdx === -1) return data;
-    return [...data].sort((a, b) => {
-      const aVal = Array.isArray(a) ? a[colIdx] : Object.values(a)[colIdx];
-      const bVal = Array.isArray(b) ? b[colIdx] : Object.values(b)[colIdx];
-      if (!isNaN(Number(aVal)) && !isNaN(Number(bVal))) {
-        return direction === 'asc' ? Number(aVal) - Number(bVal) : Number(bVal) - Number(aVal);
-      }
-      return direction === 'asc'
-        ? String(aVal).localeCompare(String(bVal))
-        : String(bVal).localeCompare(String(aVal));
-    });
-  };
-// src/pages/ReportsPage.tsx
-import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/lib/supabaseClient';
-import Card from '@/components/ui/Card';
-import Pagination from '@/components/ui/Pagination';
-import EmptyState from '@/components/ui/EmptyState';
-import Skeleton from '@/components/ui/Skeleton';
-import CollapsiblePanel from '@/components/ui/CollapsiblePanel';
-import Input from '@/components/ui/Input';
-import Button from '@/components/ui/Button';
-import { useReactToPrint } from 'react-to-print';
-import toast from 'react-hot-toast';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-
-// Correctly import individual icons from lucide-react
-import Download from 'lucide-react/dist/esm/icons/download';
-import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
-import BarChart from 'lucide-react/dist/esm/icons/bar-chart';
-import Search from 'lucide-react/dist/esm/icons/search';
-import X from 'lucide-react/dist/esm/icons/x';
-import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
-import Printer from 'lucide-react/dist/esm/icons/printer';
-
-
-// Define the report types
-type ReportType = 'profit_loss' | 'orders_list' | 'customers_list' | 'payment_details' | 'due_summary' | 'invoice_report';
-
-const reportOptions = [
-  { value: 'profit_loss', label: 'Profit & Loss' },
-  { value: 'orders_list', label: 'Orders List' },
-  { value: 'customers_list', label: 'Customer List' },
-  { value: 'payment_details', label: 'Payment Details' },
-  { value: 'due_summary', label: 'Due Summary Report' },
-  { value: 'invoice_report', label: 'Invoice Report' },
-];
-
-// Invoice Detail View Component
-const InvoiceDetailView = ({ invoiceData, onBack }: { invoiceData: any; onBack: () => void; }) => {
+  // Invoice Detail View Component
+  const InvoiceDetailView = ({ invoiceData, onBack }: { invoiceData: any; onBack: () => void; }) => {
     const printRef = useRef<HTMLDivElement>(null);
     const { invoice, payments } = invoiceData;
 
@@ -142,7 +74,7 @@ const InvoiceDetailView = ({ invoiceData, onBack }: { invoiceData: any; onBack: 
                         </div>
                     </div>
                 </div>
-                 {payments.length > 0 && (
+                {payments.length > 0 && (
                     <div className="mt-8 border-t pt-4">
                         <h3 className="font-semibold text-gray-700 mb-2">Payment History:</h3>
                         <ul className="text-xs list-disc list-inside text-gray-600">
@@ -157,7 +89,39 @@ const InvoiceDetailView = ({ invoiceData, onBack }: { invoiceData: any; onBack: 
             </div>
         </Card>
     );
-};
+  };
+import React, { useState, useEffect, useRef } from 'react';
+import { supabase } from '@/lib/supabaseClient';
+import Card from '@/components/ui/Card';
+import Pagination from '@/components/ui/Pagination';
+import EmptyState from '@/components/ui/EmptyState';
+import Skeleton from '@/components/ui/Skeleton';
+import CollapsiblePanel from '@/components/ui/CollapsiblePanel';
+import Input from '@/components/ui/Input';
+import Button from '@/components/ui/Button';
+import { useReactToPrint } from 'react-to-print';
+import toast from 'react-hot-toast';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import Download from 'lucide-react/dist/esm/icons/download';
+import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
+import BarChart from 'lucide-react/dist/esm/icons/bar-chart';
+import Search from 'lucide-react/dist/esm/icons/search';
+import X from 'lucide-react/dist/esm/icons/x';
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
+import Printer from 'lucide-react/dist/esm/icons/printer';
+
+// Define the report types
+type ReportType = 'profit_loss' | 'orders_list' | 'customers_list' | 'payment_details' | 'due_summary' | 'invoice_report';
+
+const reportOptions = [
+  { value: 'profit_loss', label: 'Profit & Loss' },
+  { value: 'orders_list', label: 'Orders List' },
+  { value: 'customers_list', label: 'Customer List' },
+  { value: 'payment_details', label: 'Payment Details' },
+  { value: 'due_summary', label: 'Due Summary Report' },
+  { value: 'invoice_report', label: 'Invoice Report' },
+];
 
 const ReportsPage: React.FC = () => {
   const [reportType, setReportType] = useState<ReportType>('profit_loss');
@@ -184,12 +148,44 @@ const ReportsPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
   const [tableHeaders, setTableHeaders] = useState<string[]>([]);
-  
+
+  // Sorting state
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+
+  // Sorting handler
+  const handleSort = (key: string) => {
+    setSortConfig((prev) => {
+      if (prev && prev.key === key) {
+        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key, direction: 'asc' };
+    });
+    setCurrentPage(1);
+  };
+
+  // Sorting logic
+  const getSortedData = (data: any[]) => {
+    if (!sortConfig || !tableHeaders.length) return data;
+    const { key, direction } = sortConfig;
+    const colIdx = tableHeaders.findIndex((h) => h === key);
+    if (colIdx === -1) return data;
+    return [...data].sort((a, b) => {
+      const aVal = Array.isArray(a) ? a[colIdx] : Object.values(a)[colIdx];
+      const bVal = Array.isArray(b) ? b[colIdx] : Object.values(b)[colIdx];
+      if (!isNaN(Number(aVal)) && !isNaN(Number(bVal))) {
+        return direction === 'asc' ? Number(aVal) - Number(bVal) : Number(bVal) - Number(aVal);
+      }
+      return direction === 'asc'
+        ? String(aVal).localeCompare(String(bVal))
+        : String(bVal).localeCompare(String(aVal));
+    });
+  };
+
   // Invoice report states
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(null);
   const [invoiceDetailData, setInvoiceDetailData] = useState<any | null>(null);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
-  
+
   // Reference for PDF printing
   const reportTableRef = useRef<HTMLDivElement>(null);
 
