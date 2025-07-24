@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Card from '../ui/Card';
 import { useUser } from '@/context/UserContext';
-import { Bell, Mail, MessageSquare, AlertCircle, Clock, ShoppingBag, DollarSign } from 'lucide-react';
+import { Bell, Mail, MessageSquare, AlertCircle, Clock, ShoppingBag, DollarSign, Phone } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useUserSettings } from '@/lib/settingsService';
 import { Loader2 } from 'lucide-react';

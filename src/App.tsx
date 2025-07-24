@@ -44,7 +44,7 @@ const TeamChatPage = lazy(() => import('./pages/TeamChatPage'));
 const AdminContentManagement = lazy(() => import('@/pages/AdminContentManagement'));
 const AIAgentPage = lazy(() => import('./pages/AIAgentPage'));
 const InsightsPage = lazy(() => import('./pages/InsightsPage'));
-// const ReportsPage = lazy(() => import('./pages/ReportsPage'));
+const ReportsPage = lazy(() => import('./pages/ReportsPage'));
 
 // Helper function to wrap routes with Suspense and ErrorBoundary
 const Suspended = (element: React.ReactNode) => (
@@ -82,7 +82,7 @@ const router = createBrowserRouter(
         <Route path="/ai-agent" element={Suspended(<AIAgentPage />)} />
         <Route path="/admin/content" element={Suspended(<AdminContentManagement />)} />
         <Route path="/insights" element={Suspended(<InsightsPage />)} />
-        {/* <Route path="/reports" element={Suspended(<ReportsPage />)} /> */}
+        <Route path="/reports" element={Suspended(<ReportsPage />)} />
       </Route>
 
       {/* 404 page */}

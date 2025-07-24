@@ -55,6 +55,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
   }, [location.pathname]);
 
+  // Main layout bg: bg-background (white/dark). Sidebar/header bg fix பண்ணியாச்சு.
   return (
     <div className={`min-h-screen flex bg-background ${theme === 'dark' ? 'dark' : ''}`}>
       <ScrollToTop />

@@ -1,5 +1,6 @@
 // src/components/layout/Sidebar.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import SidebarControl from '../SidebarControl';
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -32,21 +33,50 @@ interface NavGroup {
 
 const Sidebar: React.FC<SidebarProps> = ({
   isDocked,
-  isCollapsed = false,
+  isCollapsed: collapsedProp = false,
   setIsCollapsed,
   onClose
 }) => {
   const location = useLocation();
   const { userProfile } = useUser();
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
-  
+  const [sidebarMode, setSidebarMode] = useState(() => localStorage.getItem('sidebarMode') || 'expanded');
+  const [isCollapsed, setCollapsed] = useState(collapsedProp);
+
+  // Listen for SidebarControl changes
+  useEffect(() => {
+    function handleSidebarModeChange(e: any) {
+      setSidebarMode(e.detail);
+    }
+    window.addEventListener('sidebarModeChange', handleSidebarModeChange);
+    return () => window.removeEventListener('sidebarModeChange', handleSidebarModeChange);
+  }, []);
+
+  // Update collapse state based on sidebarMode
+  useEffect(() => {
+    if (sidebarMode === 'collapsed') setCollapsed(true);
+    else setCollapsed(false);
+  }, [sidebarMode]);
+
+  // Hover to expand/collapse
+  const handleSidebarMouseEnter = useCallback(() => {
+    if (sidebarMode === 'hover') setCollapsed(false);
+  }, [sidebarMode]);
+  const handleSidebarMouseLeave = useCallback(() => {
+    if (sidebarMode === 'hover') setCollapsed(true);
+  }, [sidebarMode]);
+
+  // Sync with parent if setIsCollapsed is provided
+  useEffect(() => {
+    if (setIsCollapsed) setIsCollapsed(isCollapsed);
+  }, [isCollapsed, setIsCollapsed]);
+
   // Initialize expanded groups based on current path
   useEffect(() => {
     if (isCollapsed) {
       setExpandedGroups([]);
       return;
     }
-    
     // Find which group contains the current path
     const currentPath = location.pathname;
     const groupWithCurrentPath = navGroups.find(group => 
@@ -55,11 +85,10 @@ const Sidebar: React.FC<SidebarProps> = ({
         (currentPath.startsWith(item.path) && item.path !== '/')
       )
     );
-    
     if (groupWithCurrentPath) {
-      setExpandedGroups(prev => 
-        prev.includes(groupWithCurrentPath.name) 
-          ? prev 
+      setExpandedGroups(prev =>
+        prev.includes(groupWithCurrentPath.name)
+          ? prev
           : [...prev, groupWithCurrentPath.name]
       );
     }
@@ -133,28 +162,32 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const sidebarWidth = isCollapsed ? 'w-16' : 'w-64';
 
+  // Sidebar bg: always white (light), dark (#161b22) for dark mode. Card/border only for card/button.
   return (
-    <aside className={`h-full ${sidebarWidth} flex flex-col bg-card border-r border-border transition-all duration-300`}>
-      <div className="flex items-center justify-between h-16 px-4 border-b border-border flex-shrink-0">
-        <h1 className={`text-xl font-bold transition-opacity duration-300 ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}>
+    <aside
+      className={`h-full ${sidebarWidth} flex flex-col bg-white dark:bg-[#161b22] border-r border-border transition-all duration-300`}
+      onMouseEnter={handleSidebarMouseEnter}
+      onMouseLeave={handleSidebarMouseLeave}
+    >
+      <div className="flex items-center justify-between h-16 px-4 border-b border-border flex-shrink-0 bg-muted/60 dark:bg-[#23272f] rounded-b-xl shadow-sm">
+        <h1 className={`text-xl font-bold tracking-tight transition-opacity duration-300 ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}> 
           Classic Offset
         </h1>
-        
-        <div className="flex items-center">
+        <div className="flex items-center gap-2">
+          <SidebarControl />
           {isDocked && setIsCollapsed && (
             <button
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="p-2 rounded-lg hover:bg-muted transition-colors"
+              onClick={() => setCollapsed(!isCollapsed)}
+              className="p-2 rounded-lg hover:bg-primary/10 transition-colors"
               aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
               {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
             </button>
           )}
-          
           {!isDocked && (
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-muted transition-colors lg:hidden"
+              className="p-2 rounded-lg hover:bg-destructive/10 transition-colors lg:hidden"
               aria-label="Close sidebar"
             >
               <X size={20} />

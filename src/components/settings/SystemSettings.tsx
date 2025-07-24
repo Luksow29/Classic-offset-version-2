@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Card from '../ui/Card';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
@@ -22,6 +22,19 @@ const SystemSettings: React.FC = () => {
     logLevel: 'error',
     analyticsEnabled: true,
   });
+
+  // Mock analytics function
+  const sendAnalyticsEvent = useCallback((event: string, data?: any) => {
+    if (!localSettings.analyticsEnabled) return;
+    // Replace this with a real analytics endpoint if needed
+    fetch('https://httpbin.org/post', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event, data, timestamp: new Date().toISOString() })
+    })
+      .then(() => console.log('Analytics event sent:', event, data))
+      .catch(() => {});
+  }, [localSettings.analyticsEnabled]);
   
   // Sync with Supabase settings
   useEffect(() => {
@@ -40,7 +53,6 @@ const SystemSettings: React.FC = () => {
 
   const handleSaveSettings = async () => {
     setLoading(true);
-    
     try {
       await updateSettings({
         system_settings: {
@@ -51,6 +63,7 @@ const SystemSettings: React.FC = () => {
           analytics_enabled: localSettings.analyticsEnabled,
         }
       } as Partial<UserSettings>);
+      sendAnalyticsEvent('save_system_settings', localSettings);
     } catch (error) {
       console.error('Error saving system settings:', error);
     } finally {
@@ -60,13 +73,26 @@ const SystemSettings: React.FC = () => {
 
   const handleClearCache = async () => {
     setLoading(true);
-    
     try {
-      // In a real app, this would clear the cache
-      // For now, we'll just simulate it
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      // Clear localStorage
+      localStorage.clear();
+      // Clear sessionStorage
+      sessionStorage.clear();
+      // Attempt to clear all IndexedDB databases
+      if (window.indexedDB && indexedDB.databases) {
+        // Modern browsers
+        const dbs = await indexedDB.databases();
+        if (Array.isArray(dbs)) {
+          await Promise.all(
+            dbs.map(db => db.name && indexedDB.deleteDatabase(db.name))
+          );
+        }
+      } else if (window.indexedDB) {
+        // Fallback: try to delete common DB names (if known)
+        // indexedDB.deleteDatabase('my-db');
+      }
       toast.success('Cache cleared successfully');
+      sendAnalyticsEvent('clear_cache');
     } catch (error) {
       console.error('Error clearing cache:', error);
       toast.error('Failed to clear cache');
@@ -80,9 +106,7 @@ const SystemSettings: React.FC = () => {
       toast.error('You must be logged in to create a backup');
       return;
     }
-    
     setBackupLoading(true);
-    
     try {
       // Get the user's data from various tables
       const [customersRes, ordersRes, paymentsRes, materialsRes, expensesRes] = await Promise.all([
@@ -92,7 +116,6 @@ const SystemSettings: React.FC = () => {
         supabase.from('materials').select('*').eq('created_by', user.id),
         supabase.from('expenses').select('*').eq('created_by', user.id),
       ]);
-      
       // Combine all data into a backup object
       const backupData = {
         timestamp: new Date().toISOString(),
@@ -103,21 +126,17 @@ const SystemSettings: React.FC = () => {
         materials: materialsRes.data || [],
         expenses: expensesRes.data || [],
       };
-      
       // Convert to JSON and create a downloadable file
       const dataStr = JSON.stringify(backupData, null, 2);
       const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
-      
       const date = new Date().toISOString().split('T')[0];
       const fileName = `classic_offset_backup_${date}.json`;
-      
       const link = document.createElement('a');
       link.setAttribute('href', dataUri);
       link.setAttribute('download', fileName);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
       // Log the backup
       await supabase.from('backup_logs').insert({
         user_id: user.id,
@@ -125,8 +144,8 @@ const SystemSettings: React.FC = () => {
         backup_size: dataStr.length,
         status: 'completed',
       });
-      
       toast.success('Backup created successfully!');
+      sendAnalyticsEvent('create_backup');
     } catch (error) {
       console.error('Error creating backup:', error);
       toast.error('Failed to create backup');
@@ -138,27 +157,37 @@ const SystemSettings: React.FC = () => {
   const handleRestore = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
     if (!user) {
       toast.error('You must be logged in to restore data');
       return;
     }
-    
     setRestoreLoading(true);
-    
     try {
       const fileContent = await file.text();
       const backupData = JSON.parse(fileContent);
-      
       // Validate the backup data
       if (!backupData.timestamp || !backupData.user_id) {
         throw new Error('Invalid backup file format');
       }
-      
-      // In a real app, you would restore the data to the database
-      // For now, we'll just simulate it
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      // Restore each table (delete existing user data, then insert from backup)
+      const tables = [
+        { name: 'customers', key: 'customers', userField: 'user_id' },
+        { name: 'orders', key: 'orders', userField: 'user_id' },
+        { name: 'payments', key: 'payments', userField: 'created_by' },
+        { name: 'materials', key: 'materials', userField: 'created_by' },
+        { name: 'expenses', key: 'expenses', userField: 'created_by' },
+      ];
+      for (const tbl of tables) {
+        // Delete existing user data
+        await supabase.from(tbl.name).delete().eq(tbl.userField, user.id);
+        // Insert backup data (if any)
+        const rows = Array.isArray(backupData[tbl.key]) ? backupData[tbl.key] : [];
+        if (rows.length > 0) {
+          // Remove id fields to avoid PK conflicts
+          const cleanRows = rows.map(({ id, ...rest }) => ({ ...rest, [tbl.userField]: user.id }));
+          await supabase.from(tbl.name).insert(cleanRows);
+        }
+      }
       // Log the restore
       await supabase.from('backup_logs').insert({
         user_id: user.id,
@@ -166,15 +195,13 @@ const SystemSettings: React.FC = () => {
         backup_size: fileContent.length,
         status: 'completed',
       });
-      
       toast.success(`Restored from ${file.name}`);
+      sendAnalyticsEvent('restore_backup', { fileName: file.name });
     } catch (error) {
       console.error('Error restoring backup:', error);
       toast.error('Failed to restore from backup');
     } finally {
       setRestoreLoading(false);
-      
-      // Reset the file input
       e.target.value = '';
     }
   };

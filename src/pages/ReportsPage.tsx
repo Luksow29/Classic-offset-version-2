@@ -1,13 +1,48 @@
+  // Sorting state
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+
+  // Sorting handler
+  const handleSort = (key: string) => {
+    setSortConfig((prev) => {
+      if (prev && prev.key === key) {
+        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key, direction: 'asc' };
+    });
+    setCurrentPage(1);
+  };
+
+  // Sorting logic
+  const getSortedData = (data: any[]) => {
+    if (!sortConfig || !tableHeaders.length) return data;
+    const { key, direction } = sortConfig;
+    const colIdx = tableHeaders.findIndex((h) => h === key);
+    if (colIdx === -1) return data;
+    return [...data].sort((a, b) => {
+      const aVal = Array.isArray(a) ? a[colIdx] : Object.values(a)[colIdx];
+      const bVal = Array.isArray(b) ? b[colIdx] : Object.values(b)[colIdx];
+      if (!isNaN(Number(aVal)) && !isNaN(Number(bVal))) {
+        return direction === 'asc' ? Number(aVal) - Number(bVal) : Number(bVal) - Number(aVal);
+      }
+      return direction === 'asc'
+        ? String(aVal).localeCompare(String(bVal))
+        : String(bVal).localeCompare(String(aVal));
+    });
+  };
 // src/pages/ReportsPage.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import Card from '@/components/ui/Card';
+import Pagination from '@/components/ui/Pagination';
+import EmptyState from '@/components/ui/EmptyState';
+import Skeleton from '@/components/ui/Skeleton';
+import CollapsiblePanel from '@/components/ui/CollapsiblePanel';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import { useReactToPrint } from 'react-to-print';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 // Correctly import individual icons from lucide-react
 import Download from 'lucide-react/dist/esm/icons/download';
@@ -37,9 +72,10 @@ const InvoiceDetailView = ({ invoiceData, onBack }: { invoiceData: any; onBack: 
     const { invoice, payments } = invoiceData;
 
     const handlePrint = useReactToPrint({
-        bodyClass: "print-body",
         documentTitle: `Invoice_${invoice.id}`,
-        content: () => printRef.current,
+        bodyClass: "print-body",
+        // @ts-ignore
+        content: () => printRef.current
     });
 
     if (!invoice) return null;
@@ -144,6 +180,9 @@ const ReportsPage: React.FC = () => {
   });
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState<any[] | null>(null);
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 10;
   const [tableHeaders, setTableHeaders] = useState<string[]>([]);
   
   // Invoice report states
@@ -160,6 +199,7 @@ const ReportsPage: React.FC = () => {
     setTableHeaders([]);
     setSelectedInvoiceId(null);
     setInvoiceDetailData(null);
+    setCurrentPage(1);
     clearFilters();
   }
 
@@ -185,6 +225,7 @@ const ReportsPage: React.FC = () => {
       minAmount: '',
       maxAmount: ''
     });
+    setCurrentPage(1);
   }
 
   const generateReport = async () => {
@@ -192,141 +233,140 @@ const ReportsPage: React.FC = () => {
     setReportData(null);
     setSelectedInvoiceId(null); // Clear detail view on new search
 
+    let queryData: any[] | null = null, error: any = null, headers: string[] = [];
     try {
-        let queryData: any[] | null = null, error: any = null, headers: string[] = [];
-        
-        // Invoice report has a different trigger (Search button)
-        if (reportType === 'invoice_report') {
-            ({ data: queryData, error } = await supabase.rpc('get_invoice_list', {
-                p_start_date: filters.startDate || null,
-                p_end_date: filters.endDate || null,
-                p_customer_name: filters.searchTerm || null,
-                p_order_id: filters.orderId ? parseInt(filters.orderId) : null,
-            }));
-            headers = ['Order ID', 'Date', 'Customer', 'Total', 'Due', 'Status'];
-        } else if (reportType === 'customers_list') {
-            // Customer list report
-            let query = supabase.from('customers').select('*');
-            
-            // Apply filters
-            if (filters.customerName) {
-                query = query.ilike('name', `%${filters.customerName}%`);
-            }
-            if (filters.customerPhone) {
-                query = query.ilike('phone', `%${filters.customerPhone}%`);
-            }
-            if (filters.customerEmail) {
-                query = query.ilike('email', `%${filters.customerEmail}%`);
-            }
-            if (filters.customerTag) {
-                query = query.contains('tags', [filters.customerTag]);
-            }
-            if (filters.sinceDate) {
-                query = query.gte('joined_date', filters.sinceDate);
-            }
-            
-            // Order by name
-            query = query.order('name');
-            
-            const { data, error: customerError } = await query;
-            queryData = data || [];
-            error = customerError;
-            headers = ['ID', 'Name', 'Phone', 'Email', 'Address', 'Joined Date'];
-        } else if (reportType === 'payment_details') {
-            // Payment details report
-            let query = supabase.from('payments').select(`
-                id, 
-                amount_paid, 
-                payment_date, 
-                payment_method,
-                status,
-                customers (name, phone),
-                order_id
-            `);
-            
-            // Apply filters
-            if (filters.startDate) {
-                query = query.gte('payment_date', filters.startDate);
-            }
-            if (filters.endDate) {
-                query = query.lte('payment_date', filters.endDate);
-            }
-            if (filters.paymentMethod) {
-                query = query.eq('payment_method', filters.paymentMethod);
-            }
-            if (filters.paymentStatus) {
-                query = query.eq('status', filters.paymentStatus);
-            }
-            if (filters.minAmount) {
-                query = query.gte('amount_paid', filters.minAmount);
-            }
-            if (filters.maxAmount) {
-                query = query.lte('amount_paid', filters.maxAmount);
-            }
-            if (filters.customerName) {
-                query = query.ilike('customers.name', `%${filters.customerName}%`);
-            }
-            
-            // Order by payment date (newest first)
-            query = query.order('payment_date', { ascending: false });
-            
-            const { data, error: paymentError } = await query;
-            
-            // Process the data to format it for display
-            queryData = (data || []).map(payment => ({
-                id: payment.id,
-                order_id: payment.order_id,
-                customer_name: (payment.customers as any)?.name || 'Unknown',
-                customer_phone: (payment.customers as any)?.phone || '-',
-                amount_paid: payment.amount_paid,
-                payment_date: new Date(payment.payment_date).toLocaleDateString('en-GB'),
-                payment_method: payment.payment_method || '-',
-                status: payment.status || '-'
-            }));
-            
-            error = paymentError;
-            headers = ['Payment ID', 'Order ID', 'Customer', 'Phone', 'Amount', 'Date', 'Method', 'Status'];
-        } else {
-            // Logic for all other reports
-            switch (reportType) {
-                case 'profit_loss':
-                    ({ data: queryData, error } = await supabase.rpc('get_profit_loss_report', { 
-                        start_date: filters.startDate || null, 
-                        end_date: filters.endDate || null 
-                    }));
-                    headers = ['Category', 'Amount (₹)'];
-                    queryData = queryData?.length ? [
-                        ['Total Revenue', `+ ₹${queryData[0].total_revenue.toLocaleString('en-IN')}`],
-                        ['Total Expenses', `- ₹${queryData[0].total_expenses.toLocaleString('en-IN')}`],
-                        ['Net Profit', `₹${queryData[0].net_profit.toLocaleString('en-IN')}`],
-                    ] : [];
-                    break;
-                case 'orders_list':
-                    ({ data: queryData, error } = await supabase.rpc('get_orders_report', { 
-                        start_date: filters.startDate || null, 
-                        end_date: filters.endDate || null, 
-                        order_status: filters.orderStatus || null 
-                    }));
-                    headers = ['Order ID', 'Customer', 'Type', 'Qty', 'Amount', 'Status', 'Date'];
-                    break;
-                case 'due_summary':
-                    ({ data: queryData, error } = await supabase.rpc('get_due_summary_report'));
-                    headers = ['Order ID', 'Delivery Date', 'Balance Due (₹)'];
-                    break;
-            }
+      // Invoice report has a different trigger (Search button)
+      if (reportType === 'invoice_report') {
+        ({ data: queryData, error } = await supabase.rpc('get_invoice_list', {
+          p_start_date: filters.startDate || null,
+          p_end_date: filters.endDate || null,
+          p_customer_name: filters.searchTerm || null,
+          p_order_id: filters.orderId ? parseInt(filters.orderId) : null,
+        }));
+        headers = ['Order ID', 'Date', 'Customer', 'Total', 'Due', 'Status'];
+      } else if (reportType === 'customers_list') {
+        // Customer list report
+        let query = supabase.from('customers').select('*');
+
+        // Apply filters
+        if (filters.customerName) {
+          query = query.ilike('name', `%${filters.customerName}%`);
         }
-        
-        if (error) throw error;
-        setReportData(queryData);
-        setTableHeaders(headers);
-        if (!queryData || queryData.length === 0) {
-            toast.success('No data found for the selected criteria.');
+        if (filters.customerPhone) {
+          query = query.ilike('phone', `%${filters.customerPhone}%`);
+        }
+        if (filters.customerEmail) {
+          query = query.ilike('email', `%${filters.customerEmail}%`);
+        }
+        if (filters.customerTag) {
+          query = query.contains('tags', [filters.customerTag]);
+        }
+        if (filters.sinceDate) {
+          query = query.gte('joined_date', filters.sinceDate);
         }
 
+        // Order by name
+        query = query.order('name');
+
+        const { data, error: customerError } = await query;
+        queryData = data || [];
+        error = customerError;
+        headers = ['ID', 'Name', 'Phone', 'Email', 'Address', 'Joined Date'];
+      } else if (reportType === 'payment_details') {
+        // Payment details report
+        let query = supabase.from('payments').select(`
+          id, 
+          amount_paid, 
+          payment_date, 
+          payment_method,
+          status,
+          customers (name, phone),
+          order_id
+        `);
+
+        // Apply filters
+        if (filters.startDate) {
+          query = query.gte('payment_date', filters.startDate);
+        }
+        if (filters.endDate) {
+          query = query.lte('payment_date', filters.endDate);
+        }
+        if (filters.paymentMethod) {
+          query = query.eq('payment_method', filters.paymentMethod);
+        }
+        if (filters.paymentStatus) {
+          query = query.eq('status', filters.paymentStatus);
+        }
+        if (filters.minAmount) {
+          query = query.gte('amount_paid', filters.minAmount);
+        }
+        if (filters.maxAmount) {
+          query = query.lte('amount_paid', filters.maxAmount);
+        }
+        if (filters.customerName) {
+          query = query.ilike('customers.name', `%${filters.customerName}%`);
+        }
+
+        // Order by payment date (newest first)
+        query = query.order('payment_date', { ascending: false });
+
+        const { data, error: paymentError } = await query;
+
+        // Process the data to format it for display
+        queryData = (data || []).map(payment => ({
+          id: payment.id,
+          order_id: payment.order_id,
+          customer_name: (payment.customers as any)?.name || 'Unknown',
+          customer_phone: (payment.customers as any)?.phone || '-',
+          amount_paid: payment.amount_paid,
+          payment_date: new Date(payment.payment_date).toLocaleDateString('en-GB'),
+          payment_method: payment.payment_method || '-',
+          status: payment.status || '-'
+        }));
+
+        error = paymentError;
+        headers = ['Payment ID', 'Order ID', 'Customer', 'Phone', 'Amount', 'Date', 'Method', 'Status'];
+      } else {
+        // Logic for all other reports
+        switch (reportType) {
+          case 'profit_loss':
+            ({ data: queryData, error } = await supabase.rpc('get_profit_loss_report', { 
+              start_date: filters.startDate || null, 
+              end_date: filters.endDate || null 
+            }));
+            headers = ['Category', 'Amount (₹)'];
+            queryData = queryData?.length ? [
+              ['Total Revenue', `+ ₹${queryData[0].total_revenue.toLocaleString('en-IN')}`],
+              ['Total Expenses', `- ₹${queryData[0].total_expenses.toLocaleString('en-IN')}`],
+              ['Net Profit', `₹${queryData[0].net_profit.toLocaleString('en-IN')}`],
+            ] : [];
+            break;
+          case 'orders_list':
+            ({ data: queryData, error } = await supabase.rpc('get_orders_report', { 
+              start_date: filters.startDate || null, 
+              end_date: filters.endDate || null, 
+              order_status: filters.orderStatus || null 
+            }));
+            headers = ['Order ID', 'Customer', 'Type', 'Qty', 'Amount', 'Status', 'Date'];
+            break;
+          case 'due_summary':
+            ({ data: queryData, error } = await supabase.rpc('get_due_summary_report'));
+            headers = ['Order ID', 'Delivery Date', 'Balance Due (₹)'];
+            break;
+        }
+      }
+
+      if (error) throw error;
+      setReportData(queryData);
+      setTableHeaders(headers);
+      if (!queryData || queryData.length === 0) {
+        toast.success('No data found for the selected criteria.');
+      }
+
     } catch (err: any) {
-        toast.error(`Report generation failed: ${err.message}`);
+      toast.error(`Report generation failed: ${err.message}`);
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
   
@@ -353,7 +393,6 @@ const ReportsPage: React.FC = () => {
 
   // Handle print using react-to-print
   const handlePrint = useReactToPrint({
-    bodyClass: () => reportTableRef.current,
     documentTitle: `${reportType}_report_${new Date().toISOString().split('T')[0]}`,
     onAfterPrint: () => toast.success('PDF generated successfully!'),
     pageStyle: `
@@ -381,6 +420,8 @@ const ReportsPage: React.FC = () => {
         }
       }
     `,
+    // @ts-ignore
+    content: () => reportTableRef.current
   });
 
   // Function to download PDF using jsPDF
@@ -390,54 +431,65 @@ const ReportsPage: React.FC = () => {
       return;
     }
 
+    // Validate tableHeaders
+    const validHeaders = Array.isArray(tableHeaders) && tableHeaders.length > 0 && tableHeaders.every(h => typeof h === 'string' && h.trim() !== '');
+    if (!validHeaders) {
+      toast.error('Invalid or missing table headers. Cannot generate PDF.');
+      return;
+    }
+
+    // Generate tableData and validate
+    const tableData = reportData.map(row => {
+      if (Array.isArray(row)) {
+        return row.map(val => val === null || val === undefined ? '-' : String(val));
+      } else {
+        return Object.values(row).map(val =>
+          val === null || val === undefined ? '-' :
+          typeof val === 'object' ? JSON.stringify(val) :
+          String(val)
+        );
+      }
+    });
+    if (!Array.isArray(tableData) || tableData.length === 0 || !Array.isArray(tableData[0])) {
+      toast.error('Invalid or missing table data. Cannot generate PDF.');
+      return;
+    }
+
     try {
       const doc = new jsPDF();
-      
+
       // Add title
       const title = `${reportOptions.find(opt => opt.value === reportType)?.label || 'Report'}`;
       doc.setFontSize(18);
       doc.text(title, 14, 20);
-      
+
       // Add date range if applicable
       if (filters.startDate || filters.endDate) {
         doc.setFontSize(12);
         doc.text(
-          `Period: ${filters.startDate ? new Date(filters.startDate).toLocaleDateString() : 'Start'} to ${filters.endDate ? new Date(filters.endDate).toLocaleDateString() : 'End'}`, 
-          14, 
+          `Period: ${filters.startDate ? new Date(filters.startDate).toLocaleDateString() : 'Start'} to ${filters.endDate ? new Date(filters.endDate).toLocaleDateString() : 'End'}`,
+          14,
           30
         );
       }
-      
+
       // Add company info
       doc.setFontSize(10);
       doc.text('Classic Offset Cards', 14, 40);
       doc.text('363, bazar road, kadayanallur -62775', 14, 45);
       doc.text('Tenkasi District, Tamil Nadu', 14, 50);
-      
-      // Generate table
-      const tableData = reportData.map(row => {
-        if (Array.isArray(row)) {
-          return row;
-        } else {
-          return Object.values(row).map(val => 
-            val === null ? '-' : 
-            typeof val === 'object' ? JSON.stringify(val) : 
-            String(val)
-          );
-        }
-      });
-      
-      // Use autoTable function from jspdf-autotable
-      (doc as any).autoTable({
-        head: [tableHeaders],
-        body: tableData,
-        startY: 60,
-        theme: 'grid',
-        styles: { fontSize: 8, cellPadding: 3 },
-        headStyles: { fillColor: [66, 139, 202], textColor: [255, 255, 255] },
-        alternateRowStyles: { fillColor: [240, 240, 240] },
-      });
-      
+
+    // Use autoTable function from jspdf-autotable
+    autoTable(doc, {
+      head: [tableHeaders],
+      body: tableData,
+      startY: 60,
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 3 },
+      headStyles: { fillColor: [66, 139, 202], textColor: [255, 255, 255] },
+      alternateRowStyles: { fillColor: [240, 240, 240] },
+    });
+
       // Add footer with date
       const pageCount = (doc as any).internal.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
@@ -450,7 +502,7 @@ const ReportsPage: React.FC = () => {
           { align: 'center' }
         );
       }
-      
+
       // Save the PDF
       doc.save(`${reportType}_report_${new Date().toISOString().split('T')[0]}.pdf`);
       toast.success('PDF downloaded successfully!');
@@ -536,7 +588,41 @@ const ReportsPage: React.FC = () => {
   
   const renderContent = () => {
     if (loading) {
-        return <div className="p-8 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto" /></div>;
+        // Table skeleton shimmer
+        return (
+          <Card className="mt-6">
+            <div className="overflow-x-auto p-2">
+              <table className="min-w-full text-sm">
+                <thead className="bg-muted/50">
+                  <tr>
+                    {tableHeaders.length > 0
+                      ? tableHeaders.map((th) => (
+                          <th key={th} className="px-4 py-2 text-left font-medium">
+                            <Skeleton width={80} height={16} />
+                          </th>
+                        ))
+                      : Array.from({ length: 6 }).map((_, i) => (
+                          <th key={i} className="px-4 py-2 text-left font-medium">
+                            <Skeleton width={80} height={16} />
+                          </th>
+                        ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {Array.from({ length: 8 }).map((_, rowIdx) => (
+                    <tr key={rowIdx}>
+                      {(tableHeaders.length > 0 ? tableHeaders : Array.from({ length: 6 })).map((_, colIdx) => (
+                        <td key={colIdx} className="px-4 py-2">
+                          <Skeleton width={100} height={16} />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        );
     }
     
     // View Switcher for Invoice Report
@@ -549,15 +635,34 @@ const ReportsPage: React.FC = () => {
         }
         // Show the list table if data exists
         if (reportData && reportData.length > 0) {
+            // Pagination logic
+            const totalPages = Math.ceil(reportData.length / rowsPerPage);
+            const paginatedData = reportData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+            // Sorting
+            const sortedInvoiceData = getSortedData(reportData);
+            const paginatedInvoiceData = sortedInvoiceData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
             return (
                 <Card className="mt-6">
                     <div className="overflow-x-auto">
                         <table className="min-w-full text-sm">
                            <thead className="bg-muted/50">
-                                <tr>{tableHeaders.map(th => <th key={th} className="px-4 py-2 text-left font-medium">{th}</th>)}</tr>
+                                <tr>
+                                  {tableHeaders.map((th) => (
+                                    <th
+                                      key={th}
+                                      className="px-4 py-2 text-left font-medium cursor-pointer select-none"
+                                      onClick={() => handleSort(th)}
+                                    >
+                                      {th}
+                                      {sortConfig?.key === th && (
+                                        <span className="ml-1">{sortConfig.direction === 'asc' ? '▲' : '▼'}</span>
+                                      )}
+                                    </th>
+                                  ))}
+                                </tr>
                             </thead>
                             <tbody className="bg-card divide-y divide-border">
-                                {reportData.map(invoice => (
+                                {paginatedInvoiceData.map(invoice => (
                                     <tr key={invoice.order_id} onClick={() => handleInvoiceSelect(invoice.order_id)} className="cursor-pointer hover:bg-muted/20">
                                         <td className="px-4 py-2 font-bold">#{invoice.order_id}</td>
                                         <td className="px-4 py-2">{new Date(invoice.order_date).toLocaleDateString('en-GB')}</td>
@@ -570,13 +675,15 @@ const ReportsPage: React.FC = () => {
                             </tbody>
                         </table>
                     </div>
+                    <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
                 </Card>
             );
         }
-        return <div className="text-center p-6 text-muted-foreground">Use the filters and click "Search Invoices" to begin.</div>;
+        return <EmptyState message="No invoices found. Try changing filters." actionLabel="Clear Filters" onAction={clearFilters} />;
     }
     
     // Render for other reports - Always render the ref container
+    // Pagination for other reports
     return (
         <Card className="mt-6">
             {reportData && reportData.length > 0 && (
@@ -608,29 +715,48 @@ const ReportsPage: React.FC = () => {
                                 <p>Tenkasi District, Tamil Nadu</p>
                             </div>
                         </div>
-                        <table className="min-w-full text-sm">
-                            <thead className="bg-muted/50">
-                                <tr>{tableHeaders.map(th => <th key={th} className="px-4 py-2 text-left font-medium">{th}</th>)}</tr>
-                            </thead>
-                            <tbody className="bg-card divide-y divide-border">
-                                {reportData.map((row, i) => (
-                                    <tr key={i} className="hover:bg-muted/20">
-                                      {Array.isArray(row) 
-                                        ? row.map((td: any, j) => <td key={j} className="px-4 py-2">{td}</td>)
-                                        : Object.values(row).map((td: any, j) => <td key={j} className="px-4 py-2">{String(td)}</td>)
-                                      }
+                        {/* Pagination + Sorting logic */}
+                        {(() => {
+                          const sortedOtherData = getSortedData(reportData);
+                          const totalPages = Math.ceil(reportData.length / rowsPerPage);
+                          const paginatedOtherData = sortedOtherData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+                          return <>
+                            <table className="min-w-full text-sm">
+                                <thead className="bg-muted/50">
+                                    <tr>
+                                      {tableHeaders.map((th, idx) => (
+                                        <th
+                                          key={th}
+                                          className="px-4 py-2 text-left font-medium cursor-pointer select-none"
+                                          onClick={() => handleSort(th)}
+                                        >
+                                          {th}
+                                          {sortConfig?.key === th && (
+                                            <span className="ml-1">{sortConfig.direction === 'asc' ? '▲' : '▼'}</span>
+                                          )}
+                                        </th>
+                                      ))}
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="bg-card divide-y divide-border">
+                                    {paginatedOtherData.map((row, i) => (
+                                        <tr key={i} className="hover:bg-muted/20">
+                                          {Array.isArray(row) 
+                                            ? row.map((td: any, j) => <td key={j} className="px-4 py-2">{td}</td>)
+                                            : Object.values(row).map((td: any, j) => <td key={j} className="px-4 py-2">{String(td)}</td>)}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+                          </>;
+                        })()}
                         <div className="p-4 text-xs text-right hidden print:block">
                             Generated on {new Date().toLocaleString()}
                         </div>
                     </>
                 ) : (
-                    <div className="p-8 text-center text-muted-foreground">
-                        No data available to display
-                    </div>
+                    <EmptyState message="No data available to display" actionLabel="Clear Filters" onAction={clearFilters} />
                 )}
             </div>
         </Card>
@@ -643,19 +769,21 @@ const ReportsPage: React.FC = () => {
       
       <Card>
         <div className="p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-            <Input as="select" id="reportType" label="Report Type" value={reportType} onChange={(e) => handleReportTypeChange(e.target.value as ReportType)}>
-              {reportOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-            </Input>
-            {renderFilters()}
-          </div>
-          <div className="flex items-center gap-3">
-              <Button onClick={generateReport} disabled={loading}>
-                  {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Working...</> : 
-                   (reportType === 'invoice_report' ? <><Search className="mr-2 h-4 w-4"/>Search Invoices</> : 'Generate Report')}
-              </Button>
-              <Button onClick={clearFilters} variant="outline"><X className="mr-2 h-4 w-4" /> Clear</Button>
-          </div>
+          <CollapsiblePanel title="Filters">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+              <Input as="select" id="reportType" label="Report Type" value={reportType} onChange={(e) => handleReportTypeChange(e.target.value as ReportType)}>
+                {reportOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              </Input>
+              {renderFilters()}
+            </div>
+            <div className="flex items-center gap-3 mt-4">
+                <Button onClick={generateReport} disabled={loading}>
+                    {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Working...</> : 
+                     (reportType === 'invoice_report' ? <><Search className="mr-2 h-4 w-4"/>Search Invoices</> : 'Generate Report')}
+                </Button>
+                <Button onClick={clearFilters} variant="outline"><X className="mr-2 h-4 w-4" /> Clear</Button>
+            </div>
+          </CollapsiblePanel>
         </div>
       </Card>
       

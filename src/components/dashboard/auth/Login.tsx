@@ -32,12 +32,15 @@ const Logo = ({ className }: { className?: string }) => (
   </div>
 );
 
+
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState('');
   const navigate = useNavigate();
 
   const handleEmailLogin = async (e: React.FormEvent) => {
@@ -47,6 +50,27 @@ export default function Login() {
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
     if (signInError) setError(signInError.message);
     else navigate('/');
+    setLoading(false);
+  };
+
+  const handleEmailSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      setLoading(false);
+      return;
+    }
+    const { error: signUpError } = await supabase.auth.signUp({ email, password });
+    if (signUpError) setError(signUpError.message);
+    else {
+      setIsSignUp(false);
+      setError('Sign up successful! Please sign in.');
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
+    }
     setLoading(false);
   };
 
@@ -98,9 +122,9 @@ export default function Login() {
           </div>
 
           <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700">
-            <h2 className="text-3xl font-bold text-black dark:text-white text-center">Sign In</h2>
+            <h2 className="text-3xl font-bold text-black dark:text-white text-center">{isSignUp ? 'Sign Up' : 'Sign In'}</h2>
             <p className="mt-2 text-gray-600 dark:text-gray-400 text-center">
-              Welcome back! Please enter your details.
+              {isSignUp ? 'Create a new account to get started.' : 'Welcome back! Please enter your details.'}
             </p>
 
             {error && (
@@ -140,7 +164,7 @@ export default function Login() {
                     <path clipPath="url(#b)" fill="#4285F4" d="M48 48L17 24l-4-3 35-10z" />
                   </svg>
                 )}
-                <span className="font-medium">Sign in with Google</span>
+                <span className="font-medium">{isSignUp ? 'Sign up with Google' : 'Sign in with Google'}</span>
               </button>
 
               <div className="relative">
@@ -155,78 +179,164 @@ export default function Login() {
               </div>
             </div>
 
-            <form onSubmit={handleEmailLogin} className="mt-6 space-y-5">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-black dark:text-white mb-1">
-                  Email
-                </label>
-                <div className="relative">
-                  <Mail className="w-5 h-5 text-gray-400 absolute top-1/2 left-3 -translate-y-1/2" />
-                  <input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="w-full px-4 py-3 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="password-login" className="block text-sm font-medium text-black dark:text-white mb-1">
-                  Password
-                </label>
-                <div className="relative">
-                  <Lock className="w-5 h-5 text-gray-400 absolute top-1/2 left-3 -translate-y-1/2" />
-                  <input
-                    id="password-login"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="w-full px-4 py-3 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <input
-                    id="remember-me"
-                    name="remember-me"
-                    type="checkbox"
-                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="remember-me" className="text-gray-700 dark:text-gray-300">
-                    Remember me
+            {isSignUp ? (
+              <form onSubmit={handleEmailSignUp} className="mt-6 space-y-5">
+                <div>
+                  <label htmlFor="email-signup" className="block text-sm font-medium text-black dark:text-white mb-1">
+                    Email
                   </label>
+                  <div className="relative">
+                    <Mail className="w-5 h-5 text-gray-400 absolute top-1/2 left-3 -translate-y-1/2" />
+                    <input
+                      id="email-signup"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="w-full px-4 py-3 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
                 </div>
-                <Link to="/forgot-password" className="font-medium text-primary-600 hover:text-primary-500">
-                  Forgot password?
-                </Link>
-              </div>
 
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={loading || googleLoading}
-                  className="w-full flex items-center justify-center min-h-[48px] py-3 px-4 
-                  bg-white dark:bg-primary-600 
-                  text-black dark:text-white 
-                  font-semibold rounded-lg 
-                  hover:bg-gray-100 dark:hover:bg-primary-700 
-                  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 
-                  disabled:opacity-60 disabled:cursor-wait 
-                  transition-all duration-300 transform hover:scale-105 active:scale-95 
-                  shadow-md hover:shadow-lg"
-                >
-                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sign In'}
-                </button>
-              </div>
-            </form>
+                <div>
+                  <label htmlFor="password-signup" className="block text-sm font-medium text-black dark:text-white mb-1">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-5 h-5 text-gray-400 absolute top-1/2 left-3 -translate-y-1/2" />
+                    <input
+                      id="password-signup"
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="w-full px-4 py-3 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="confirm-password" className="block text-sm font-medium text-black dark:text-white mb-1">
+                    Confirm Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-5 h-5 text-gray-400 absolute top-1/2 left-3 -translate-y-1/2" />
+                    <input
+                      id="confirm-password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      className="w-full px-4 py-3 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={loading || googleLoading}
+                    className="w-full flex items-center justify-center min-h-[48px] py-3 px-4 
+                    bg-white dark:bg-primary-600 
+                    text-black dark:text-white 
+                    font-semibold rounded-lg 
+                    hover:bg-gray-100 dark:hover:bg-primary-700 
+                    focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 
+                    disabled:opacity-60 disabled:cursor-wait 
+                    transition-all duration-300 transform hover:scale-105 active:scale-95 
+                    shadow-md hover:shadow-lg"
+                  >
+                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sign Up'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleEmailLogin} className="mt-6 space-y-5">
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-black dark:text-white mb-1">
+                    Email
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-5 h-5 text-gray-400 absolute top-1/2 left-3 -translate-y-1/2" />
+                    <input
+                      id="email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="w-full px-4 py-3 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="password-login" className="block text-sm font-medium text-black dark:text-white mb-1">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-5 h-5 text-gray-400 absolute top-1/2 left-3 -translate-y-1/2" />
+                    <input
+                      id="password-login"
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="w-full px-4 py-3 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="remember-me"
+                      name="remember-me"
+                      type="checkbox"
+                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="remember-me" className="text-gray-700 dark:text-gray-300">
+                      Remember me
+                    </label>
+                  </div>
+                  <Link to="/forgot-password" className="font-medium text-primary-600 hover:text-primary-500">
+                    Forgot password?
+                  </Link>
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={loading || googleLoading}
+                    className="w-full flex items-center justify-center min-h-[48px] py-3 px-4 
+                    bg-white dark:bg-primary-600 
+                    text-black dark:text-white 
+                    font-semibold rounded-lg 
+                    hover:bg-gray-100 dark:hover:bg-primary-700 
+                    focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 
+                    disabled:opacity-60 disabled:cursor-wait 
+                    transition-all duration-300 transform hover:scale-105 active:scale-95 
+                    shadow-md hover:shadow-lg"
+                  >
+                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sign In'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            <div className="mt-6 text-center">
+              <button
+                type="button"
+                className="text-primary-600 dark:text-primary-400 font-medium hover:underline focus:outline-none"
+                onClick={() => { setIsSignUp((v) => !v); setError(''); }}
+              >
+                {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+              </button>
+            </div>
           </div>
         </div>
       </div>

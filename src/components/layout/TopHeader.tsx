@@ -19,10 +19,11 @@ const TopHeader: React.FC<TopHeaderProps> = ({ onMenuClick }) => {
   const { userProfile } = useUser();
   const isAdminOrOwner = userProfile?.role === 'Owner' || userProfile?.role === 'Manager';
 
+  // Header bg: always white (light), dark (#161b22) for dark mode. Card/border only for card/button.
   return (
     <>
-      <header className="h-16 bg-card border-b border-border flex-shrink-0 z-10">
-        <div className="h-full px-4 flex items-center justify-between">
+      <header className="h-16 bg-white/80 dark:bg-[#181c23]/90 border-b border-border flex-shrink-0 z-20 backdrop-blur-md shadow-sm rounded-b-xl">
+        <div className="h-full px-6 flex items-center justify-between">
           {/* Left Side - Sidebar toggle for mobile */}
           <div className="flex items-center">
             <button

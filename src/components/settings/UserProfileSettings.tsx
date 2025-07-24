@@ -8,10 +8,12 @@ import { useUser } from '@/context/UserContext';
 import { Loader2, User, Mail, Phone, MapPin, Building } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+
 const UserProfileSettings: React.FC = () => {
   const { user, userProfile } = useUser();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -20,23 +22,32 @@ const UserProfileSettings: React.FC = () => {
     company: '',
     bio: '',
   });
+  const [originalData, setOriginalData] = useState(formData);
 
   useEffect(() => {
     if (userProfile) {
-      setFormData({
+      const newData = {
         name: userProfile.name || '',
         email: userProfile.email || '',
-        phone: (userProfile as any)?.phone || '',
-        address: (userProfile as any)?.address || '',
-        company: (userProfile as any)?.company || '',
-        bio: (userProfile as any)?.bio || '',
-      });
+        phone: userProfile.phone || '',
+        address: userProfile.address || '',
+        company: userProfile.company || '',
+        bio: userProfile.bio || '',
+      };
+      setFormData(newData);
+      setOriginalData(newData);
     }
   }, [userProfile]);
 
   const handleChange: ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement> = (e) => {
     const { id, value } = e.target;
     setFormData(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleEdit = () => setEditing(true);
+  const handleCancel = () => {
+    setFormData(originalData);
+    setEditing(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -58,7 +69,6 @@ const UserProfileSettings: React.FC = () => {
 
       if (error) throw error;
       toast.success('Profile updated successfully');
-      
       // Update the profile in any other relevant tables
       await supabase.rpc('sync_user_profile', {
         user_id: user.id,
@@ -66,7 +76,8 @@ const UserProfileSettings: React.FC = () => {
         user_phone: formData.phone || null,
         user_address: formData.address || null
       });
-      
+      setEditing(false);
+      setOriginalData(formData);
     } catch (error: any) {
       console.error('Error updating profile:', error);
       toast.error(error.message || 'Failed to update profile');
@@ -87,7 +98,14 @@ const UserProfileSettings: React.FC = () => {
 
   return (
     <Card>
-      <h2 className="text-xl font-semibold mb-6">User Profile</h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-semibold">User Profile</h2>
+        {!editing && (
+          <Button type="button" onClick={handleEdit} variant="outline">
+            Edit
+          </Button>
+        )}
+      </div>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Input
@@ -97,6 +115,7 @@ const UserProfileSettings: React.FC = () => {
             onChange={handleChange as any}
             icon={<User className="h-4 w-4" />}
             required
+            disabled={!editing}
           />
           <Input
             id="email"
@@ -115,6 +134,7 @@ const UserProfileSettings: React.FC = () => {
             value={formData.phone}
             onChange={handleChange as any}
             icon={<Phone className="h-4 w-4" />}
+            disabled={!editing}
           />
           <Input
             id="company"
@@ -122,6 +142,7 @@ const UserProfileSettings: React.FC = () => {
             value={formData.company}
             onChange={handleChange as any}
             icon={<Building className="h-4 w-4" />}
+            disabled={!editing}
           />
         </div>
 
@@ -131,6 +152,7 @@ const UserProfileSettings: React.FC = () => {
           value={formData.address}
           onChange={handleChange}
           rows={3}
+          disabled={!editing}
         />
 
         <TextArea
@@ -140,20 +162,26 @@ const UserProfileSettings: React.FC = () => {
           onChange={handleChange}
           rows={4}
           helperText="Tell us a little about yourself"
+          disabled={!editing}
         />
 
-        <div className="flex justify-end">
-          <Button type="submit" disabled={saving}>
-            {saving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              'Save Changes'
-            )}
-          </Button>
-        </div>
+        {editing && (
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={handleCancel} disabled={saving}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
+          </div>
+        )}
       </form>
     </Card>
   );

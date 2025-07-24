@@ -1,4 +1,3 @@
-// src/context/UserContext.tsx
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react'; // useCallback ஐச் சேர்க்கவும்
 import { supabase } from '@/lib/supabaseClient';
 import type { Session, User } from '@supabase/supabase-js';
@@ -8,7 +7,10 @@ interface UserProfile {
   name: string;
   role: 'Owner' | 'Manager' | 'Staff' | null;
   email: string; // public.users அட்டவணையில் email உள்ளது
-  // உங்களுக்குத் தேவையான public.users அட்டவணையிலிருந்து வேறு ஏதேனும் காலங்கள் இருந்தால் இங்கே சேர்க்கலாம்
+  phone?: string | null;
+  address?: string | null;
+  company?: string | null;
+  bio?: string | null;
 }
 
 interface UserContextType {
@@ -26,13 +28,15 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
+
+
   // பயனர் சுயவிவரத்தைப் பெறுவதற்கான ஃபங்ஷனை வரையறுக்கவும்
   const fetchUserProfile = useCallback(async (supabaseUser: User) => {
-    setLoading(true); // சுயவிவரத்தைப் பெறும்போது loading ஐ true ஆக அமைக்கவும்
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('users') // public.users அட்டவணையிலிருந்து சுயவிவரத்தைப் பெறவும்
-        .select('id, name, role, email') // தேவையான காலங்களை மட்டும் தேர்ந்தெடுக்கவும்
+        .select('id, name, role, email, phone, address, company, bio') // அனைத்து காலங்களையும் தேர்ந்தெடுக்கவும்
         .eq('id', supabaseUser.id)
         .single();
 
