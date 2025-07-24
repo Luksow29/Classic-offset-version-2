@@ -111,12 +111,10 @@ const PaymentDashboard: React.FC = () => {
           acc.paid += 1;
         } else if (o.due_status === 'Overdue') {
           acc.overdue += 1;
-        } else if (o.due_status === 'Due Soon') {
-          if ((o.amount_paid || 0) > 0) {
-            acc.partial += 1;
-          } else {
-            acc.due += 1;
-          }
+        } else if ((o.amount_paid || 0) > 0) {
+          acc.partial += 1;
+        } else {
+          acc.due += 1;
         }
         return acc;
       }, { paid: 0, partial: 0, due: 0, overdue: 0 }) || { paid: 0, partial: 0, due: 0, overdue: 0 };

@@ -81,6 +81,7 @@ const Dashboard: React.FC = () => {
             previousMonthDate.setMonth(previousMonthDate.getMonth() - 1);
             const previousMonth = previousMonthDate.toISOString().slice(0, 7);
             
+            if (!userProfile?.id) throw new Error('User ID not found in userProfile');
             const [
                 pendingOrdersResponse,
                 dailyOrdersResponse,
@@ -91,10 +92,10 @@ const Dashboard: React.FC = () => {
             ] = await Promise.all([
                 supabase.rpc('get_recent_pending_orders'),
                 supabase.rpc('get_daily_order_counts', { days_to_check: 7 }),
-                supabase.rpc('get_financial_summary', { p_month: month }),
-                supabase.rpc('get_financial_summary', { p_month: previousMonth }),
+                supabase.rpc('get_financial_summary', { p_user_id: userProfile.id, p_month: month }),
+                supabase.rpc('get_financial_summary', { p_user_id: userProfile.id, p_month: previousMonth }),
                 supabase.from('order_summary_with_dues').select('total_amount, date').gte('date', `${month}-01`),
-                supabase.rpc('get_dashboard_metrics'),
+                supabase.rpc('get_dashboard_metrics', { p_user_id: userProfile.id }),
             ]);
 
             const responses = [pendingOrdersResponse, dailyOrdersResponse, currentMonthSummaryResponse, previousMonthSummaryResponse, revenueResponse, consolidatedMetricsResponse];
@@ -107,13 +108,15 @@ const Dashboard: React.FC = () => {
                 return acc;
             }, {});
 
+            // Debug: Log the raw result of get_dashboard_metrics
+            console.log('get_dashboard_metrics raw response:', consolidatedMetricsResponse.data);
             setData({
                 dailyOrdersChartData: dailyOrdersResponse.data || [],
                 pendingOrders: pendingOrdersResponse.data || [],
                 financialSummaryData: currentMonthSummaryResponse.data?.[0] || null,
                 previousFinancialSummaryData: previousMonthSummaryResponse.data?.[0] || null,
                 revenueChartData: Object.entries(revenueByDate).map(([date, value]) => ({ date, value })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
-                consolidatedMetrics: consolidatedMetricsResponse.data?.[0] || null,
+                consolidatedMetrics: consolidatedMetricsResponse.data || null,
             });
         } catch (err: any) {
             console.error("Detailed error in fetchDashboardData:", err);

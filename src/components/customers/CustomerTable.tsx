@@ -91,10 +91,6 @@ const CustomerTable: React.FC<CustomerTableProps> = ({ onAddNew, onEdit, onDataC
   const totalPages = Math.ceil(totalCustomers / ITEMS_PER_PAGE);
 
   const handleDeleteCustomer = (customer: Customer) => {
-    if (!userProfile || userProfile.role !== 'Owner') {
-      toast.error('Permission denied: Only Owners can delete customers.');
-      return;
-    }
     setCustomerToDelete(customer);
     setShowDeleteModal(true);
   };
@@ -103,7 +99,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({ onAddNew, onEdit, onDataC
     if (!customerToDelete) return;
     setLoading(true);
     try {
-      const { error: deleteError } = await supabase.rpc('delete_customer_and_related_data', { customer_id_to_delete: customerToDelete.id });
+      const { error: deleteError } = await supabase.rpc('delete_customer_and_related_data', { p_customer_id: customerToDelete.id });
       if (deleteError) throw deleteError;
       toast.success('Customer deleted successfully!');
       fetchCustomers(); // Refetch data
@@ -146,10 +142,10 @@ const CustomerTable: React.FC<CustomerTableProps> = ({ onAddNew, onEdit, onDataC
             <Input id="search-customers" placeholder="Search by name, phone, or email..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
           </div>
           <div className="flex items-center gap-2">
-            <ImportExportCustomers />
-            <Button onClick={onAddNew} size="sm" className="w-full sm:w-auto">
-              <Plus className="w-4 h-4 mr-2" /> Add New Customer
-            </Button>
+        <ImportExportCustomers />
+        <Button onClick={onAddNew} size="sm" className="w-full sm:w-auto">
+          <Plus className="w-4 h-4 mr-2" /> Add New Customer
+        </Button>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

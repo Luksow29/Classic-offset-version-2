@@ -21,19 +21,29 @@ interface Payment {
   id: string;
   customer_id: string;
   order_id: number;
-  amount_paid: number; // This is the payment transaction amount from 'payments' table
+  amount_paid: number;
   due_date: string;
-  status: 'Paid' | 'Partial' | 'Due' | 'Overdue'; // This is payment status from 'payments' table
+  status: 'Paid' | 'Partial' | 'Due' | 'Overdue';
   payment_method?: string;
   notes?: string;
   created_at: string;
   updated_at?: string;
   customer_name?: string;
   customer_phone?: string;
-  // Order financial data (synced with order_summary_with_dues view)
   order_total_amount: number;
-  order_amount_paid: number;    // UPDATED: Renamed from order_amount_received for consistency
-  order_balance_due: number;    // UPDATED: Renamed from order_balance_amount for consistency
+  order_amount_paid: number;
+  order_balance_due: number;
+}
+
+interface GroupedPayment {
+  order_id: number;
+  customer_name: string;
+  customer_phone: string;
+  order_total_amount: number;
+  order_amount_paid: number;
+  order_balance_due: number;
+  status: 'Paid' | 'Partial' | 'Due' | 'Overdue';
+  payments: Payment[];
 }
 
 interface PaymentHistory {
@@ -52,7 +62,7 @@ type SortOrder = 'asc' | 'desc';
 
 const PaymentManagementTable: React.FC = () => {
   const { user } = useUser();
-  const [payments, setPayments] = useState<Payment[]>([]);
+  const [groupedPayments, setGroupedPayments] = useState<GroupedPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -67,9 +77,10 @@ const PaymentManagementTable: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   
   // Selection states
-  const [selectedPayments, setSelectedPayments] = useState<Payment[]>([]);
+  const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
   const [selectAll, setSelectAll] = useState(false);
-  
+  const [expandedOrders, setExpandedOrders] = useState<Set<number>>(new Set());
+
   // Modal states
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
   const [viewingPayment, setViewingPayment] = useState<Payment | null>(null);
@@ -96,74 +107,50 @@ const PaymentManagementTable: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      // Step 1: Fetch payments with customer data
-      const { data: paymentsData, error: fetchPaymentsError } = await supabase
-        .from('payments')
-        .select(`
-          *,
-          customers (
-            name,
-            phone
-          )
-        `)
+      const { data, error } = await supabase
+        .from('order_payments_view')
+        .select('*')
         .order(sortField, { ascending: sortOrder === 'asc' });
 
-      if (fetchPaymentsError) throw fetchPaymentsError;
+      if (error) throw error;
 
-      // Step 2: Get a list of all order_ids from the fetched payments
-      const orderIds = paymentsData.map(p => p.order_id).filter(id => id !== null) as number[];
-
-      let orderSummaries: any[] = [];
-      if (orderIds.length > 0) {
-        // Step 3: Fetch related order summaries from the view for financial consistency
-        const { data: orderSummaryData, error: fetchSummaryError } = await supabase
-          .from('order_summary_with_dues')
-          .select('order_id, total_amount, amount_paid, balance_due') // Select relevant columns from the view
-          .in('order_id', orderIds); // Fetch summaries only for relevant orders
-
-        if (fetchSummaryError) throw fetchSummaryError;
-        orderSummaries = orderSummaryData || [];
-      }
-
-      // Step 4: Process payments and combine with order summaries
-      const processedPayments = (paymentsData || []).map(payment => {
-        const customerData = payment.customers;
-        // Find the matching order summary
-        const orderSummary = orderSummaries.find(os => os.order_id === payment.order_id);
-        
-        const orderTotalAmount = orderSummary?.total_amount || 0;
-        const orderAmountPaid = orderSummary?.amount_paid || 0; // From order_summary_with_dues
-        const orderBalanceDue = orderSummary?.balance_due || 0; // From order_summary_with_dues
-
-        // Calculate status based on payment's own status and order's financial state
-        let calculatedStatus: 'Paid' | 'Partial' | 'Due' | 'Overdue' = payment.status; // Start with payment's own status
-
-        // Refine status based on overall order balance
-        if (orderBalanceDue <= 0) {
-            calculatedStatus = 'Paid';
-        } else if (orderAmountPaid > 0 && orderBalanceDue > 0) { // If some amount paid on order, but balance > 0
-            calculatedStatus = 'Partial';
-        } else if (payment.due_date && new Date(payment.due_date) < new Date() && orderBalanceDue > 0) {
-            calculatedStatus = 'Overdue';
-        } else if (orderBalanceDue > 0) { // If there's a balance and not overdue/partial
-            calculatedStatus = 'Due';
+      const grouped = (data || []).reduce((acc, item) => {
+        const orderId = item.order_id;
+        if (!acc[orderId]) {
+          acc[orderId] = {
+            order_id: orderId,
+            customer_name: item.customer_name,
+            customer_phone: item.customer_phone,
+            order_total_amount: item.order_total_amount,
+            order_amount_paid: item.order_amount_paid,
+            order_balance_due: item.order_balance_due,
+            status: item.order_status,
+            payments: [],
+          };
         }
-        // If initial payment.status is 'Paid' but orderBalanceDue is > 0, it might be an issue.
-        // The above logic prioritizes the overall order state.
+        if (item.payment_id) {
+          acc[orderId].payments.push({
+            id: item.payment_id,
+            customer_id: item.customer_id,
+            order_id: item.order_id,
+            amount_paid: item.payment_amount,
+            due_date: item.payment_due_date,
+            status: item.payment_status,
+            payment_method: item.payment_method,
+            notes: item.payment_notes,
+            created_at: item.payment_created_at,
+            updated_at: item.payment_updated_at,
+            customer_name: item.customer_name,
+            customer_phone: item.customer_phone,
+            order_total_amount: item.order_total_amount,
+            order_amount_paid: item.order_amount_paid,
+            order_balance_due: item.order_balance_due,
+          });
+        }
+        return acc;
+      }, {} as Record<number, GroupedPayment>);
 
-        return {
-          ...payment,
-          customer_name: customerData?.name || 'Unknown Customer',
-          customer_phone: customerData?.phone || '',
-          status: calculatedStatus, // Use refined status
-          // Use order summary data as single source of truth for order financials
-          order_total_amount: orderTotalAmount,
-          order_amount_paid: orderAmountPaid, // Consistent naming
-          order_balance_due: orderBalanceDue // Consistent naming
-        };
-      });
-
-      setPayments(processedPayments);
+      setGroupedPayments(Object.values(grouped));
     } catch (err: any) {
       setError(err.message || 'Failed to fetch payments');
       toast.error('Failed to load payments');
@@ -196,25 +183,18 @@ const PaymentManagementTable: React.FC = () => {
 
   // Filter and sort payments
   const filteredAndSortedPayments = useMemo(() => {
-    let filtered = payments.filter(payment => {
-      const matchesSearch = 
-        payment.customer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        String(payment.order_id).includes(searchQuery) ||
-        payment.id.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const matchesStatus = !statusFilter || payment.status === statusFilter;
-      
-      const matchesDate = !dateFilter || payment.due_date.startsWith(dateFilter);
-      
-      const matchesAmount = 
-        (!amountFilter.min || payment.amount_paid >= parseFloat(amountFilter.min)) &&
-        (!amountFilter.max || payment.amount_paid <= parseFloat(amountFilter.max));
-      
-      return matchesSearch && matchesStatus && matchesDate && matchesAmount;
-    });
+    return groupedPayments.filter(group => {
+      const matchesSearch =
+        group.customer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        String(group.order_id).includes(searchQuery);
 
-    return filtered;
-  }, [payments, searchQuery, statusFilter, dateFilter, amountFilter]);
+      const matchesStatus = !statusFilter || group.status === statusFilter;
+
+      // Additional filtering logic can be added here if needed
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [groupedPayments, searchQuery, statusFilter]);
 
   // Handle sorting
   const handleSort = (field: SortField) => {
@@ -227,13 +207,12 @@ const PaymentManagementTable: React.FC = () => {
   };
 
   // Handle selection
-  const handleSelectPayment = (payment: Payment) => {
+  const handleSelectPayment = (paymentId: string) => {
     setSelectedPayments(prev => {
-      const isSelected = prev.some(p => p.id === payment.id);
-      if (isSelected) {
-        return prev.filter(p => p.id !== payment.id);
+      if (prev.includes(paymentId)) {
+        return prev.filter(id => id !== paymentId);
       } else {
-        return [...prev, payment];
+        return [...prev, paymentId];
       }
     });
   };
@@ -242,9 +221,22 @@ const PaymentManagementTable: React.FC = () => {
     if (selectAll) {
       setSelectedPayments([]);
     } else {
-      setSelectedPayments(filteredAndSortedPayments);
+      const allPaymentIds = filteredAndSortedPayments.flatMap(g => g.payments.map(p => p.id));
+      setSelectedPayments(allPaymentIds);
     }
     setSelectAll(!selectAll);
+  };
+
+  const toggleOrderExpansion = (orderId: number) => {
+    setExpandedOrders(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(orderId)) {
+        newSet.delete(orderId);
+      } else {
+        newSet.add(orderId);
+      }
+      return newSet;
+    });
   };
 
   // Handle edit
@@ -264,10 +256,17 @@ const PaymentManagementTable: React.FC = () => {
     if (!editingPayment || !user?.id) return;
 
     try {
-      const updatedData = {
+      // Update the orders table for the due date (delivery_date)
+      const { error: orderUpdateError } = await supabase
+        .from('orders')
+        .update({ delivery_date: editForm.due_date })
+        .eq('id', editingPayment.order_id);
+
+      if (orderUpdateError) throw orderUpdateError;
+
+      const updatedPaymentData = {
         amount_paid: parseFloat(editForm.amount_paid),
-        due_date: editForm.due_date,
-        status: editForm.status as 'Paid' | 'Partial' | 'Due' | 'Overdue', // Cast to correct type
+        status: editForm.status as 'Paid' | 'Partial' | 'Due' | 'Overdue',
         payment_method: editForm.payment_method,
         notes: editForm.notes,
         updated_at: new Date().toISOString()
@@ -275,25 +274,21 @@ const PaymentManagementTable: React.FC = () => {
 
       const { data, error, count } = await supabase
         .from('payments')
-        .update(updatedData)
+        .update(updatedPaymentData)
         .eq('id', editingPayment.id)
         .select();
 
       if (error) throw error;
 
-      // Only log to history if the payment was actually updated
       if (count && count > 0) {
         const { error: historyError } = await supabase.from('payment_history').insert({
           payment_id: editingPayment.id,
           action: 'UPDATE',
-          old_data: editingPayment, // UPDATED: Use old_data
-          new_data: { // Ensure consistent data logged
-            ...editingPayment, 
-            ...updatedData, 
-            // Log the synchronized order financial data as well if relevant
-            order_total_amount: editingPayment.order_total_amount,
-            order_amount_paid: editingPayment.order_amount_paid,
-            order_balance_due: editingPayment.order_balance_due
+          old_data: editingPayment,
+          new_data: {
+            ...editingPayment,
+            ...updatedPaymentData,
+            due_date: editForm.due_date, // Log the updated due date
           },
           changed_by: user.id,
           notes: 'Payment updated via management interface'
@@ -301,7 +296,6 @@ const PaymentManagementTable: React.FC = () => {
 
         if (historyError) {
           console.error('Failed to log payment history:', historyError);
-          // Don't throw here as the main update was successful
         }
       } else {
         throw new Error('Payment record not found or could not be updated');
@@ -363,13 +357,11 @@ const PaymentManagementTable: React.FC = () => {
     if (selectedPayments.length === 0 || !user?.id) return;
 
     try {
-      const paymentIds = selectedPayments.map(p => p.id);
-      
       // First, delete all payment history records for these payments
       const { error: historyDeleteError } = await supabase
         .from('payment_history')
         .delete()
-        .in('payment_id', paymentIds);
+        .in('payment_id', selectedPayments);
 
       if (historyDeleteError) throw historyDeleteError;
 
@@ -377,7 +369,7 @@ const PaymentManagementTable: React.FC = () => {
       const { error: paymentsDeleteError } = await supabase
         .from('payments')
         .delete()
-        .in('id', paymentIds);
+        .in('id', selectedPayments);
 
       if (paymentsDeleteError) throw paymentsDeleteError;
 
@@ -394,13 +386,14 @@ const PaymentManagementTable: React.FC = () => {
   // Export functionality
   const exportToCSV = () => {
     const headers = ['Payment ID', 'Customer', 'Order ID', 'Order Total', 'Amount Paid', 'Balance Due', 'Status', 'Due Date', 'Payment Method', 'Created Date'];
-    const csvData = filteredAndSortedPayments.map(payment => [
+    const allPayments = filteredAndSortedPayments.flatMap(g => g.payments);
+    const csvData = allPayments.map(payment => [
       payment.id,
       payment.customer_name,
       payment.order_id,
       `₹${payment.order_total_amount}`,
-      `₹${payment.amount_paid}`, // UPDATED: Using order_amount_paid for consistency in export
-      `₹${payment.order_balance_due}`, // UPDATED: Using order_balance_due for consistency in export
+      `₹${payment.amount_paid}`,
+      `₹${payment.order_balance_due}`,
       payment.status,
       new Date(payment.due_date).toLocaleDateString(),
       payment.payment_method || '-',
@@ -408,10 +401,10 @@ const PaymentManagementTable: React.FC = () => {
     ]);
 
     const csvContent = [headers, ...csvData]
-      .map(row => row.map(field => `"${field}"`).join(','))
+      .map(row => row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(','))
       .join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -593,67 +586,87 @@ const PaymentManagementTable: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredAndSortedPayments.map((payment) => (
-                <tr key={payment.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                  <td className="px-4 py-3">
-                    <input
-                      type="checkbox"
-                      checked={selectedPayments.some(p => p.id === payment.id)}
-                      onChange={() => handleSelectPayment(payment)}
-                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                    />
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <User className="w-4 h-4 text-gray-400" />
-                      <div>
-                        <div className="font-medium text-gray-900 dark:text-white">{payment.customer_name}</div>
-                        <div className="text-xs text-gray-500">{payment.customer_phone}</div>
+              {filteredAndSortedPayments.map((group) => (
+                <React.Fragment key={group.order_id}>
+                  <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <td className="px-4 py-3">
+                      <Button variant="ghost" size="icon" onClick={() => toggleOrderExpansion(group.order_id)}>
+                        {expandedOrders.has(group.order_id) ? <Minus size={14} /> : <Plus size={14} />}
+                      </Button>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <User className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <div className="font-medium text-gray-900 dark:text-white">{group.customer_name}</div>
+                          <div className="text-xs text-gray-500">{group.customer_phone}</div>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Link 
-                      to={`/invoices/${payment.order_id}`} 
-                      className="text-primary-600 hover:text-primary-700 hover:underline"
-                    >
-                      #{payment.order_id}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-right font-medium">₹{payment.order_total_amount.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-right font-medium text-green-600">₹{payment.amount_paid.toLocaleString()}</td> {/* Using payment.amount_paid for this cell */}
-                  <td className="px-4 py-3 text-right font-medium text-red-600">₹{payment.order_balance_due.toLocaleString()}</td> {/* Using payment.order_balance_due */}
-                  <td className="px-4 py-3 text-center">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(payment.status)}`}>
-                      {payment.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3 text-gray-400" />
-                      <span>{new Date(payment.due_date).toLocaleDateString()}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1">
-                      <CreditCard className="w-3 h-3 text-gray-400" />
-                      <span>{payment.payment_method || '-'}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => handleView(payment)} title="View Details">
-                        <Eye size={14} />
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleEdit(payment)} title="Edit Payment">
-                        <Edit size={14} />
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(payment)} title="Delete Payment">
-                        <Trash2 size={14} className="text-red-500" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Link
+                        to={`/invoices/${group.order_id}`}
+                        className="text-primary-600 hover:text-primary-700 hover:underline"
+                      >
+                        #{group.order_id}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 text-right font-medium">₹{group.order_total_amount.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-right font-medium text-green-600">₹{group.order_amount_paid.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-right font-medium text-red-600">₹{group.order_balance_due.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(group.status)}`}>
+                        {group.status}
+                      </span>
+                    </td>
+                    <td colSpan={3}></td>
+                  </tr>
+                  {expandedOrders.has(group.order_id) && (
+                    <>
+                      {group.payments.map(payment => (
+                        <tr key={payment.id} className="bg-gray-50 dark:bg-gray-800">
+                          <td className="px-4 py-3 pl-12">
+                            <input
+                              type="checkbox"
+                              checked={selectedPayments.includes(payment.id)}
+                              onChange={() => handleSelectPayment(payment.id)}
+                              className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                            />
+                          </td>
+                          <td colSpan={3}></td>
+                          <td className="px-4 py-3 text-right font-medium text-green-600">₹{payment.amount_paid.toLocaleString()}</td>
+                          <td></td>
+                          <td></td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3 text-gray-400" />
+                              <span>{new Date(payment.due_date).toLocaleDateString()}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-1">
+                              <CreditCard className="w-3 h-3 text-gray-400" />
+                              <span>{payment.payment_method || '-'}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-1">
+                              <Button variant="ghost" size="sm" onClick={() => handleView(payment)} title="View Details">
+                                <Eye size={14} />
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => handleEdit(payment)} title="Edit Payment">
+                                <Edit size={14} />
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => handleDelete(payment)} title="Delete Payment">
+                                <Trash2 size={14} className="text-red-500" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </>
+                  )}
+                </React.Fragment>
               ))}
             </tbody>
           </table>
@@ -669,14 +682,14 @@ const PaymentManagementTable: React.FC = () => {
         {/* Footer */}
         {filteredAndSortedPayments.length > 0 && (
           <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex justify-between items-center text-sm text-gray-500">
+          <div className="flex justify-between items-center text-sm text-gray-500">
               <span>
-                Showing {filteredAndSortedPayments.length} of {payments.length} payments
+                Showing {filteredAndSortedPayments.length} of {groupedPayments.length} orders
                 {selectedPayments.length > 0 && ` • ${selectedPayments.length} selected`}
               </span>
               <div className="flex items-center gap-2">
                 <Filter size={16} />
-                <span>Total Value: ₹{filteredAndSortedPayments.reduce((sum, p) => sum + p.amount_paid, 0).toLocaleString()}</span>
+                <span>Total Value: ₹{filteredAndSortedPayments.reduce((sum, g) => sum + g.order_amount_paid, 0).toLocaleString()}</span>
               </div>
             </div>
           </div>

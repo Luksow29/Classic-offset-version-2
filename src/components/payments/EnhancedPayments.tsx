@@ -3,6 +3,7 @@ import PaymentForm from './PaymentForm';
 import PaymentManagementTable from './PaymentManagementTable';
 import PaymentDashboard from './PaymentDashboard';
 import PaymentHistory from './PaymentHistory';
+import TriggerMissingPayments from './TriggerMissingPayments';
 import { BarChart3, PlusCircle, List, History, Settings } from 'lucide-react';
 
 type TabType = 'dashboard' | 'manage' | 'add' | 'history' | 'settings';
@@ -21,6 +22,7 @@ const EnhancedPayments: React.FC = () => {
     { id: 'manage' as TabType, label: 'Manage Payments', icon: List },
     { id: 'add' as TabType, label: 'Add Payment', icon: PlusCircle },
     { id: 'history' as TabType, label: 'History & Audit', icon: History },
+    { id: 'settings' as TabType, label: 'Settings', icon: Settings },
   ];
 
   return (
@@ -76,6 +78,10 @@ const EnhancedPayments: React.FC = () => {
         
         {activeTab === 'history' && (
           <PaymentHistory />
+        )}
+
+        {activeTab === 'settings' && (
+          <TriggerMissingPayments />
         )}
       </div>
     </div>

@@ -82,7 +82,7 @@ const OrderStatusCard: React.FC<OrderStatusCardProps> = ({ orders, loading, erro
             <li key={order.id} className="p-4 flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
               <div>
                 <Link to={`/orders`} className="text-sm font-semibold text-gray-800 dark:text-white hover:underline">
-                  #{order.order_id} – {order.customer_name}
+                  #{order.id} – {order.customer_name}
                 </Link>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   {new Date(order.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}

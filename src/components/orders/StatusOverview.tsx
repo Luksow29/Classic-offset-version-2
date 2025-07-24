@@ -44,12 +44,36 @@ const StatusOverview: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const fetchStatusOverview = useCallback(async () => {
-    // loading-ஐ true ஆக அமைக்க வேண்டாம், பின்னணியில் புதுப்பிக்க
     setError(null);
     try {
-      const { data, error: rpcError } = await supabase.rpc('get_orders_with_status_history');
-      if (rpcError) throw rpcError;
-      setOrders(data || []);
+      const { data: ordersData, error: ordersError } = await supabase
+        .from('orders')
+        .select('id, customer_name');
+
+      if (ordersError) throw ordersError;
+
+      const { data: statusLogsData, error: statusLogsError } = await supabase
+        .from('order_status_log')
+        .select('*')
+        .order('updated_at', { ascending: false });
+
+      if (statusLogsError) throw statusLogsError;
+
+      const ordersWithStatus = ordersData.map(order => {
+        const history = statusLogsData.filter(log => log.order_id === order.id);
+        const latestStatus = history[0] || { status: 'Pending', updated_by: 'System', updated_at: new Date().toISOString() };
+
+        return {
+          order_id: order.id,
+          customer_name: order.customer_name,
+          latest_status: latestStatus.status,
+          last_updated_by: latestStatus.updated_by,
+          last_updated_at: latestStatus.updated_at,
+          history: history,
+        };
+      });
+
+      setOrders(ordersWithStatus);
     } catch (err: any) {
       setError(err.message || "Failed to load status overview.");
     } finally {
@@ -80,8 +104,13 @@ const StatusOverview: React.FC = () => {
   }, [fetchStatusOverview]);
 
   const filteredOrders = useMemo(() => {
+    const statusFilterLower = statusFilter.toLowerCase();
     return orders
-      .filter(order => statusFilter === 'All' || order.latest_status === statusFilter)
+      .filter(order => {
+        if (statusFilterLower === 'all') return true;
+        // Compare status case-insensitively
+        return (order.latest_status || '').toLowerCase() === statusFilterLower;
+      })
       .filter(order => 
         order.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         String(order.order_id).includes(searchTerm)
