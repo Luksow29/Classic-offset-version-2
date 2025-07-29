@@ -19,10 +19,11 @@ interface GalleryItem {
 }
 
 interface GalleryItemsTableProps {
-  onDataChange: () => void; // தரவு மாறியதும் parent ஐ புதுப்பிக்க (delete, update)
+  onDataChange: () => void;
+  onEditItem: (item: GalleryItem) => void;
 }
 
-const GalleryItemsTable: React.FC<GalleryItemsTableProps> = ({ onDataChange }) => {
+const GalleryItemsTable: React.FC<GalleryItemsTableProps> = ({ onDataChange, onEditItem }) => {
   const { userProfile } = useUser();
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,8 +74,7 @@ const GalleryItemsTable: React.FC<GalleryItemsTableProps> = ({ onDataChange }) =
       toast.error('Permission denied: Only Owners and Managers can edit gallery items.');
       return;
     }
-    setEditingItem(item);
-    setShowEditModal(true);
+    onEditItem(item);
   };
 
   const handleDelete = (item: GalleryItem) => {

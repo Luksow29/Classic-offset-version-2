@@ -21,7 +21,7 @@ const RejectReasonModal: React.FC<RejectReasonModalProps> = ({ isOpen, onClose, 
   };
 
   return (
-    <Modal isOpen={isOpen} setOpen={onClose} title="Reason for Rejection">
+    <Modal isOpen={isOpen} onClose={onClose} title="Reason for Rejection">
       <div className="space-y-4">
         <TextArea
           id="rejectionReason"

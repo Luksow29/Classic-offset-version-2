@@ -186,7 +186,7 @@ const AdminContentManagement: React.FC = () => {
             <section className="space-y-4">
               <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Gallery Management</h2>
               <GalleryUploader onUploadSuccess={handleUploadSuccess} />
-              <GalleryItemsTable onDataChange={handleDataChange} />
+              <GalleryItemsTable onEditItem={handleEditGalleryItem} onDataChange={handleDataChange} />
             </section>
 
             {/* Highlight Features Management Section */}
@@ -278,7 +278,7 @@ const AdminContentManagement: React.FC = () => {
           >
             <section className="space-y-4">
               <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Order Requests</h2>
-              <OrderRequestsTable onDataChange={handleDataChange} />
+              <OrderRequestsTable />
             </section>
           </motion.div>
         );
