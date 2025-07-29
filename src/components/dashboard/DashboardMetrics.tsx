@@ -1,5 +1,6 @@
 // src/components/dashboard/DashboardMetrics.tsx
 import React from 'react';
+import { metricsDrilldownMap } from './metricsDrilldownMap';
 import MetricCard from '../ui/MetricCard';
 import AnimatedCounter from '../ui/AnimatedCounter';
 
@@ -39,10 +40,11 @@ interface ConsolidatedMetricsData {
 interface DashboardMetricsProps {
     metricsData: ConsolidatedMetricsData | null;
     loading: boolean;
-    error: string | null;
+    error?: string | null;
+    onDrilldown?: (type: string, filters?: Record<string, any>) => void;
 }
 
-const DashboardMetrics: React.FC<DashboardMetricsProps> = ({ metricsData, loading, error }) => {
+const DashboardMetrics: React.FC<DashboardMetricsProps> = ({ metricsData, loading, error, onDrilldown }) => {
   if (loading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 animate-pulse">
@@ -89,14 +91,21 @@ const DashboardMetrics: React.FC<DashboardMetricsProps> = ({ metricsData, loadin
     
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-      {formattedMetrics.map((metric) => (
-        <MetricCard
-          key={metric.title}
-          title={metric.title}
-          value={metric.value}
-          icon={metric.icon}
-        />
-      ))}
+      {formattedMetrics.map((metric) => {
+        const reportType = metricsDrilldownMap[metric.title as string];
+        return (
+          <MetricCard
+            key={metric.title}
+            title={metric.title}
+            value={metric.value}
+            icon={metric.icon}
+            onClick={reportType && onDrilldown ? () => {
+              console.log('[DashboardMetrics] Metric clicked:', metric.title, reportType);
+              onDrilldown(reportType, {/* Optionally pass filters here */});
+            } : undefined}
+          />
+        );
+      })}
     </div>
   );
 };

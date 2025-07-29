@@ -9,6 +9,8 @@ import Select, { SelectProps } from './ui/Select';
 import TextArea, { TextAreaProps } from './ui/TextArea';
 import { MessageCircle, Send, Loader2, AlertTriangle, MessageSquare } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
+import RealtimeStatus from './ui/RealtimeStatus';
+import { useRealtimeWhatsApp } from '@/hooks/useRealtimeWhatsApp';
 
 // Data type definitions
 interface Customer { id: string; name: string; phone: string; }
@@ -47,6 +49,11 @@ const SendMessageUI = ({ allCustomers, templates, onRefresh, initialOrder }) => 
   const [message, setMessage] = useState('');
   const [customerOrders, setCustomerOrders] = useState<OrderSummary[]>([]);
   const [isFetchingData, setIsFetchingData] = useState(false);
+  
+  // Set up realtime WhatsApp monitoring
+  const { recentMessages } = useRealtimeWhatsApp((log) => {
+    console.log('📱 WhatsApp message logged:', log);
+  });
   
   useEffect(() => {
     if (initialOrder) {
@@ -276,6 +283,9 @@ const WhatsAppDashboard: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">WhatsApp Suite</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">Send personalized messages to your customers.</p>
+        </div>
+        <div className="ml-auto">
+          <RealtimeStatus showDetails />
         </div>
       </div>
       <SendMessageUI 

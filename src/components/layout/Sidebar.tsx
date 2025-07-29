@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, FileText, DollarSign, Package, Users, UserCircle,
   AlertCircle, ActivitySquare, FileSignature, Boxes, X, ChevronLeft, ChevronRight,
-  Briefcase, BarChart3, ChevronDown, MessageCircle, Settings, MessageSquare, Sparkles, Lightbulb
+  Briefcase, BarChart3, ChevronDown, MessageCircle, Settings, MessageSquare, Sparkles, Lightbulb, Brain, Rocket, Gift
 } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
 import { useUser } from '@/context/UserContext';
@@ -100,7 +100,9 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: <BarChart3 size={20} />,
       items: [
         { name: 'Dashboard', path: '/', icon: <LayoutDashboard size={18} /> },
-        { name: 'Insights', path: '/insights', icon: <Lightbulb size={18} /> },
+        { name: 'Business Insights', path: '/business-insights', icon: <Brain size={18} /> },
+        { name: 'Enhancement Progress', path: '/enhancements', icon: <Rocket size={18} /> },
+        { name: 'Comprehensive Insights', path: '/insights', icon: <Brain size={18} /> },
         { name: 'Reports', path: '/reports', icon: <BarChart3 size={18} /> },
         { name: 'Status Overview', path: '/status-overview', icon: <ActivitySquare size={18} /> },
         { name: 'Due Summary', path: '/due-summary', icon: <AlertCircle size={18} /> },
@@ -113,6 +115,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         { name: 'Orders', path: '/orders', icon: <FileText size={18} /> },
         { name: 'Expenses', path: '/expenses', icon: <DollarSign size={18} /> },
         { name: 'Materials', path: '/materials', icon: <Package size={18} /> },
+        { name: 'Smart Inventory', path: '/smart-inventory', icon: <Package size={18} /> },
         { name: 'Products', path: '/products', icon: <Boxes size={18} /> },
         { name: 'Invoices', path: '/invoices', icon: <FileSignature size={18} /> },
       ],
@@ -122,6 +125,8 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: <Users size={20} />,
       items: [
         { name: 'Customers', path: '/customers', icon: <UserCircle size={18} /> },
+        { name: 'Advanced CRM', path: '/advanced-crm', icon: <Users size={18} /> },
+        { name: 'Loyalty Program', path: '/loyalty-program', icon: <Gift size={18} /> },
         { name: 'Staff', path: '/staff', icon: <Users size={18} /> },
         { name: 'Payments', path: '/payments', icon: <DollarSign size={18} /> },
         { name: 'Users', path: '/users', icon: <Users size={18} />, requiredRole: 'Owner' },

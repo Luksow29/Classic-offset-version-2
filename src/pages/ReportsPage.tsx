@@ -91,6 +91,13 @@
     );
   };
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
+
+interface ReportsPageDrilldownProps {
+  drilldownType?: string;
+  drilldownFilters?: Record<string, any>;
+  isDrilldown?: boolean;
+}
 import { supabase } from '@/lib/supabaseClient';
 import Card from '@/components/ui/Card';
 import Pagination from '@/components/ui/Pagination';
@@ -123,8 +130,13 @@ const reportOptions = [
   { value: 'invoice_report', label: 'Invoice Report' },
 ];
 
-const ReportsPage: React.FC = () => {
-  const [reportType, setReportType] = useState<ReportType>('profit_loss');
+const ReportsPage: React.FC<ReportsPageDrilldownProps> = ({ drilldownType, drilldownFilters, isDrilldown }) => {
+  const location = useLocation();
+  // Get ?type= from query string for drill-down, unless drilldownType is provided
+  const params = new URLSearchParams(location.search);
+  const initialType = (drilldownType as ReportType) || (params.get('type') as ReportType) || 'profit_loss';
+  const [reportType, setReportType] = useState<ReportType>(initialType);
+  // Optionally use drilldownFilters for filtering (extend logic as needed)
   const [filters, setFilters] = useState<any>({
     startDate: '', 
     endDate: '', 

@@ -7,6 +7,7 @@ import {
 } from 'react-router-dom';
 import { ThemeProvider } from './lib/ThemeProvider';
 import { UserProvider } from './context/UserContext';
+import { RealtimeProvider } from './context/RealtimeContext';
 import { Toaster } from 'react-hot-toast';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 
@@ -43,8 +44,13 @@ const SettingsPage = lazy(() => import('./components/settings/SettingsPage'));
 const TeamChatPage = lazy(() => import('./pages/TeamChatPage'));
 const AdminContentManagement = lazy(() => import('@/pages/AdminContentManagement'));
 const AIAgentPage = lazy(() => import('./pages/AIAgentPage'));
-const InsightsPage = lazy(() => import('./pages/InsightsPage'));
+const InsightsPage = lazy(() => import('./pages/ComprehensiveInsightsPage'));
 const ReportsPage = lazy(() => import('./pages/ReportsPage'));
+const BusinessInsights = lazy(() => import('./components/ai/BusinessInsights'));
+const WeeklyProgress = lazy(() => import('./components/enhancements/WeeklyProgress'));
+const SmartInventory = lazy(() => import('./components/inventory/SmartInventory'));
+const AdvancedCRM = lazy(() => import('./components/crm/AdvancedCRM'));
+const LoyaltyProgram = lazy(() => import('./components/loyalty/LoyaltyProgram'));
 
 // Helper function to wrap routes with Suspense and ErrorBoundary
 const Suspended = (element: React.ReactNode) => (
@@ -83,6 +89,11 @@ const router = createBrowserRouter(
         <Route path="/admin/content" element={Suspended(<AdminContentManagement />)} />
         <Route path="/insights" element={Suspended(<InsightsPage />)} />
         <Route path="/reports" element={Suspended(<ReportsPage />)} />
+        <Route path="/business-insights" element={Suspended(<BusinessInsights />)} />
+        <Route path="/enhancements" element={Suspended(<WeeklyProgress />)} />
+        <Route path="/smart-inventory" element={Suspended(<SmartInventory />)} />
+        <Route path="/advanced-crm" element={Suspended(<AdvancedCRM />)} />
+        <Route path="/loyalty-program" element={Suspended(<LoyaltyProgram />)} />
       </Route>
 
       {/* 404 page */}
@@ -95,40 +106,42 @@ function App() {
   return (
     <ThemeProvider>
       <UserProvider>
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            success: { 
-              duration: 3000,
-              style: {
-                background: 'hsl(var(--success))',
-                color: 'hsl(var(--success-foreground))'
+        <RealtimeProvider>
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              success: { 
+                duration: 3000,
+                style: {
+                  background: 'hsl(var(--success))',
+                  color: 'hsl(var(--success-foreground))'
+                },
+                iconTheme: {
+                  primary: 'hsl(var(--success-foreground))',
+                  secondary: 'hsl(var(--success))',
+                }
               },
-              iconTheme: {
-                primary: 'hsl(var(--success-foreground))',
-                secondary: 'hsl(var(--success))',
-              }
-            },
-            error: { 
-              duration: 5000,
-              style: {
-                background: 'hsl(var(--destructive))',
-                color: 'hsl(var(--destructive-foreground))'
+              error: { 
+                duration: 5000,
+                style: {
+                  background: 'hsl(var(--destructive))',
+                  color: 'hsl(var(--destructive-foreground))'
+                },
+                iconTheme: {
+                  primary: 'hsl(var(--destructive-foreground))',
+                  secondary: 'hsl(var(--destructive))',
+                }
               },
-              iconTheme: {
-                primary: 'hsl(var(--destructive-foreground))',
-                secondary: 'hsl(var(--destructive))',
-              }
-            },
-            style: {
-              fontSize: '14px',
-              maxWidth: '400px',
-              padding: '12px 18px',
-              borderRadius: 'var(--radius)',
-            },
-          }}
-        />
-        <RouterProvider router={router} />
+              style: {
+                fontSize: '14px',
+                maxWidth: '400px',
+                padding: '12px 18px',
+                borderRadius: 'var(--radius)',
+              },
+            }}
+          />
+          <RouterProvider router={router} />
+        </RealtimeProvider>
       </UserProvider>
     </ThemeProvider>
   );

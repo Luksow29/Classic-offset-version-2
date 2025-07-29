@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { twMerge } from 'tailwind-merge';
 import { motion } from 'framer-motion';
 
@@ -11,14 +11,14 @@ interface CardProps {
   onClick?: () => void;
 }
 
-const Card: React.FC<CardProps> = ({ 
+const Card = forwardRef<HTMLDivElement, CardProps>(({ 
   title, 
   children, 
   className = '', 
   titleClassName = '', 
   interactive = false,
   onClick
-}) => {
+}, ref) => {
   const cardVariants = interactive ? {
     initial: { 
       scale: 1, 
@@ -35,27 +35,17 @@ const Card: React.FC<CardProps> = ({
     }
   } : {};
 
-  const Component = interactive ? motion.div : 'div';
-  const cardProps = interactive ? {
-    variants: cardVariants,
-    initial: "initial",
-    whileHover: "hover",
-    whileTap: "tap",
-    onClick
-  } : { onClick };
+  const cardClassName = twMerge(`
+    bg-card text-card-foreground
+    rounded-lg
+    border border-border
+    shadow-sm
+    overflow-hidden
+    transition-colors
+  `, className);
 
-  return (
-    <Component 
-      {...cardProps}
-      className={twMerge(`
-        bg-card text-card-foreground
-        rounded-lg
-        border border-border
-        shadow-sm
-        overflow-hidden
-        transition-colors
-      `, className)}
-    >
+  const cardContent = (
+    <>
       {title && (
         <div className={twMerge("p-6 border-b border-border flex items-center justify-between", titleClassName)}>
           <h3 className="text-lg font-semibold leading-none tracking-tight">
@@ -66,8 +56,36 @@ const Card: React.FC<CardProps> = ({
       <div className={twMerge("", !title && "")}>
         {children}
       </div>
-    </Component>
+    </>
   );
-};
+
+  if (interactive) {
+    return (
+      <motion.div
+        ref={ref}
+        variants={cardVariants}
+        initial="initial"
+        whileHover="hover"
+        whileTap="tap"
+        onClick={onClick}
+        className={cardClassName}
+      >
+        {cardContent}
+      </motion.div>
+    );
+  }
+
+  return (
+    <div 
+      ref={ref}
+      onClick={onClick}
+      className={cardClassName}
+    >
+      {cardContent}
+    </div>
+  );
+});
+
+Card.displayName = 'Card';
 
 export default Card;
