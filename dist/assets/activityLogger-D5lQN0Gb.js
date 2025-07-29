@@ -1,1 +1,0 @@
-import{b as o,d as r,e as s,f as c,s as e}from"./index-BQ92t-xb.js";const m=async(t,a)=>{try{await o(r(s,"activity_logs"),{message:t,user:a,timestamp:c()}),await e.from("activity_logs").insert({message:t,user:a,timestamp:new Date().toISOString()})}catch(i){console.error("Error logging activity:",i)}};export{m as l};
