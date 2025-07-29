@@ -36,9 +36,9 @@ const BrandingContentForm: React.FC<BrandingContentFormProps> = ({ sectionName }
           .from('site_content')
           .select('*')
           .eq('section_name', sectionName)
-          .single();
+          .maybeSingle();
 
-        if (fetchError && fetchError.code !== 'PGRST116') {
+        if (fetchError) {
           throw fetchError;
         }
 
