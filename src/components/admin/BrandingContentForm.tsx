@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { safeSingleQuery } from '@/lib/supabaseErrorHandler';
 import Card from '../ui/Card';
 import TextArea from '../ui/TextArea';
 import Button from '../ui/Button';
@@ -32,14 +33,19 @@ const BrandingContentForm: React.FC<BrandingContentFormProps> = ({ sectionName }
       setLoading(true);
       setError(null);
       try {
-        const { data, error: fetchError } = await supabase
+        const { data, error: fetchError } = await safeSingleQuery(
+          supabase
           .from('site_content')
           .select('*')
           .eq('section_name', sectionName)
-          .maybeSingle();
+          .maybeSingle(),
+          { operation: 'select_single', table: 'site_content' }
+        );
 
         if (fetchError) {
-          throw fetchError;
+          console.error('Error fetching site content:', fetchError);
+          setError(`Failed to load content: ${fetchError.message}`);
+          return;
         }
 
         if (data) {
@@ -50,7 +56,7 @@ const BrandingContentForm: React.FC<BrandingContentFormProps> = ({ sectionName }
           setContentId(null);
         }
       } catch (err: any) {
-        console.error(`❌ Error fetching content for ${sectionName}:`, err.message);
+        console.error(`❌ Error fetching content for ${sectionName}:`, err);
         setError(`Failed to load content for ${sectionName}: ${err.message}`);
       } finally {
         setLoading(false);

@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react'; // useCallback ஐச் சேர்க்கவும்
 import { supabase } from '@/lib/supabaseClient';
+import { safeSingleQuery } from '@/lib/supabaseErrorHandler';
 import type { Session, User } from '@supabase/supabase-js';
 
 interface UserProfile {
@@ -34,14 +35,17 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchUserProfile = useCallback(async (supabaseUser: User) => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await safeSingleQuery(
+        supabase
         .from('users') // public.users அட்டவணையிலிருந்து சுயவிவரத்தைப் பெறவும்
         .select('id, name, role, email, phone, address, company, bio') // அனைத்து காலங்களையும் தேர்ந்தெடுக்கவும்
         .eq('id', supabaseUser.id)
-        .maybeSingle();
+        .maybeSingle(),
+        { operation: 'select_single', table: 'users', userId: supabaseUser.id }
+      );
 
       if (error) {
-        console.error("Error fetching user profile:", error.message);
+        console.error("Error fetching user profile:", error);
         // பிழை ஏற்பட்டால், ஒரு குறைந்தபட்ச சுயவிவரத்தை அமைக்கவும்
         setUserProfile({ id: supabaseUser.id, name: supabaseUser.email || 'Guest', role: 'Staff', email: supabaseUser.email || '' });
         return; // பிழை ஏற்பட்டால், மேலும் தொடராமல் திரும்பு
@@ -55,7 +59,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUserProfile({ id: supabaseUser.id, name: supabaseUser.email || 'New User', role: 'Staff', email: supabaseUser.email || '' });
       }
     } catch (err: any) {
-      console.error("Unexpected error in fetchUserProfile:", err.message);
+      console.error("Unexpected error in fetchUserProfile:", err);
       // எதிர்பாராத பிழை ஏற்பட்டால்
       setUserProfile({ id: supabaseUser.id, name: 'Error User', role: null, email: '' });
     } finally {
