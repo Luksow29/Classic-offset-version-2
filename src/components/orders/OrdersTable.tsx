@@ -17,7 +17,7 @@ import {
   CheckSquare, Square, MoreHorizontal, Filter, Download, RefreshCw, ArrowUpDown, Calendar, Clock, X
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Order, OrdersTableOrder, Status, SortField, SortOrder, OrdersTableProps } from '@/types';
+import { Order, OrdersTableOrder, OrdersTableProps, SortField, SortOrder, Status } from '@/types';
 // Remove local Order interface - use the one from types/index.ts
 
 const OrdersTable: React.FC<OrdersTableProps> = ({ highlightOrderId }) => {
@@ -104,7 +104,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ highlightOrderId }) => {
         balance_amount: order.balance_amount,
         is_deleted: order.is_deleted,
         status: latestStatusMap[order.id] || 'Pending',
-      })) as OrdersTableOrder[] || [];
+      })) || [];
 
       setOrders(ordersWithStatus);
     } catch (err: any) {
@@ -131,7 +131,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ highlightOrderId }) => {
     }
   };
 
-  const handleSelectOrder = (order: Order) => {
+  const handleSelectOrder = (order: OrdersTableOrder) => {
     setSelectedOrders(prev => {
       const isSelected = prev.some(o => o.order_id === order.order_id);
       if (isSelected) {
