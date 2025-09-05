@@ -3,12 +3,12 @@
 import React from 'react';
 import Modal from '../ui/Modal';
 import CustomerForm from './CustomerForm';
-import { Customer } from '@/types'; // Assuming you have a types file
+import { Customer } from '@/types';
 
 interface CustomerFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (newCustomer: Customer) => void;
+  onSuccess: (newCustomer?: Customer) => void;
   customerToEdit?: Customer | null;
 }
 
