@@ -14,7 +14,10 @@ import DeleteOrderModal from './DeleteOrderModal';
 import BulkActionsModal from './BulkActionsModal';
 import {
   Loader2, AlertTriangle, FileX, Search, MessageCircle, Eye, Edit, Trash2,
-  CheckSquare, Square, MoreHorizontal, Filter, Download, RefreshCw,
+  CheckSquare, Square, MoreHorizontal, Filter, Download, RefreshCw, ArrowUpDown, Calendar, Clock, X
+} from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Order, OrdersTableOrder, Status, SortField, SortOrder, OrdersTableProps } from '@/types';
 // Remove local Order interface - use the one from types/index.ts
 
 const OrdersTable: React.FC<OrdersTableProps> = ({ highlightOrderId }) => {
@@ -101,7 +104,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ highlightOrderId }) => {
         balance_amount: order.balance_amount,
         is_deleted: order.is_deleted,
         status: latestStatusMap[order.id] || 'Pending',
-      })) || [];
+      })) as OrdersTableOrder[] || [];
 
       setOrders(ordersWithStatus);
     } catch (err: any) {
@@ -161,8 +164,8 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ highlightOrderId }) => {
       return matchesSearch && matchesStatus && matchesDate;
     });
     filtered.sort((a, b) => {
-        let aValue: any = a[sortField as keyof OrdersTableOrder];
-        let bValue: any = b[sortField as keyof OrdersTableOrder];
+        let aValue: any = a[sortField as keyof Order];
+        let bValue: any = b[sortField as keyof Order];
         if (sortField === 'date' || sortField === 'delivery_date') {
             aValue = new Date(aValue).getTime();
             bValue = new Date(bValue).getTime();
@@ -275,7 +278,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ highlightOrderId }) => {
                     <Button size="sm" variant="outline" onClick={() => handleStatusUpdate(order)}>Update</Button>
                 </div>
               </div>
-            )
+            );
           }) : <div className="text-center py-12 text-gray-500"><FileX className="w-12 h-12 mx-auto mb-4" /><p>No orders found for the current filters.</p></div>}
         </div>
 
