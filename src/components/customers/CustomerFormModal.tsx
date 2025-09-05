@@ -3,22 +3,19 @@
 import React from 'react';
 import Modal from '../ui/Modal';
 import CustomerForm from './CustomerForm';
-import { Customer } from '@/types';
+import { Customer } from '@/types'; // Assuming you have a types file
 
 interface CustomerFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (newCustomer?: Customer) => void;
+  onSuccess: (newCustomer: Customer) => void;
   customerToEdit?: Customer | null;
 }
 
 const CustomerFormModal: React.FC<CustomerFormModalProps> = ({ isOpen, onClose, onSuccess, customerToEdit }) => {
   
   const handleSave = () => {
-    // The `onSuccess` logic might need to be enhanced if the parent component
-    // needs the full customer object after creation/update.
-    // For now, we assume the parent will refetch or handle it.
-    onSuccess(customerToEdit || {} as Customer);
+    onSuccess();
     onClose();
   };
 
