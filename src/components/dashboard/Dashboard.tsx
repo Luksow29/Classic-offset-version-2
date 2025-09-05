@@ -117,16 +117,16 @@ const Dashboard: React.FC = () => {
                     if (res.error) handleSupabaseError(res.error, { operation: 'rpc_call', table: 'get_daily_order_counts' });
                     return res;
                 }),
-                supabase.rpc('get_financial_summary', { p_user_id: userProfile.id, p_month: month }).then(res => {
+                supabase.rpc('get_financial_summary', { p_month: month }).then(res => {
                     if (res.error) handleSupabaseError(res.error, { operation: 'rpc_call', table: 'get_financial_summary' });
                     return res;
                 }),
-                supabase.rpc('get_financial_summary', { p_user_id: userProfile.id, p_month: previousMonth }).then(res => {
+                supabase.rpc('get_financial_summary', { p_month: previousMonth }).then(res => {
                     if (res.error) handleSupabaseError(res.error, { operation: 'rpc_call', table: 'get_financial_summary' });
                     return res;
                 }),
                 supabase.from('order_summary_with_dues').select('total_amount, date').gte('date', `${month}-01`),
-                supabase.rpc('get_dashboard_metrics').then(res => {
+                supabase.rpc('get_dashboard_metrics', { p_user_id: userProfile?.id }).then(res => {
                     if (res.error) handleSupabaseError(res.error, { operation: 'rpc_call', table: 'get_dashboard_metrics' });
                     return res;
                 }),
