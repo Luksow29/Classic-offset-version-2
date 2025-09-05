@@ -164,8 +164,8 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ highlightOrderId }) => {
       return matchesSearch && matchesStatus && matchesDate;
     });
     filtered.sort((a, b) => {
-        let aValue: any = a[sortField as keyof Order];
-        let bValue: any = b[sortField as keyof Order];
+        let aValue: any = a[sortField as keyof OrdersTableOrder];
+        let bValue: any = b[sortField as keyof OrdersTableOrder];
         if (sortField === 'date' || sortField === 'delivery_date') {
             aValue = new Date(aValue).getTime();
             bValue = new Date(bValue).getTime();
