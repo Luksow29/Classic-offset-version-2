@@ -15,20 +15,7 @@ import BulkActionsModal from './BulkActionsModal';
 import {
   Loader2, AlertTriangle, FileX, Search, MessageCircle, Eye, Edit, Trash2,
   CheckSquare, Square, MoreHorizontal, Filter, Download, RefreshCw,
-  ArrowUpDown, Calendar, User, Package, Clock, X
-} from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
-
-import { Order } from '@/types';
-
-type SortField = 'order_id' | 'customer_name' | 'date' | 'delivery_date' | 'status';
-type SortOrder = 'asc' | 'desc';
-type Status = 'Pending' | 'Design' | 'Printing' | 'Delivered';
-
-interface OrdersTableProps {
-  highlightOrderId: string | null;
-}
+// Remove local Order interface - use the one from types/index.ts
 
 const OrdersTable: React.FC<OrdersTableProps> = ({ highlightOrderId }) => {
   const [orders, setOrders] = useState<Order[]>([]);
