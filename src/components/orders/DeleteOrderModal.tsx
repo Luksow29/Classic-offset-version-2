@@ -5,12 +5,12 @@ import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import { AlertTriangle, Loader2, Archive, Trash2, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { Order } from './OrdersTable';
+import { OrdersTableOrder } from '@/types';
 
 interface DeleteOrderModalProps {
   isOpen: boolean;
   onClose: () => void;
-  order: Order | null;
+  order: OrdersTableOrder | null;
   onOrderDeleted: () => void;
 }
 
