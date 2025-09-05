@@ -270,63 +270,6 @@ const Dashboard: React.FC = () => {
             }
             default: {
                 return null;
-            };
-        }
-
-    useEffect(() => {
-        fetchDashboardData(currentMonth);
-    }, [currentMonth, fetchDashboardData]);
-
-    useEffect(() => {
-        localStorage.setItem('dashboardOrder', JSON.stringify(componentOrder));
-    }, [componentOrder]);
-
-    const onDragEnd = (result: DropResult) => {
-        const { destination, source } = result;
-        if (!destination || (destination.droppableId === source.droppableId && destination.index === source.index)) {
-            return;
-        }
-        const newOrder = Array.from(componentOrder);
-        const [reorderedItem] = newOrder.splice(source.index, 1);
-        newOrder.splice(destination.index, 0, reorderedItem);
-        setComponentOrder(newOrder);
-    };
-
-    const resetLayout = () => {
-        setComponentOrder(DEFAULT_ORDER);
-        localStorage.removeItem('dashboardOrder');
-        toast.success("Dashboard layout has been reset!");
-    };
-
-    const renderComponent = (id: string) => {
-        if (!data) return null;
-        switch (id) {
-            case 'metrics': {
-                return (
-                    <DashboardMetrics
-                        metricsData={data.consolidatedMetrics}
-                        loading={loading}
-                        onDrilldown={handleMetricDrilldown}
-                    />
-                );
-            }
-            case 'financialSummary': {
-                return <FinancialSummary data={data.financialSummaryData} previousData={data.previousFinancialSummaryData} loading={loading} />;
-            }
-            case 'revenueChart': {
-                return <div className="h-80"><RevenueChart data={data.revenueChartData} /></div>;
-            }
-            case 'ordersChart': {
-                return <div className="h-80"><OrdersChart data={data.dailyOrdersChartData} /></div>;
-            }
-            case 'activityFeed': {
-                return <ActivityLogFeed />;
-            }
-            case 'orderStatus': {
-                return <OrderStatusCard orders={data.pendingOrders} loading={loading} error={error} onStatusUpdated={() => fetchDashboardData(currentMonth)} />;
-            }
-            default: {
-                return null;
             }
         }
     };
