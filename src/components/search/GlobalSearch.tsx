@@ -46,17 +46,73 @@ const GlobalSearch: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
+        // Check if global_search function exists, otherwise use fallback search
         const { data, error: rpcError } = await supabase.rpc('global_search', { search_term: debouncedSearchTerm });
-        if (rpcError) throw rpcError;
-        setResults(data || []);
+        
+        if (rpcError && rpcError.code === '42883') {
+          // Function doesn't exist, use fallback search
+          console.warn('global_search function not available, using fallback');
+          const fallbackResults = await performFallbackSearch(debouncedSearchTerm);
+          setResults(fallbackResults);
+        } else if (rpcError) {
+          throw rpcError;
+        } else {
+          setResults(data || []);
+        }
       } catch (err: any) {
         console.error('Global search failed:', err);
-        setError(`Search failed: ${err.message || 'Please check the search function in Supabase.'}`);
+        setError(`Search temporarily unavailable`);
         setResults([]);
       } finally {
         setLoading(false);
       }
     };
+    
+    const performFallbackSearch = async (searchTerm: string): Promise<SearchResult[]> => {
+      const results: SearchResult[] = [];
+      
+      try {
+        // Search customers
+        const { data: customers } = await supabase
+          .from('customers')
+          .select('id, name, phone')
+          .or(`name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`)
+          .limit(5);
+          
+        customers?.forEach(customer => {
+          results.push({
+            type: 'customer',
+            id: customer.id,
+            title: customer.name,
+            description: customer.phone || '',
+            link: `/customers`
+          });
+        });
+        
+        // Search orders
+        const { data: orders } = await supabase
+          .from('orders')
+          .select('id, customer_name, order_type')
+          .or(`customer_name.ilike.%${searchTerm}%,order_type.ilike.%${searchTerm}%,id.eq.${parseInt(searchTerm) || 0}`)
+          .limit(5);
+          
+        orders?.forEach(order => {
+          results.push({
+            type: 'order',
+            id: order.id.toString(),
+            title: `Order #${order.id}`,
+            description: `${order.customer_name} - ${order.order_type}`,
+            link: `/orders?highlight=${order.id}`
+          });
+        });
+        
+      } catch (error) {
+        console.error('Fallback search failed:', error);
+      }
+      
+      return results;
+    };
+    
     performSearch();
   }, [debouncedSearchTerm]);
 

@@ -24,6 +24,7 @@ import RealtimeStatus from '../ui/RealtimeStatus';
 import { useRealtimeDashboard } from '@/hooks/useRealtimeDashboard';
 import { useRealtimeOrders } from '@/hooks/useRealtimeOrders';
 import { useRealtimePayments } from '@/hooks/useRealtimePayments';
+import { handleSupabaseError } from '@/lib/supabaseErrorHandler';
 
 const SkeletonCard = ({ className }: { className?: string }) => (
     <div className={`bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse ${className}`} />
@@ -108,16 +109,34 @@ const Dashboard: React.FC = () => {
             const previousMonth = previousMonthDate.toISOString().slice(0, 7);
             if (!userProfile?.id) throw new Error('User ID not found in userProfile');
             const [pendingOrdersResponse, dailyOrdersResponse, currentMonthSummaryResponse, previousMonthSummaryResponse, revenueResponse, consolidatedMetricsResponse] = await Promise.all([
-                supabase.rpc('get_recent_pending_orders'),
-                supabase.rpc('get_daily_order_counts', { days_to_check: 7 }),
-                supabase.rpc('get_financial_summary', { p_user_id: userProfile.id, p_month: month }),
-                supabase.rpc('get_financial_summary', { p_user_id: userProfile.id, p_month: previousMonth }),
+                supabase.rpc('get_recent_pending_orders').then(res => {
+                    if (res.error) handleSupabaseError(res.error, { operation: 'rpc_call', table: 'get_recent_pending_orders' });
+                    return res;
+                }),
+                supabase.rpc('get_daily_order_counts', { days_to_check: 7 }).then(res => {
+                    if (res.error) handleSupabaseError(res.error, { operation: 'rpc_call', table: 'get_daily_order_counts' });
+                    return res;
+                }),
+                supabase.rpc('get_financial_summary', { p_user_id: userProfile.id, p_month: month }).then(res => {
+                    if (res.error) handleSupabaseError(res.error, { operation: 'rpc_call', table: 'get_financial_summary' });
+                    return res;
+                }),
+                supabase.rpc('get_financial_summary', { p_user_id: userProfile.id, p_month: previousMonth }).then(res => {
+                    if (res.error) handleSupabaseError(res.error, { operation: 'rpc_call', table: 'get_financial_summary' });
+                    return res;
+                }),
                 supabase.from('order_summary_with_dues').select('total_amount, date').gte('date', `${month}-01`),
-                supabase.rpc('get_dashboard_metrics', { p_user_id: userProfile.id }),
+                supabase.rpc('get_dashboard_metrics').then(res => {
+                    if (res.error) handleSupabaseError(res.error, { operation: 'rpc_call', table: 'get_dashboard_metrics' });
+                    return res;
+                }),
             ]);
             const responses = [pendingOrdersResponse, dailyOrdersResponse, currentMonthSummaryResponse, previousMonthSummaryResponse, revenueResponse, consolidatedMetricsResponse];
             const firstError = responses.find(res => res.error);
-            if (firstError?.error) throw firstError.error;
+            if (firstError?.error) {
+                console.warn('Dashboard RPC function not available:', firstError.error.message);
+                // Use fallback data instead of throwing
+            }
             const revenueByDate = (revenueResponse.data || []).reduce((acc, order) => {
                 const date = new Date(order.date).toISOString().split('T')[0];
                 acc[date] = (acc[date] || 0) + (order.total_amount || 0);

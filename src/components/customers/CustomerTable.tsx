@@ -12,6 +12,7 @@ import toast from 'react-hot-toast';
 import { useUser } from '@/context/UserContext';
 import ImportExportCustomers from './enhancements/ImportExportCustomers';
 import { Customer } from '@/types';
+import { handleSupabaseError } from '@/lib/supabaseErrorHandler';
 import { useVirtualizer } from '@tanstack/react-virtual';
 
 interface CustomerTableProps {
@@ -71,14 +72,21 @@ const CustomerTable: React.FC<CustomerTableProps> = ({ onAddNew, onEdit, onDataC
 
       const { data, error: fetchError, count } = await query;
 
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        const handledError = handleSupabaseError(fetchError, { 
+          operation: 'select_customers', 
+          table: 'customer_summary' 
+        });
+        if (handledError) throw handledError;
+      }
 
       setCustomers(data || []);
       setTotalCustomers(count || 0);
 
     } catch (err: any) {
-      setError(`Failed to load customers: ${err.message}`);
-      toast.error('Failed to load customers.');
+      console.error('Customer fetch error:', err);
+      setError('Failed to load customers. Please check your permissions.');
+      toast.error('Failed to load customers. Please check your permissions.');
     } finally {
       setLoading(false);
     }

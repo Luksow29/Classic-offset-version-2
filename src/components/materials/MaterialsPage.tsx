@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import toast from 'react-hot-toast';
+import { handleSupabaseError } from '@/lib/supabaseErrorHandler';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import MaterialTable from './MaterialTable';
@@ -122,13 +123,20 @@ const MaterialsPage: React.FC = () => {
 
       const { data, error, count } = await query;
       
-      if (error) throw error;
+      if (error) {
+        const handledError = handleSupabaseError(error, { 
+          operation: 'select_materials', 
+          table: 'materials_with_details' 
+        });
+        if (handledError) throw handledError;
+      }
       
       setMaterials(data || []);
       setTotalPages(Math.ceil((count || 0) / limit));
       setCurrentPage(page);
     } catch (err: any) {
-      toast.error(err.message || 'Failed to fetch materials');
+      console.error('Materials fetch error:', err);
+      toast.error('Failed to fetch materials. Please check your permissions.');
     } finally {
       setLoading(false);
     }

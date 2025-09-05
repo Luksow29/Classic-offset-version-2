@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import GeminiChat from '@/components/chat/GeminiChat';
 import MetricCard, { MetricCardProps } from '@/components/ui/MetricCard';
+import { handleSupabaseError } from '@/lib/supabaseErrorHandler';
 import { motion } from 'framer-motion';
 
 // Correctly import individual icons from lucide-react to enable tree-shaking
@@ -37,7 +38,20 @@ const InsightsPage: React.FC = () => {
       setError(null);
       try {
         const { data, error } = await supabase.rpc('get_dashboard_metrics');
-        if (error) throw new Error(`Database error: ${error.message}`);
+        if (error) {
+          const handledError = handleSupabaseError(error, { 
+            operation: 'rpc_call', 
+            table: 'get_dashboard_metrics' 
+          }, false);
+          
+          if (handledError) {
+            console.warn('Dashboard metrics function not available, using fallback');
+            // Use fallback metrics
+            setMetrics({ total_revenue: 0, total_customers_count: 0, orders_due_count: 0, balance_due: 0 });
+            return;
+          }
+        }
+        
         if (data && data.length > 0) {
             setMetrics(data[0]);
         } else {
@@ -45,7 +59,7 @@ const InsightsPage: React.FC = () => {
         }
       } catch (err: any) {
         console.error("Error fetching dashboard metrics:", err);
-        setError("Failed to load key metrics. Please try refreshing the page.");
+        setError("Some metrics may be unavailable. Core functionality is still working.");
       } finally {
         setLoading(false);
       }

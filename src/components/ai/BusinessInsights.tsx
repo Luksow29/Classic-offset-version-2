@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { Brain, TrendingUp, AlertTriangle, Target, Lightbulb } from 'lucide-react';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
+import { handleSupabaseError } from '@/lib/supabaseErrorHandler';
 import toast from 'react-hot-toast';
 
 interface BusinessInsight {
@@ -25,20 +26,42 @@ const BusinessInsights: React.FC = () => {
       // Get business data for analysis
       console.log('Fetching dashboard metrics...');
       const { data: metrics, error: metricsError } = await supabase.rpc('get_dashboard_metrics');
-      console.log('Dashboard metrics:', metrics, 'Error:', metricsError);
+      
+      if (metricsError) {
+        const handledError = handleSupabaseError(metricsError, { 
+          operation: 'rpc_call', 
+          table: 'get_dashboard_metrics' 
+        }, false);
+        
+        if (handledError) {
+          console.warn('Dashboard metrics function not available, using basic insights');
+        }
+      }
       
       const { data: recentOrders, error: ordersError } = await supabase
         .from('orders')
         .select('*')
         .gte('date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
         .order('date', { ascending: false });
-      console.log('Recent orders:', recentOrders, 'Error:', ordersError);
+      
+      if (ordersError) {
+        handleSupabaseError(ordersError, { 
+          operation: 'select_orders', 
+          table: 'orders' 
+        }, false);
+      }
 
       const { data: customers, error: customersError } = await supabase
         .from('customers')
         .select('id, name, created_at')
         .order('created_at', { ascending: false });
-      console.log('Customers:', customers, 'Error:', customersError);
+      
+      if (customersError) {
+        handleSupabaseError(customersError, { 
+          operation: 'select_customers', 
+          table: 'customers' 
+        }, false);
+      }
 
       const generatedInsights: BusinessInsight[] = [];
 
