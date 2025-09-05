@@ -104,117 +104,46 @@ const Dashboard: React.FC = () => {
         setLoading(true);
         setError(null);
         try {
-            console.log('🔍 Fetching dashboard data for month:', month);
-            console.log('👤 Current user profile:', userProfile);
-            
-            // Get ALL data without date filtering first to debug
-            const [allOrdersResponse, allPaymentsResponse, pendingOrdersResponse] = await Promise.all([
-                supabase.from('orders').select('*').order('id', { ascending: false }),
-                supabase.from('payments').select('*').order('created_at', { ascending: false }),
-                supabase.from('orders').select('id, customer_name, date, total_amount, balance_amount').gt('balance_amount', 0).order('id', { ascending: false }).limit(10)
+            const previousMonthDate = new Date(month);
+            previousMonthDate.setMonth(previousMonthDate.getMonth() - 1);
+            const previousMonth = previousMonthDate.toISOString().slice(0, 7);
+            if (!userProfile?.id) throw new Error('User ID not found in userProfile');
+            const [pendingOrdersResponse, dailyOrdersResponse, currentMonthSummaryResponse, previousMonthSummaryResponse, revenueResponse, consolidatedMetricsResponse] = await Promise.all([
+                supabase.rpc('get_recent_pending_orders'),
+                supabase.rpc('get_daily_order_counts', { days_to_check: 7 }),
+                supabase.rpc('get_financial_summary', { p_user_id: userProfile.id, p_month: month }),
+                supabase.rpc('get_financial_summary', { p_user_id: userProfile.id, p_month: previousMonth }),
+                supabase.from('orders').select('amount_received, date').gte('date', `${month}-01`).eq('is_deleted', false),
+                supabase.rpc('get_dashboard_metrics_table'),
             ]);
+            const responses = [pendingOrdersResponse, dailyOrdersResponse, currentMonthSummaryResponse, previousMonthSummaryResponse, revenueResponse, consolidatedMetricsResponse];
+            const firstError = responses.find(res => res.error);
+            if (firstError?.error) throw firstError.error;
             
-            console.log('📊 All Orders Data:', allOrdersResponse.data);
-            console.log('💰 All Payments Data:', allPaymentsResponse.data);
-            console.log('⏳ Pending Orders:', pendingOrdersResponse.data);
+            // Debug: Log the metrics response
+            console.log('Dashboard Metrics Response:', consolidatedMetricsResponse);
+            console.log('Dashboard Metrics Data:', consolidatedMetricsResponse.data);
             
-            if (allOrdersResponse.error) {
-                console.error('Orders fetch error:', allOrdersResponse.error);
-                throw allOrdersResponse.error;
-            }
-            if (allPaymentsResponse.error) {
-                console.error('Payments fetch error:', allPaymentsResponse.error);
-                throw allPaymentsResponse.error;
-            }
-            
-            const allOrders = allOrdersResponse.data || [];
-            const allPayments = allPaymentsResponse.data || [];
-            
-            console.log('📈 Calculating metrics from:', {
-                totalOrders: allOrders.length,
-                totalPayments: allPayments.length
-            });
-            
-            // Calculate metrics from ALL data (not filtered by month for now)
-            const totalRevenue = allOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
-            const totalPaid = allPayments.reduce((sum, payment) => sum + (payment.amount_paid || 0), 0);
-            const balanceDue = allOrders.reduce((sum, order) => sum + (order.balance_amount || 0), 0);
-            const totalCustomers = new Set(allOrders.map(o => o.customer_id).filter(Boolean)).size;
-            const ordersDue = allOrders.filter(o => (o.balance_amount || 0) > 0).length;
-            
-            console.log('💡 Calculated metrics:', {
-                totalRevenue,
-                totalPaid,
-                balanceDue,
-                totalCustomers,
-                ordersDue
-            });
-            
-            const consolidatedMetrics = {
-                total_revenue: totalRevenue,
-                total_paid: totalPaid,
-                total_expenses: 0,
-                balance_due: balanceDue,
-                total_orders_count: allOrders.length,
-                total_customers_count: totalCustomers,
-                orders_due_count: ordersDue,
-                orders_overdue_count: 0,
-                orders_fully_paid_count: allOrders.filter(o => (o.balance_amount || 0) <= 0).length,
-                orders_partial_count: allOrders.filter(o => (o.amount_received || 0) > 0 && (o.balance_amount || 0) > 0).length,
-                stock_alerts_count: 0
-            };
-            
-            // For financial summary, use the same data
-            const financialSummaryData = {
-                orders: allOrders.length,
-                revenue: totalPaid, // Use actual payments received as revenue
-                received: totalPaid,
-                expenses: 0,
-                balanceDue: balanceDue,
-            };
-            
-            // For revenue chart, group payments by date
-            const revenueByDate = allPayments.reduce((acc, payment) => {
-                if (payment.payment_date) {
-                    const date = payment.payment_date;
-                    acc[date] = (acc[date] || 0) + (payment.amount_paid || 0);
-                }
+            const revenueByDate = (revenueResponse.data || []).reduce((acc, order) => {
+                const date = new Date(order.date).toISOString().split('T')[0];
+                acc[date] = (acc[date] || 0) + (order.amount_received || 0);
                 return acc;
-            }, {} as Record<string, number>);
-            
-            const revenueChartData = Object.entries(revenueByDate)
-                .map(([date, value]) => ({ date, value }))
-                .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-            
-            console.log('📈 Revenue chart data:', revenueChartData);
-            
-            // Get daily order counts for orders chart
-            const last7Days = [];
-            for (let i = 6; i >= 0; i--) {
-                const date = new Date();
-                date.setDate(date.getDate() - i);
-                const dateStr = date.toISOString().split('T')[0];
-                const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
-                const orderCount = allOrders.filter(o => o.date === dateStr).length;
-                last7Days.push({ day: dayName, order_count: orderCount });
-            }
-            
+            }, {});
             setData({
-                dailyOrdersChartData: last7Days,
+                dailyOrdersChartData: dailyOrdersResponse.data || [],
                 pendingOrders: pendingOrdersResponse.data || [],
-                financialSummaryData: financialSummaryData,
-                previousFinancialSummaryData: { orders: 0, revenue: 0, received: 0, expenses: 0, balanceDue: 0 }, // Set to zero for now
-                revenueChartData: revenueChartData,
-                consolidatedMetrics: consolidatedMetrics,
+                financialSummaryData: currentMonthSummaryResponse.data?.[0] || null,
+                previousFinancialSummaryData: previousMonthSummaryResponse.data?.[0] || null,
+                revenueChartData: Object.entries(revenueByDate).map(([date, value]) => ({ date, value })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
+                consolidatedMetrics: consolidatedMetricsResponse.data?.[0] || null,
             });
-            
-        } catch (err: any) {
-            console.error('❌ Dashboard fetch error:', err);
-            setError(err.message || "An unknown error occurred.");
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+            setError(error instanceof Error ? error.message : 'Failed to fetch dashboard data');
         } finally {
             setLoading(false);
         }
-    }, [userProfile]);
+    }, [userProfile?.id]);
 
     useEffect(() => {
         fetchDashboardData(currentMonth);

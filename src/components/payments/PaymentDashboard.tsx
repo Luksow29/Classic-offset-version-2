@@ -31,6 +31,7 @@ interface RecentPayment {
   amount_paid: number;
   status: string;
   created_at: string;
+  payment_method?: string;
 }
 
 // ✅ மாற்றம்: due_status-ஐ interface-ல் சேர்க்கவும்
@@ -62,56 +63,81 @@ const PaymentDashboard: React.FC = () => {
       const daysAgo = new Date();
       daysAgo.setDate(daysAgo.getDate() - parseInt(selectedPeriod));
 
-      // ✅ மாற்றம்: due_status பத்தியையும் select செய்யவும்
+      // Get both order data and detailed payment entries
       const { data: summaryOrders, error: summaryOrdersError } = await supabase
-        .from('order_summary_with_dues')
+        .from('orders')
         .select(`
-          order_id,
+          id,
           customer_name,
           total_amount,
-          amount_paid,
-          balance_due,
+          amount_received,
+          balance_amount,
           date,
           delivery_date,
-          due_status 
+          is_deleted
         `)
         .gte('date', daysAgo.toISOString())
+        .eq('is_deleted', false)
         .order('date', { ascending: false });
 
       if (summaryOrdersError) throw summaryOrdersError;
 
-      const { data: payments, error: paymentsError } = await supabase
+      // Get detailed payment entries from payments table
+      const { data: detailedPayments, error: paymentsError } = await supabase
         .from('payments')
         .select(`
           id,
+          order_id,
           amount_paid,
           payment_method,
-          created_at,
-          customers (name)
+          payment_date,
+          created_at
         `)
-        .gte('created_at', daysAgo.toISOString());
+        .gte('payment_date', daysAgo.toISOString());
 
       if (paymentsError) throw paymentsError;
 
+      // Create recent payments from detailed payments table
+      const recentPayments = detailedPayments?.map(p => {
+        // Find the corresponding order to get customer name
+        const order = summaryOrders?.find(o => o.id === p.order_id);
+        return {
+          id: p.id.toString(),
+          customer_name: order?.customer_name || 'Unknown',
+          amount_paid: p.amount_paid,
+          status: 'Paid',
+          created_at: p.payment_date || p.created_at,
+          payment_method: p.payment_method || 'Unknown'
+        };
+      }) || [];
+
       const totalOrders = summaryOrders?.length || 0;
       const totalRevenue = summaryOrders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0;
-      const totalReceived = summaryOrders?.reduce((sum, o) => sum + (o.amount_paid || 0), 0) || 0;
-      const pendingAmount = summaryOrders?.reduce((sum, o) => sum + (o.balance_due || 0), 0) || 0;
+      
+      // Calculate total received from detailed payments
+      const totalReceived = detailedPayments?.reduce((sum, p) => sum + (p.amount_paid || 0), 0) || 0;
+      
+      const pendingAmount = summaryOrders?.reduce((sum, o) => sum + (o.balance_amount || 0), 0) || 0;
 
-      // ✅ சரி செய்யப்பட்டது: Overdue Amount-ஐ நேரடியாக due_status-லிருந்து கணக்கிடவும்
+      // Calculate overdue amount from orders past delivery date with balance
       const overdueAmount = summaryOrders?.reduce((sum, o) => {
-        return sum + (o.due_status === 'Overdue' ? (o.balance_due || 0) : 0);
+        const isOverdue = new Date(o.delivery_date) < new Date() && (o.balance_amount || 0) > 0;
+        return sum + (isOverdue ? (o.balance_amount || 0) : 0);
       }, 0) || 0;
 
       const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-      // ✅ சரி செய்யப்பட்டது: Order Status-ஐ நேரடியாக due_status-லிருந்து கணக்கிடவும்
+      // Calculate order status from orders data
       const ordersByStatus = summaryOrders?.reduce((acc, o) => {
-        if ((o.balance_due || 0) <= 0) {
+        const balance = o.balance_amount || 0;
+        const received = o.amount_received || 0;
+        const isOverdue = new Date(o.delivery_date) < new Date();
+        
+        if (balance <= 0) {
           acc.paid += 1;
-        } else if (o.due_status === 'Overdue') {
+        } else if (isOverdue && balance > 0) {
           acc.overdue += 1;
-        } else if ((o.amount_paid || 0) > 0) {
+        } else if (received > 0) {
           acc.partial += 1;
         } else {
           acc.due += 1;
@@ -121,9 +147,10 @@ const PaymentDashboard: React.FC = () => {
       
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
-      const recentPaymentsCount = payments?.filter(p => new Date(p.created_at) > weekAgo).length || 0;
+      const recentPaymentsCount = detailedPayments?.filter(p => new Date(p.payment_date || p.created_at) > weekAgo).length || 0;
 
-      const paymentMethods = payments?.reduce((acc, p) => {
+      // Calculate payment methods from detailed payments
+      const paymentMethods = detailedPayments?.reduce((acc, p) => {
         const method = p.payment_method || 'Unknown';
         acc[method] = (acc[method] || 0) + 1;
         return acc;
@@ -141,15 +168,8 @@ const PaymentDashboard: React.FC = () => {
         paymentMethods
       });
 
-      const recent = payments
-        ?.map(p => ({
-          id: p.id,
-          customer_name: (p.customers as any)?.name || 'Unknown',
-          amount_paid: p.amount_paid,
-          status: 'Paid',
-          created_at: p.created_at
-        }))
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      const recent = recentPayments
+        ?.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         .slice(0, 5) || [];
 
       setRecentPayments(recent);

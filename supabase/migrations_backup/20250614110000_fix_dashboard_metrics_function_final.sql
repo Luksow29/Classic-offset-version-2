@@ -24,8 +24,8 @@ BEGIN
     RETURN QUERY
     WITH metrics AS (
         SELECT
-            -- Total Revenue: Sum of all non-deleted order totals
-            (SELECT COALESCE(SUM(total_amount), 0) FROM public.orders WHERE is_deleted = false) AS total_revenue,
+                -- Total Revenue: Sum of all received payments
+                (SELECT COALESCE(SUM(amount_paid), 0) FROM public.payments) AS total_revenue,
 
             -- Total Amount Paid: Correctly sum `amount_paid` from payments
             (SELECT COALESCE(SUM(amount_paid), 0) FROM public.payments) AS total_paid,
