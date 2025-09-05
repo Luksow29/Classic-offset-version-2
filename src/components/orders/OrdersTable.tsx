@@ -141,7 +141,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ highlightOrderId }) => {
     }
   };
 
-  const handleSelectOrder = (order: OrdersTableOrder) => {
+  const handleSelectOrder = (order: Order) => {
     setSelectedOrders(prev => {
       const isSelected = prev.some(o => o.order_id === order.order_id);
       if (isSelected) {
@@ -196,11 +196,11 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ highlightOrderId }) => {
     );
   }, [selectedOrders, filteredAndSortedOrders]);
 
-  const handleStatusUpdate = (order: Order) => { setSelectedOrder(order); setShowUpdateModal(true); };
-  const handleViewDetails = (orderId: number) => { setDetailsOrderId(orderId); setShowDetailsModal(true); };
-  const handleEditOrder = (order: Order) => { setSelectedOrder(order); setShowEditModal(true); };
-  const handleDeleteOrder = (order: Order) => { setSelectedOrder(order); setShowDeleteModal(true); };
 
+  const handleStatusUpdate = (order: OrdersTableOrder) => { setSelectedOrder(order); setShowUpdateModal(true); };
+  const handleViewDetails = (orderId: number) => { setDetailsOrderId(orderId); setShowDetailsModal(true); };
+  const handleEditOrder = (order: OrdersTableOrder) => { setSelectedOrder(order); setShowEditModal(true); };
+  const handleDeleteOrder = (order: OrdersTableOrder) => { setSelectedOrder(order); setShowDeleteModal(true); };
   const exportToCSV = () => {
     // ... (Your existing exportToCSV logic remains unchanged)
     const headers = ['Order ID', 'Customer', 'Order Type', 'Quantity', 'Order Date', 'Delivery Date', 'Status', 'Total Amount'];
