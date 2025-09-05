@@ -14,6 +14,13 @@ export default defineConfig({
             filename: 'analyse.html', // output file name
         }),
     ],
+    server: {
+        hmr: {
+            clientPort: process.env.PORT ? parseInt(process.env.PORT) : 5173,
+            protocol: 'wss',
+            host: '0.0.0.0'
+        }
+    },
     resolve: {
         alias: {
             '@': path.resolve(__dirname, './src'),
