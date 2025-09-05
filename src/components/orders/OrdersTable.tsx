@@ -28,7 +28,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ highlightOrderId }) => {
   const navigate = useNavigate();
   
   // Modal states
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<OrdersTableOrder | null>(null);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -47,7 +47,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ highlightOrderId }) => {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   
   // Selection states
-  const [selectedOrders, setSelectedOrders] = useState<OrdersTableOrder[]>([]);
+  const [selectedOrders, setSelectedOrders] = useState<Order[]>([]);
   const [selectAll, setSelectAll] = useState(false);
 
   const fetchOrders = useCallback(async () => {
