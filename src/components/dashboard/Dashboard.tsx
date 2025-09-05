@@ -104,105 +104,174 @@ const Dashboard: React.FC = () => {
         setLoading(true);
         setError(null);
         try {
-            const previousMonthDate = new Date(month);
-            previousMonthDate.setMonth(previousMonthDate.getMonth() - 1);
-            const previousMonth = previousMonthDate.toISOString().slice(0, 7);
+            console.log('🔍 Fetching dashboard data for month:', month);
+            console.log('👤 Current user profile:', userProfile);
             
-            // Calculate date ranges for the selected month
-            const monthStart = `${month}-01`;
-            const monthEnd = new Date(month + '-01');
-            monthEnd.setMonth(monthEnd.getMonth() + 1);
-            monthEnd.setDate(0); // Last day of the month
-            const monthEndStr = monthEnd.toISOString().split('T')[0];
-            
-            const [pendingOrdersResponse, dailyOrdersResponse, currentMonthOrdersResponse, previousMonthOrdersResponse, currentMonthPaymentsResponse, previousMonthPaymentsResponse, revenueResponse] = await Promise.all([
-                supabase.rpc('get_recent_pending_orders').then(res => {
-                    if (res.error) handleSupabaseError(res.error, { operation: 'rpc_call', table: 'get_recent_pending_orders' });
-                    return res;
-                }),
-                supabase.rpc('get_daily_order_counts', { days_to_check: 7 }).then(res => {
-                    if (res.error) handleSupabaseError(res.error, { operation: 'rpc_call', table: 'get_daily_order_counts' });
-                    return res;
-                }),
-                // Get current month orders
-                supabase.from('orders').select('*').gte('date', monthStart).lte('date', monthEndStr),
-                // Get previous month orders
-                supabase.from('orders').select('*').gte('date', `${previousMonth}-01`).lt('date', monthStart),
-                // Get current month payments
-                supabase.from('payments').select('*').gte('payment_date', monthStart).lte('payment_date', monthEndStr),
-                // Get previous month payments
-                supabase.from('payments').select('*').gte('payment_date', `${previousMonth}-01`).lt('payment_date', monthStart),
-                // Get revenue data for chart
-                supabase.from('orders').select('date, total_amount').gte('date', monthStart).lte('date', monthEndStr).order('date'),
+            // Get ALL data without date filtering first to debug
+            const [allOrdersResponse, allPaymentsResponse, pendingOrdersResponse] = await Promise.all([
+                supabase.from('orders').select('*').order('id', { ascending: false }),
+                supabase.from('payments').select('*').order('created_at', { ascending: false }),
+                supabase.from('orders').select('id, customer_name, date, total_amount, balance_amount').gt('balance_amount', 0).order('id', { ascending: false }).limit(10)
             ]);
             
-            const responses = [pendingOrdersResponse, dailyOrdersResponse, currentMonthOrdersResponse, previousMonthOrdersResponse, currentMonthPaymentsResponse, previousMonthPaymentsResponse, revenueResponse];
-            const firstError = responses.find(res => res.error);
-            if (firstError?.error) {
-                console.warn('Dashboard RPC function not available:', firstError.error.message);
+            console.log('📊 All Orders Data:', allOrdersResponse.data);
+            console.log('💰 All Payments Data:', allPaymentsResponse.data);
+            console.log('⏳ Pending Orders:', pendingOrdersResponse.data);
+            
+            if (allOrdersResponse.error) {
+                console.error('Orders fetch error:', allOrdersResponse.error);
+                throw allOrdersResponse.error;
+            }
+            if (allPaymentsResponse.error) {
+                console.error('Payments fetch error:', allPaymentsResponse.error);
+                throw allPaymentsResponse.error;
             }
             
-            // Calculate current month metrics
-            const currentOrders = currentMonthOrdersResponse.data || [];
-            const currentPayments = currentMonthPaymentsResponse.data || [];
+            const allOrders = allOrdersResponse.data || [];
+            const allPayments = allPaymentsResponse.data || [];
             
-            const currentMetrics = {
-                total_revenue: currentOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0),
-                total_paid: currentPayments.reduce((sum, payment) => sum + (payment.amount_paid || 0), 0),
-                total_expenses: 0, // Will be calculated from expenses table if needed
-                balance_due: currentOrders.reduce((sum, order) => sum + (order.balance_amount || 0), 0),
-                total_orders_count: currentOrders.length,
-                total_customers_count: new Set(currentOrders.map(o => o.customer_id)).size,
-                orders_due_count: currentOrders.filter(o => (o.balance_amount || 0) > 0).length,
-                orders_overdue_count: 0, // Would need delivery date comparison
-                orders_fully_paid_count: currentOrders.filter(o => (o.balance_amount || 0) <= 0).length,
-                orders_partial_count: currentOrders.filter(o => (o.amount_received || 0) > 0 && (o.balance_amount || 0) > 0).length,
-                stock_alerts_count: 0 // Would need stock alerts query
+            console.log('📈 Calculating metrics from:', {
+                totalOrders: allOrders.length,
+                totalPayments: allPayments.length
+            });
+            
+            // Calculate metrics from ALL data (not filtered by month for now)
+            const totalRevenue = allOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
+            const totalPaid = allPayments.reduce((sum, payment) => sum + (payment.amount_paid || 0), 0);
+            const balanceDue = allOrders.reduce((sum, order) => sum + (order.balance_amount || 0), 0);
+            const totalCustomers = new Set(allOrders.map(o => o.customer_id).filter(Boolean)).size;
+            const ordersDue = allOrders.filter(o => (o.balance_amount || 0) > 0).length;
+            
+            console.log('💡 Calculated metrics:', {
+                totalRevenue,
+                totalPaid,
+                balanceDue,
+                totalCustomers,
+                ordersDue
+            });
+            
+            const consolidatedMetrics = {
+                total_revenue: totalRevenue,
+                total_paid: totalPaid,
+                total_expenses: 0,
+                balance_due: balanceDue,
+                total_orders_count: allOrders.length,
+                total_customers_count: totalCustomers,
+                orders_due_count: ordersDue,
+                orders_overdue_count: 0,
+                orders_fully_paid_count: allOrders.filter(o => (o.balance_amount || 0) <= 0).length,
+                orders_partial_count: allOrders.filter(o => (o.amount_received || 0) > 0 && (o.balance_amount || 0) > 0).length,
+                stock_alerts_count: 0
             };
             
-            // Calculate previous month metrics
-            const previousOrders = previousMonthOrdersResponse.data || [];
-            const previousPayments = previousMonthPaymentsResponse.data || [];
-            
-            const previousMetrics = {
-                orders: previousOrders.length,
-                revenue: previousOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0),
-                received: previousPayments.reduce((sum, payment) => sum + (payment.amount_paid || 0), 0),
-                expenses: 0, // Will be calculated if needed
-                balanceDue: previousOrders.reduce((sum, order) => sum + (order.balance_amount || 0), 0),
+            // For financial summary, use the same data
+            const financialSummaryData = {
+                orders: allOrders.length,
+                revenue: totalPaid, // Use actual payments received as revenue
+                received: totalPaid,
+                expenses: 0,
+                balanceDue: balanceDue,
             };
             
-            // Process revenue chart data
-            const revenueByDate = (revenueResponse.data || []).reduce((acc, order) => {
-                const date = new Date(order.date).toISOString().split('T')[0];
-                acc[date] = (acc[date] || 0) + (order.total_amount || 0);
+            // For revenue chart, group payments by date
+            const revenueByDate = allPayments.reduce((acc, payment) => {
+                if (payment.payment_date) {
+                    const date = payment.payment_date;
+                    acc[date] = (acc[date] || 0) + (payment.amount_paid || 0);
+                }
                 return acc;
-            }, {});
+            }, {} as Record<string, number>);
             
             const revenueChartData = Object.entries(revenueByDate)
                 .map(([date, value]) => ({ date, value }))
                 .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
             
+            console.log('📈 Revenue chart data:', revenueChartData);
+            
+            // Get daily order counts for orders chart
+            const last7Days = [];
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                const dateStr = date.toISOString().split('T')[0];
+                const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+                const orderCount = allOrders.filter(o => o.date === dateStr).length;
+                last7Days.push({ day: dayName, order_count: orderCount });
+            }
+            
             setData({
-                dailyOrdersChartData: dailyOrdersResponse.data || [],
+                dailyOrdersChartData: last7Days,
                 pendingOrders: pendingOrdersResponse.data || [],
-                financialSummaryData: {
-                    orders: currentOrders.length,
-                    revenue: currentMetrics.total_paid, // Use actual payments received as revenue
-                    received: currentMetrics.total_paid,
-                    expenses: 0, // Will be calculated if needed
-                    balanceDue: currentMetrics.balance_due,
-                },
-                previousFinancialSummaryData: previousMetrics,
+                financialSummaryData: financialSummaryData,
+                previousFinancialSummaryData: { orders: 0, revenue: 0, received: 0, expenses: 0, balanceDue: 0 }, // Set to zero for now
                 revenueChartData: revenueChartData,
-                consolidatedMetrics: currentMetrics,
+                consolidatedMetrics: consolidatedMetrics,
             });
+            
         } catch (err: any) {
+            console.error('❌ Dashboard fetch error:', err);
             setError(err.message || "An unknown error occurred.");
         } finally {
             setLoading(false);
         }
     }, [userProfile]);
+
+    useEffect(() => {
+        fetchDashboardData(currentMonth);
+    }, [currentMonth, fetchDashboardData]);
+
+    useEffect(() => {
+        localStorage.setItem('dashboardOrder', JSON.stringify(componentOrder));
+    }, [componentOrder]);
+
+    const onDragEnd = (result: DropResult) => {
+        const { destination, source } = result;
+        if (!destination || (destination.droppableId === source.droppableId && destination.index === source.index)) {
+            return;
+        }
+        const newOrder = Array.from(componentOrder);
+        const [reorderedItem] = newOrder.splice(source.index, 1);
+        newOrder.splice(destination.index, 0, reorderedItem);
+        setComponentOrder(newOrder);
+    };
+
+    const resetLayout = () => {
+        setComponentOrder(DEFAULT_ORDER);
+        localStorage.removeItem('dashboardOrder');
+        toast.success("Dashboard layout has been reset!");
+    };
+
+    const renderComponent = (id: string) => {
+        if (!data) return null;
+        switch (id) {
+            case 'metrics': {
+                return (
+                    <DashboardMetrics
+                        metricsData={data.consolidatedMetrics}
+                        loading={loading}
+                        onDrilldown={handleMetricDrilldown}
+                    />
+                );
+            }
+            case 'financialSummary': {
+                return <FinancialSummary data={data.financialSummaryData} previousData={data.previousFinancialSummaryData} loading={loading} />;
+            }
+            case 'revenueChart': {
+                return <div className="h-80"><RevenueChart data={data.revenueChartData} /></div>;
+            }
+            case 'ordersChart': {
+                return <div className="h-80"><OrdersChart data={data.dailyOrdersChartData} /></div>;
+            }
+            case 'activityFeed': {
+                return <ActivityLogFeed />;
+            }
+            case 'orderStatus': {
+                return <OrderStatusCard orders={data.pendingOrders} loading={loading} error={error} onStatusUpdated={() => fetchDashboardData(currentMonth)} />;
+            }
+            default: {
+                return null;
+            };
+        }
 
     useEffect(() => {
         fetchDashboardData(currentMonth);
