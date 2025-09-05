@@ -10,13 +10,7 @@ import toast from 'react-hot-toast';
 import { logActivity } from '@/lib/activityLogger';
 import { db } from '@/lib/firebaseClient'; // Import Firestore instance
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore'; // Import Firestore functions
-
-// Customer and Order interfaces
-interface Customer {
-  id: string;
-  name: string;
-  phone?: string;
-}
+import { Customer } from '@/types';
 
 interface Order {
   id: number;

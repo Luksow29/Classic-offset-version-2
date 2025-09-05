@@ -20,20 +20,7 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
-export interface Order {
-  order_id: number;
-  customer_name: string;
-  order_type: string;
-  quantity: number;
-  date: string;
-  delivery_date: string;
-  status: string;
-  customer_phone?: string;
-  total_amount?: number;
-  amount_received?: number;
-  balance_amount?: number;
-  is_deleted?: boolean;
-}
+import { Order } from '@/types';
 
 type SortField = 'order_id' | 'customer_name' | 'date' | 'delivery_date' | 'status';
 type SortOrder = 'asc' | 'desc';
@@ -154,7 +141,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ highlightOrderId }) => {
     }
   };
 
-  const handleSelectOrder = (order: Order) => {
+  const handleSelectOrder = (order: OrdersTableOrder) => {
     setSelectedOrders(prev => {
       const isSelected = prev.some(o => o.order_id === order.order_id);
       if (isSelected) {

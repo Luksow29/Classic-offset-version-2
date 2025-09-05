@@ -35,6 +35,21 @@ export interface Customer {
   tier_upgraded_at: string | null; // timestamptz
 }
 
+export interface OrdersTableOrder {
+  order_id: number;
+  customer_name: string;
+  order_type: string;
+  quantity: number;
+  date: string;
+  delivery_date: string;
+  status: string;
+  customer_phone?: string;
+  total_amount?: number;
+  amount_received?: number;
+  balance_amount?: number;
+  is_deleted?: boolean;
+}
+
 export interface Order {
   id: number; // bigint - matches database primary key
   date: string; // date

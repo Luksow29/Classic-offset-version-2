@@ -30,11 +30,6 @@ interface Employee {
     name: string;
     job_role: string;
 }
-interface Customer {
-  id: string;
-  name: string;
-  phone: string;
-}
 interface SelectOption {
     value: string;
     label: string;

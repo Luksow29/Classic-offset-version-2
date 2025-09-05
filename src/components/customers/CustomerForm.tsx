@@ -13,21 +13,7 @@ import { logActivity } from '@/lib/activityLogger';
 import { db } from '@/lib/firebaseClient';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
-// Define the shape of the customer object
-interface Customer {
-  id?: string;
-  name: string;
-  phone: string;
-  email?: string;
-  address?: string;
-  joined_date?: string;
-  secondary_phone?: string;
-  company_name?: string;
-  billing_address?: string;
-  shipping_address?: string;
-  birthday?: string;
-  tags?: string[];
-}
+import { Customer } from '@/types';
 
 interface CustomerFormProps {
   selectedCustomer: Customer | null;

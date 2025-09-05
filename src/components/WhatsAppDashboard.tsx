@@ -12,8 +12,8 @@ import toast, { Toaster } from 'react-hot-toast';
 import RealtimeStatus from './ui/RealtimeStatus';
 import { useRealtimeWhatsApp } from '@/hooks/useRealtimeWhatsApp';
 
-// Data type definitions
-interface Customer { id: string; name: string; phone: string; }
+import { Customer } from '@/types';
+
 interface OrderSummary {
   order_id: number;
   customer_id: string;
