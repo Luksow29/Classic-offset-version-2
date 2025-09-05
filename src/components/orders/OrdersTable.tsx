@@ -44,7 +44,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ highlightOrderId }) => {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   
   // Selection states
-  const [selectedOrders, setSelectedOrders] = useState<Order[]>([]);
+  const [selectedOrders, setSelectedOrders] = useState<OrdersTableOrder[]>([]);
   const [selectAll, setSelectAll] = useState(false);
 
   const fetchOrders = useCallback(async () => {
