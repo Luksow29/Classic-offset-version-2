@@ -9,12 +9,12 @@ import TextArea from '../ui/TextArea';
 import Button from '../ui/Button';
 import { Loader2, AlertCircle, User, Phone, Package, Calendar, Palette } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { Order } from './OrdersTable';
+import { OrdersTableOrder } from '@/types';
 
 interface EditOrderModalProps {
   isOpen: boolean;
   onClose: () => void;
-  order: Order | null;
+  order: OrdersTableOrder | null;
   onOrderUpdated: () => void;
 }
 
