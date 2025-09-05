@@ -28,7 +28,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ highlightOrderId }) => {
   const navigate = useNavigate();
   
   // Modal states
-  const [selectedOrder, setSelectedOrder] = useState<OrdersTableOrder | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
