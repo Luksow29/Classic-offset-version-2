@@ -44,7 +44,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ highlightOrderId }) => {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   
   // Selection states
-  const [selectedOrders, setSelectedOrders] = useState<OrdersTableOrder[]>([]);
+  const [selectedOrders, setSelectedOrders] = useState<Order[]>([]);
   const [selectAll, setSelectAll] = useState(false);
 
   const fetchOrders = useCallback(async () => {
@@ -101,7 +101,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ highlightOrderId }) => {
         balance_amount: order.balance_amount,
         is_deleted: order.is_deleted,
         status: latestStatusMap[order.id] || 'Pending',
-      })) || [];
+      })) as OrdersTableOrder[] || [];
 
       setOrders(ordersWithStatus);
     } catch (err: any) {
