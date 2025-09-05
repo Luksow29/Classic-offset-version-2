@@ -9,10 +9,10 @@ import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import { Loader2, CheckCircle, Pencil, Printer, Truck } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { Order } from './OrdersTable';
+import { OrdersTableOrder } from '@/types';
 
 interface Props {
-  order: Order;
+  order: OrdersTableOrder;
   isOpen: boolean;
   onClose: () => void;
   onStatusUpdated: () => void;
