@@ -38,7 +38,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .from('users') // public.users அட்டவணையிலிருந்து சுயவிவரத்தைப் பெறவும்
         .select('id, name, role, email, phone, address, company, bio') // அனைத்து காலங்களையும் தேர்ந்தெடுக்கவும்
         .eq('id', supabaseUser.id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Error fetching user profile:", error.message);
