@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react'; // useCallback ஐச் சேர்க்கவும்
 import { supabase } from '@/lib/supabaseClient';
+import { PostgrestError } from '@supabase/supabase-js';
 import { safeSingleQuery } from '@/lib/supabaseErrorHandler';
 import type { Session, User } from '@supabase/supabase-js';
 

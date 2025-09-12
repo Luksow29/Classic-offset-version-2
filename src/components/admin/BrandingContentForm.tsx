@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { PostgrestError } from '@supabase/supabase-js';
 import { safeSingleQuery } from '@/lib/supabaseErrorHandler';
 import Card from '../ui/Card';
 import TextArea from '../ui/TextArea';
