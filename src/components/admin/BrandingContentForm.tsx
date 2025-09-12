@@ -38,7 +38,7 @@ const BrandingContentForm: React.FC<BrandingContentFormProps> = ({ sectionName }
           .from('site_content')
           .select('*')
           .eq('section_name', sectionName)
-          .maybeSingle(),
+          .maybeSingle() as Promise<{ data: any | null; error: PostgrestError | null }>,
           { operation: 'select_single', table: 'site_content' }
         );
 

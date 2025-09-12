@@ -14,6 +14,12 @@ import { useRealtimeWhatsApp } from '@/hooks/useRealtimeWhatsApp';
 
 import { Customer, AllOrderSummary } from '@/types';
 
+interface CustomerSelectData {
+  id: string;
+  name: string;
+  phone: string;
+}
+
 type OrderSummary = AllOrderSummary & {
   order_id: number;
   customer_id: string;
@@ -41,7 +47,12 @@ interface FullOrderInfo extends OrderSummary, OrderDetails {}
 interface Template { id: string; name: string; category: string; body: string; }
 
 // --- Child Component for Sending Messages ---
-const SendMessageUI = ({ allCustomers, templates, onRefresh, initialOrder }) => {
+const SendMessageUI = ({ allCustomers, templates, onRefresh, initialOrder }: {
+  allCustomers: CustomerSelectData[];
+  templates: Template[];
+  onRefresh: () => void;
+  initialOrder: OrderSummary | null;
+}) => {
   const { user } = useUser();
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [selectedOrderId, setSelectedOrderId] = useState('');
@@ -223,7 +234,7 @@ const SendMessageUI = ({ allCustomers, templates, onRefresh, initialOrder }) => 
 const WhatsAppDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
+  const [allCustomers, setAllCustomers] = useState<CustomerSelectData[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [initialOrder, setInitialOrder] = useState<OrderSummary | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
