@@ -17,7 +17,7 @@ import {
   CheckSquare, Square, MoreHorizontal, Filter, Download, RefreshCw, ArrowUpDown, Calendar, Clock, X
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Order, OrdersTableOrder, OrdersTableProps, SortField, SortOrder, Status } from '@/types';
+import { Order, OrdersTableOrder, SortField, SortOrder, Status } from '@/types';
 // Remove local Order interface - use the one from types/index.ts
 
 const OrdersTable: React.FC<OrdersTableProps> = ({ highlightOrderId }) => {

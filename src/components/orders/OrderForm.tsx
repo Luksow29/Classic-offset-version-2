@@ -14,6 +14,7 @@ import { db } from '@/lib/firebaseClient';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { logActivity } from '@/lib/activityLogger';
 import CustomerFormModal from '../customers/CustomerFormModal';
+import { Customer } from '@/types/index';
 
 interface OrderFormProps {
     onSuccess: () => void;

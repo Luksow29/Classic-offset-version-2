@@ -21,7 +21,7 @@ interface OrderDetails extends Order {
   amount_received: number;
   balance_amount: number;
   payment_method: string;
-  notes?: string;
+  notes: string | null;
   customer_phone?: string;
   customer_email?: string;
   customer_address?: string;
