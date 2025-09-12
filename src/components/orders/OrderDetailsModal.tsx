@@ -5,7 +5,7 @@ import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import Card from '../ui/Card'; // FIX: Missing Card component import added
 import { Calendar, User, Package, DollarSign, Phone, MapPin, FileText, Clock, Loader2, Pencil, Printer, Truck, CheckCircle } from 'lucide-react';
-import { Order } from './OrdersTable';
+import { Order } from '@/types/index';
 import OrderStatusStepper from './OrderStatusStepper';
 
 interface OrderDetailsModalProps {
@@ -15,6 +15,8 @@ interface OrderDetailsModalProps {
 }
 
 interface OrderDetails extends Order {
+  status: string;
+  customer_name: string;
   total_amount: number;
   amount_received: number;
   balance_amount: number;
