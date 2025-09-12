@@ -80,6 +80,9 @@ const CustomerTable: React.FC<CustomerTableProps> = ({ onAddNew, onEdit, onDataC
         if (handledError) throw handledError;
       }
 
+      console.log('CustomerTable - Raw customer data:', data);
+      console.log('CustomerTable - First customer structure:', data?.[0]);
+
       setCustomers(data || []);
       setTotalCustomers(count || 0);
 
@@ -203,7 +206,12 @@ const CustomerTable: React.FC<CustomerTableProps> = ({ onAddNew, onEdit, onDataC
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{new Date(customer.joined_date).toLocaleDateString('en-GB')}</td>
                   <td className="px-4 py-3 text-center space-x-1">
-                    <Button variant="ghost" size="sm" title="View Details" onClick={() => setSelectedCustomerForDetails(customer)}><Eye size={16} /></Button>
+                    <Button variant="ghost" size="sm" title="View Details" onClick={() => {
+                      console.log('Opening customer details for:', customer);
+                      console.log('Customer ID:', customer.id);
+                      console.log('Customer Name:', customer.name);
+                      setSelectedCustomerForDetails(customer);
+                    }}><Eye size={16} /></Button>
                     <Button variant="ghost" size="sm" title="Edit Customer" onClick={() => onEdit(customer)}><Edit size={16} /></Button>
                     <Button variant="ghost" size="sm" title="Delete Customer" onClick={() => handleDeleteCustomer(customer)}><Trash2 size={16} className="text-destructive" /></Button>
                   </td>

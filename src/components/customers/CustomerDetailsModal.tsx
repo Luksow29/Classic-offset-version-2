@@ -48,29 +48,110 @@ const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({ customerId,
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'orders' | 'payments' | 'whatsapp' | 'communication'>('orders');
 
+  // Add validation for customerId
+  if (!customerId || customerId.trim() === '') {
+    return (
+      <Modal isOpen={isOpen} onClose={onClose} title={`Customer Details: ${customerName}`} size="3xl">
+        <div className="text-center py-10 text-red-500">
+          <p>Invalid Customer ID: "{customerId}"</p>
+          <p className="text-sm text-gray-500 mt-2">Please contact support if this issue persists.</p>
+        </div>
+      </Modal>
+    );
+  }
+
   const fetchCustomerDetails = useCallback(async () => {
     if (!customerId || activeTab === 'communication') return;
+    
+    console.log('=== Fetching customer details ===');
+    console.log('Customer ID:', customerId);
+    console.log('Customer ID type:', typeof customerId);
+    console.log('Customer ID length:', customerId.length);
+    console.log('Customer Name:', customerName);
+    console.log('Active Tab:', activeTab);
+    
     setLoading(true);
     setError(null);
 
     try {
       if (activeTab === 'orders') {
-        const { data, error: fetchError } = await supabase
-          .from('order_summary_with_dues')
-          .select('order_id, total_amount, status, date')
+        console.log('Fetching orders for customer ID:', customerId);
+        
+        // First try with customer_id
+        let { data, error: fetchError } = await supabase
+          .from('orders')
+          .select('id, total_amount, date, customer_id, customer_name, order_type, quantity')
           .eq('customer_id', customerId)
+          .eq('is_deleted', false)
           .order('date', { ascending: false });
 
-        if (fetchError) throw fetchError;
-        setOrders(data || []);
+        // If no results and we have a customer name, try with customer_name
+        if ((!data || data.length === 0) && customerName) {
+          console.log('No orders found by customer_id, trying customer_name:', customerName);
+          const { data: nameData, error: nameError } = await supabase
+            .from('orders')
+            .select('id, total_amount, date, customer_id, customer_name, order_type, quantity')
+            .eq('customer_name', customerName)
+            .eq('is_deleted', false)
+            .order('date', { ascending: false });
+          
+          if (!nameError) {
+            data = nameData;
+            fetchError = null;
+          }
+        }
+
+        if (fetchError) {
+          console.error('Error fetching orders:', fetchError);
+          throw fetchError;
+        }
+        
+        console.log('Fetched orders data:', data);
+        
+        // Get the latest status for each order from order_status_log
+        const orderIds = (data || []).map(order => order.id);
+        let statusMap: Record<number, string> = {};
+        
+        if (orderIds.length > 0) {
+          const { data: statusData, error: statusError } = await supabase
+            .from('order_status_log')
+            .select('order_id, status, updated_at')
+            .in('order_id', orderIds)
+            .order('updated_at', { ascending: false });
+
+          if (!statusError && statusData) {
+            // Create a map of order_id to latest status
+            statusData.forEach((log) => {
+              if (log.order_id && !statusMap[log.order_id]) {
+                statusMap[log.order_id] = log.status;
+              }
+            });
+          }
+        }
+        
+        // Transform data to match the expected interface with actual status
+        const transformedOrders = (data || []).map(order => ({
+          order_id: order.id,
+          total_amount: order.total_amount,
+          status: statusMap[order.id] || 'Pending', // Use actual status from log or default to Pending
+          date: order.date
+        }));
+        
+        setOrders(transformedOrders);
       } else if (activeTab === 'payments') {
+        console.log('Fetching payments for customer ID:', customerId);
         const { data, error: fetchError } = await supabase
           .from('payments')
           .select('id, order_id, amount_paid, payment_method, created_at')
           .eq('customer_id', customerId)
           .order('created_at', { ascending: false });
 
-        if (fetchError) throw fetchError;
+        if (fetchError) {
+          console.error('Error fetching payments:', fetchError);
+          throw fetchError;
+        }
+        
+        console.log('Fetched payments data:', data);
         setPayments(data || []);
       } else if (activeTab === 'whatsapp') {
         const { data, error: fetchError } = await supabase
@@ -96,6 +177,23 @@ const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({ customerId,
       fetchCustomerDetails();
     }
   }, [isOpen, customerId, activeTab, fetchCustomerDetails]);
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'delivered':
+        return 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400';
+      case 'printing':
+        return 'bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400';
+      case 'design':
+        return 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400';
+      case 'cancelled':
+        return 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400';
+      default:
+        return 'bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400';
+    }
+  };
 
   const renderContent = () => {
     if (loading) {
@@ -128,7 +226,11 @@ const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({ customerId,
                   <tr key={order.order_id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                     <td className="px-4 py-2 font-medium">#{order.order_id}</td>
                     <td className="px-4 py-2">₹{order.total_amount.toLocaleString('en-IN')}</td>
-                    <td className="px-4 py-2"><span className={`px-2 py-1 text-xs rounded-full font-medium ${order.status === 'Delivered' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{order.status || 'N/A'}</span></td>
+                    <td className="px-4 py-2">
+                      <span className={`px-2 py-1 text-xs rounded-full font-medium ${getStatusColor(order.status || 'pending')}`}>
+                        {order.status || 'Pending'}
+                      </span>
+                    </td>
                     <td className="px-4 py-2">{new Date(order.date).toLocaleDateString('en-GB')}</td>
                     <td className="px-4 py-2 text-right"><Link to={`/invoices/${order.order_id}`}><Button variant="link" size="sm">View Invoice</Button></Link></td>
                   </tr>
@@ -168,12 +270,7 @@ const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({ customerId,
             </div>
         );
       case 'communication':
-        // Assuming customerId is a string, but the component might expect a number.
-        // Let's ensure it's passed correctly.
-        const numericCustomerId = parseInt(customerId, 10);
-        return isNaN(numericCustomerId) ? 
-          <div className="text-center py-10 text-red-500">Invalid Customer ID</div> :
-          <CustomerCommunicationLog customerId={numericCustomerId} />;
+        return <CustomerCommunicationLog customerId={customerId} />;
       default:
         return null;
     }

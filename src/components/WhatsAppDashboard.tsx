@@ -258,7 +258,40 @@ const WhatsAppDashboard: React.FC = () => {
       const errors = [customersRes.error, templatesRes.error, dueOrdersRes.error].filter(Boolean);
       if (errors.length > 0) throw errors[0];
 
-      setAllCustomers(customersRes.data || []);
+      // Convert the partial customer data to the full Customer interface by adding default values
+      const customers = (customersRes.data || []).map(customer => ({
+        ...customer,
+        email: null,
+        address: null,
+        joined_date: null,
+        created_at: new Date().toISOString(),
+        total_orders: null,
+        total_spent: null,
+        last_interaction: null,
+        updated_at: null,
+        billing_address: null,
+        shipping_address: null,
+        birthday: null,
+        secondary_phone: null,
+        company_name: null,
+        tags: null,
+        user_id: null,
+        customer_type: null,
+        communication_preference: null,
+        notes: null,
+        last_interaction_date: null,
+        follow_up_date: null,
+        customer_since: null,
+        total_lifetime_value: null,
+        loyalty_points: null,
+        loyalty_tier_id: null,
+        referral_code: null,
+        total_points_earned: null,
+        total_points_spent: null,
+        tier_upgraded_at: null
+      } as Customer));
+      
+      setAllCustomers(customers);
       setTemplates(templatesRes.data || []);
 
       if (orderIdFromUrl) {

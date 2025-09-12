@@ -5,7 +5,7 @@ import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import Card from '../ui/Card'; // FIX: Missing Card component import added
 import { Calendar, User, Package, DollarSign, Phone, MapPin, FileText, Clock, Loader2, Pencil, Printer, Truck, CheckCircle } from 'lucide-react';
-import { Order } from '@/types/index';
+import { Order } from '@/types';
 import OrderStatusStepper from './OrderStatusStepper';
 
 interface OrderDetailsModalProps {
@@ -15,18 +15,10 @@ interface OrderDetailsModalProps {
 }
 
 interface OrderDetails extends Order {
-  status: string;
-  customer_name: string;
-  total_amount: number;
-  amount_received: number;
-  balance_amount: number;
-  payment_method: string;
-  notes: string | null;
-  customer_phone?: string;
   customer_email?: string;
   customer_address?: string;
   designer_name?: string;
-  design_needed: boolean;
+  status?: string; // Add status property
 }
 
 interface StatusHistory {
@@ -87,6 +79,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ isOpen, onClose, 
         customer_email: orderData.customers?.email,
         customer_address: orderData.customers?.address,
         designer_name: designerData?.name,
+        status: historyData?.[0]?.status || 'Pending', // Get latest status from history
       });
       setStatusHistory(historyData || []);
     } catch (err: any) {

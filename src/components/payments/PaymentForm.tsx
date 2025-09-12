@@ -54,7 +54,41 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onSuccess }) => {
       try {
         const { data: customersData, error: customersError } = await supabase.from('customers').select('id, name, phone').order('name');
         if (customersError) throw customersError;
-        setCustomers(customersData || []);
+        
+        // Convert the partial customer data to the full Customer interface by adding default values
+        const customers = (customersData || []).map(customer => ({
+          ...customer,
+          email: null,
+          address: null,
+          joined_date: null,
+          created_at: new Date().toISOString(),
+          total_orders: null,
+          total_spent: null,
+          last_interaction: null,
+          updated_at: null,
+          billing_address: null,
+          shipping_address: null,
+          birthday: null,
+          secondary_phone: null,
+          company_name: null,
+          tags: null,
+          user_id: null,
+          customer_type: null,
+          communication_preference: null,
+          notes: null,
+          last_interaction_date: null,
+          follow_up_date: null,
+          customer_since: null,
+          total_lifetime_value: null,
+          loyalty_points: null,
+          loyalty_tier_id: null,
+          referral_code: null,
+          total_points_earned: null,
+          total_points_spent: null,
+          tier_upgraded_at: null
+        } as Customer));
+        
+        setCustomers(customers);
 
         const { data: ordersData, error: ordersError } = await supabase.from('order_summary_with_dues').select('order_id, customer_id, customer_name, total_amount, amount_paid, balance_due').gt('balance_due', 0).order('order_id', { ascending: false });
         if (ordersError) throw ordersError;

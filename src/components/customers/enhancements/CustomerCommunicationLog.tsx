@@ -13,7 +13,7 @@ const initialLogs: CommunicationLog[] = [
   { id: 2, date: '2023-10-24', type: 'Call', notes: 'Discussed the project timeline and budget.' },
 ];
 
-const CustomerCommunicationLog: React.FC<{ customerId: number }> = ({ customerId }) => {
+const CustomerCommunicationLog: React.FC<{ customerId: string }> = ({ customerId }) => {
   const [logs, setLogs] = useState<CommunicationLog[]>(initialLogs);
   const [newLog, setNewLog] = useState({ type: 'Call' as const, notes: '' });
 

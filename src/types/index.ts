@@ -170,3 +170,15 @@ export interface AllOrderSummary {
   order_type: string | null;
   delivery_date: string | null;
 }
+
+// Additional types needed for OrdersTable component
+export interface OrdersTableProps {
+  searchTerm?: string;
+  statusFilter?: string;
+  onOrderUpdated?: () => void;
+  highlightOrderId?: string;
+}
+
+export type SortField = 'order_id' | 'customer_name' | 'date' | 'delivery_date' | 'total_amount' | 'status';
+export type SortOrder = 'asc' | 'desc';
+export type Status = 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'delivered' | 'Pending' | 'Design' | 'Printing' | 'Delivered';

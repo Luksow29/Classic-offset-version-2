@@ -34,14 +34,11 @@ const BrandingContentForm: React.FC<BrandingContentFormProps> = ({ sectionName }
       setLoading(true);
       setError(null);
       try {
-        const { data, error: fetchError } = await safeSingleQuery(
-          supabase
+        const { data, error: fetchError } = await supabase
           .from('site_content')
           .select('*')
           .eq('section_name', sectionName)
-          .maybeSingle() as unknown as Promise<{ data: any | null; error: PostgrestError | null }>,
-          { operation: 'select_single', table: 'site_content' }
-        );
+          .maybeSingle();
 
         if (fetchError) {
           console.error('Error fetching site content:', fetchError);

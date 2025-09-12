@@ -17,18 +17,18 @@ import {
   CheckSquare, Square, MoreHorizontal, Filter, Download, RefreshCw, ArrowUpDown, Calendar, Clock, X
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Order, OrdersTableOrder, SortField, SortOrder, Status } from '@/types';
+import { Order, OrdersTableOrder, OrdersTableProps, SortField, SortOrder, Status } from '@/types';
 // Remove local Order interface - use the one from types/index.ts
 
 const OrdersTable: React.FC<OrdersTableProps> = ({ highlightOrderId }) => {
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<OrdersTableOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
   const navigate = useNavigate();
   
   // Modal states
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<OrdersTableOrder | null>(null);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -47,7 +47,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ highlightOrderId }) => {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   
   // Selection states
-  const [selectedOrders, setSelectedOrders] = useState<Order[]>([]);
+  const [selectedOrders, setSelectedOrders] = useState<OrdersTableOrder[]>([]);
   const [selectAll, setSelectAll] = useState(false);
 
   const fetchOrders = useCallback(async () => {
@@ -131,7 +131,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ highlightOrderId }) => {
     }
   };
 
-  const handleSelectOrder = (order: Order) => {
+  const handleSelectOrder = (order: OrdersTableOrder) => {
     setSelectedOrders(prev => {
       const isSelected = prev.some(o => o.order_id === order.order_id);
       if (isSelected) {
@@ -250,9 +250,12 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ highlightOrderId }) => {
         {/* Mobile View - Card Layout */}
         <div className="md:hidden p-4 space-y-4">
           {filteredAndSortedOrders.length > 0 ? filteredAndSortedOrders.map(order => {
-            const statusColors: Record<Status, string> = {
+            const statusColors: Partial<Record<Status, string>> = {
                 Pending: 'border-yellow-500', Design: 'border-blue-500',
-                Printing: 'border-purple-500', Delivered: 'border-green-500'
+                Printing: 'border-purple-500', Delivered: 'border-green-500',
+                pending: 'border-yellow-500', confirmed: 'border-blue-500',
+                in_progress: 'border-purple-500', completed: 'border-green-500',
+                cancelled: 'border-red-500', delivered: 'border-green-500'
             };
             return (
               <div key={order.order_id} className={`p-4 rounded-lg shadow-sm border-l-4 ${statusColors[order.status as Status] || 'border-gray-400'} ${order.is_deleted ? 'bg-red-50 dark:bg-red-900/20' : 'bg-white dark:bg-gray-800'}`}>
