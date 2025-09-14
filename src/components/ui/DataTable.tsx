@@ -169,14 +169,14 @@ function DataTable<T>({
     <div className={twMerge('w-full', className)}>
       {/* Filtering */}
       {filtering && (
-        <div className="p-4 flex items-center gap-2">
+        <div className="p-3 sm:p-4 flex items-center gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               value={filtering.globalFilter || ''}
               onChange={(e) => filtering.onGlobalFilterChange(e.target.value)}
               placeholder="Search..."
-              className="pl-9 w-full"
+              className="pl-9 w-full text-sm"
             />
             {filtering.globalFilter && (
               <button
@@ -190,7 +190,55 @@ function DataTable<T>({
         </div>
       )}
 
-      <div className="overflow-x-auto">
+      {/* Mobile Card View for small screens */}
+      <div className="block md:hidden">
+        <div className="space-y-3 p-3">
+          {data.map((row) => {
+            const key = getRowKey(row);
+            return (
+              <div
+                key={key}
+                className={twMerge(
+                  'bg-card border border-border rounded-lg p-4 space-y-2',
+                  onRowClick ? 'cursor-pointer hover:bg-muted/50' : '',
+                  selection?.selectedRows[key] ? 'ring-2 ring-primary/50' : ''
+                )}
+                onClick={() => onRowClick?.(row)}
+              >
+                {selection && (
+                  <div className="flex items-center gap-2 pb-2 border-b border-border">
+                    <input
+                      type="checkbox"
+                      checked={selection.selectedRows[key] || false}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        selection.onRowSelectionChange(key, e.target.checked);
+                      }}
+                      className="rounded border-input"
+                    />
+                    <span className="text-xs text-muted-foreground">Select</span>
+                  </div>
+                )}
+                {columns.map((column) => {
+                  const content = getCellContent(column, row);
+                  if (!content) return null;
+                  return (
+                    <div key={column.id} className="flex justify-between items-start">
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        {typeof column.header === 'string' ? column.header : column.id}
+                      </span>
+                      <div className="text-sm text-right max-w-[60%]">{content}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block overflow-x-auto">
         <table className={twMerge('w-full text-sm', tableClassName)}>
           <thead className={twMerge('bg-muted/50 text-muted-foreground', headerClassName)}>
             <tr>
@@ -274,35 +322,38 @@ function DataTable<T>({
         </table>
       </div>
 
-      {/* Pagination */}
+      {/* Pagination - Mobile Responsive */}
       {pagination && pagination.pageCount > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-          <div className="text-sm text-muted-foreground">
+        <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 px-3 sm:px-4 py-3 border-t border-border">
+          <div className="text-xs sm:text-sm text-muted-foreground">
             Showing {pagination.pageIndex * pagination.pageSize + 1} to{' '}
             {Math.min((pagination.pageIndex + 1) * pagination.pageSize, data.length)} of{' '}
             {data.length} entries
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 xs:gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => pagination.onPageChange(pagination.pageIndex - 1)}
               disabled={pagination.pageIndex === 0}
+              className="h-8 w-8 p-0 xs:w-auto xs:px-3"
             >
               <ChevronLeft className="h-4 w-4" />
-              <span className="sr-only">Previous page</span>
+              <span className="sr-only xs:not-sr-only xs:ml-1 hidden xs:inline">Previous</span>
             </Button>
-            <span className="text-sm">
-              Page {pagination.pageIndex + 1} of {pagination.pageCount}
+            <span className="text-xs xs:text-sm px-2">
+              <span className="hidden xs:inline">Page </span>{pagination.pageIndex + 1}<span className="hidden xs:inline"> of {pagination.pageCount}</span>
+              <span className="xs:hidden">/{pagination.pageCount}</span>
             </span>
             <Button
               variant="outline"
               size="sm"
               onClick={() => pagination.onPageChange(pagination.pageIndex + 1)}
               disabled={pagination.pageIndex === pagination.pageCount - 1}
+              className="h-8 w-8 p-0 xs:w-auto xs:px-3"
             >
               <ChevronRight className="h-4 w-4" />
-              <span className="sr-only">Next page</span>
+              <span className="sr-only xs:not-sr-only xs:ml-1 hidden xs:inline">Next</span>
             </Button>
           </div>
         </div>

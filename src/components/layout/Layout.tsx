@@ -4,8 +4,10 @@ import { useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import Sidebar from './Sidebar';
 import TopHeader from './TopHeader';
+import CommandPalette from '../ui/CommandPalette';
 import { useTheme } from '@/lib/ThemeProvider';
 import { useClickOutside } from '@/hooks/useClickOutside';
+import { useCommandPalette } from '@/hooks/useCommandPalette';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -32,6 +34,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     return saved ? JSON.parse(saved) : false;
   });
   const { theme } = useTheme();
+  
+  // Command palette state
+  const { isOpen: isCommandPaletteOpen, closePalette: closeCommandPalette } = useCommandPalette();
   
   const sidebarRef = useRef<HTMLDivElement>(null);
 
@@ -125,6 +130,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </main>
       </div>
+
+      {/* Command Palette */}
+      <CommandPalette 
+        isOpen={isCommandPaletteOpen} 
+        onClose={closeCommandPalette} 
+      />
     </div>
   );
 };

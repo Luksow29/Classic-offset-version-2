@@ -6,7 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, FileText, DollarSign, Package, Users, UserCircle,
   AlertCircle, ActivitySquare, FileSignature, Boxes, X, ChevronLeft, ChevronRight,
-  Briefcase, BarChart3, ChevronDown, MessageCircle, Settings, MessageSquare, Sparkles, Lightbulb, Brain, Rocket, Gift
+  Briefcase, BarChart3, ChevronDown, MessageCircle, Settings, MessageSquare, Sparkles, Lightbulb, Brain, Rocket, Gift,
+  CreditCard, Award, TrendingUp, Calendar, PieChart, FileBarChart, Target, Clock, Zap, Filter
 } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
 import { useUser } from '@/context/UserContext';
@@ -58,80 +59,83 @@ const Sidebar: React.FC<SidebarProps> = ({
     else setCollapsed(false);
   }, [sidebarMode]);
 
-  // Hover to expand/collapse
-  const handleSidebarMouseEnter = useCallback(() => {
-    if (sidebarMode === 'hover') setCollapsed(false);
-  }, [sidebarMode]);
-  const handleSidebarMouseLeave = useCallback(() => {
-    if (sidebarMode === 'hover') setCollapsed(true);
-  }, [sidebarMode]);
-
-  // Sync with parent if setIsCollapsed is provided
-  useEffect(() => {
-    if (setIsCollapsed) setIsCollapsed(isCollapsed);
-  }, [isCollapsed, setIsCollapsed]);
-
-  // Initialize expanded groups based on current path
-  useEffect(() => {
-    if (isCollapsed) {
-      setExpandedGroups([]);
-      return;
-    }
-    // Find which group contains the current path
-    const currentPath = location.pathname;
-    const groupWithCurrentPath = navGroups.find(group => 
-      group.items.some(item => 
-        currentPath === item.path || 
-        (currentPath.startsWith(item.path) && item.path !== '/')
-      )
-    );
-    if (groupWithCurrentPath) {
-      setExpandedGroups(prev =>
-        prev.includes(groupWithCurrentPath.name)
-          ? prev
-          : [...prev, groupWithCurrentPath.name]
-      );
-    }
-  }, [location.pathname, isCollapsed]);
-
+  // Navigation Groups array
   const navGroups: NavGroup[] = [
     {
-      name: 'Overview',
-      icon: <BarChart3 size={20} />,
+      name: 'Dashboard',
+      icon: <LayoutDashboard size={20} />,
       items: [
-        { name: 'Dashboard', path: '/', icon: <LayoutDashboard size={18} /> },
+        { name: 'Overview', path: '/', icon: <BarChart3 size={18} /> },
+        { name: 'Insights', path: '/insights', icon: <Lightbulb size={18} /> },
         { name: 'Business Insights', path: '/business-insights', icon: <Brain size={18} /> },
-        { name: 'Enhancement Progress', path: '/enhancements', icon: <Rocket size={18} /> },
-        { name: 'Comprehensive Insights', path: '/insights', icon: <Brain size={18} /> },
-        { name: 'Reports', path: '/reports', icon: <BarChart3 size={18} /> },
-        { name: 'Status Overview', path: '/status-overview', icon: <ActivitySquare size={18} /> },
-        { name: 'Due Summary', path: '/due-summary', icon: <AlertCircle size={18} /> },
       ],
     },
     {
-      name: 'Operations',
-      icon: <Briefcase size={20} />,
+      name: 'Orders',
+      icon: <Package size={20} />,
       items: [
-        { name: 'Orders', path: '/orders', icon: <FileText size={18} /> },
-        { name: 'Expenses', path: '/expenses', icon: <DollarSign size={18} /> },
-        { name: 'Materials', path: '/materials', icon: <Package size={18} /> },
-        { name: 'Smart Inventory', path: '/smart-inventory', icon: <Package size={18} /> },
-        { name: 'Products', path: '/products', icon: <Boxes size={18} /> },
+        { name: 'Order Management', path: '/orders', icon: <FileText size={18} /> },
         { name: 'Invoices', path: '/invoices', icon: <FileSignature size={18} /> },
+        { name: 'Status Overview', path: '/status-overview', icon: <Clock size={18} /> },
       ],
     },
     {
-      name: 'Management',
+      name: 'Payments & Finance',
+      icon: <CreditCard size={20} />,
+      items: [
+        { name: 'Payments', path: '/payments', icon: <CreditCard size={18} /> },
+        { name: 'Due Summary', path: '/due-summary', icon: <DollarSign size={18} /> },
+        { name: 'Expenses', path: '/expenses', icon: <Target size={18} /> },
+      ],
+    },
+    {
+      name: 'Inventory',
+      icon: <Boxes size={20} />,
+      items: [
+        { name: 'Stock', path: '/stock', icon: <Boxes size={18} /> },
+        { name: 'Materials', path: '/materials', icon: <Briefcase size={18} /> },
+        { name: 'Smart Inventory', path: '/smart-inventory', icon: <Zap size={18} /> },
+      ],
+    },
+    {
+      name: 'Customers',
       icon: <Users size={20} />,
       items: [
-        { name: 'Customers', path: '/customers', icon: <UserCircle size={18} /> },
+        { name: 'Customer Management', path: '/customers', icon: <UserCircle size={18} /> },
         { name: 'Advanced CRM', path: '/advanced-crm', icon: <Users size={18} /> },
-        { name: 'Loyalty Program', path: '/loyalty-program', icon: <Gift size={18} /> },
-        { name: 'Staff', path: '/staff', icon: <Users size={18} /> },
-        { name: 'Payments', path: '/payments', icon: <DollarSign size={18} /> },
-        { name: 'Users', path: '/users', icon: <Users size={18} />, requiredRole: 'Owner' },
-        { name: 'Stock', path: '/stock', icon: <Package size={18} /> },
+        { name: 'Loyalty Program', path: '/loyalty-program', icon: <Award size={18} /> },
+      ],
+    },
+    {
+      name: 'Analytics & Reports',
+      icon: <PieChart size={20} />,
+      items: [
+        { name: 'Reports', path: '/reports', icon: <FileBarChart size={18} /> },
+        { name: 'Weekly Progress', path: '/enhancements', icon: <TrendingUp size={18} /> },
+      ],
+    },
+    {
+      name: 'Staff & Management',
+      icon: <ActivitySquare size={20} />,
+      items: [
+        { name: 'Staff Management', path: '/staff', icon: <UserCircle size={18} /> },
+        { name: 'User Management', path: '/users', icon: <Users size={18} />, requiredRole: 'Owner' },
+        { name: 'Products Master', path: '/products', icon: <Package size={18} /> },
+      ],
+    },
+    {
+      name: 'Showcase',
+      icon: <Rocket size={20} />,
+      items: [
+        { name: 'Showcase', path: '/showcase', icon: <Gift size={18} /> },
+      ],
+    },
+    {
+      name: 'Settings',
+      icon: <Settings size={20} />,
+      items: [
         { name: 'Settings', path: '/settings', icon: <Settings size={18} /> },
+        { name: 'Admin Content', path: '/admin/content', icon: <Zap size={18} />, requiredRole: 'Owner' },
       ],
     },
     {
@@ -158,51 +162,74 @@ const Sidebar: React.FC<SidebarProps> = ({
         : [...prev, groupName]
     );
   };
-  
+
   const handleLinkClick = () => {
     if (!isDocked) {
       onClose();
     }
   };
 
-  const sidebarWidth = isCollapsed ? 'w-16' : 'w-64';
+  const handleSidebarMouseEnter = useCallback(() => {
+    // Optional: auto-expand on hover
+  }, []);
 
-  // Sidebar bg: always white (light), dark (#161b22) for dark mode. Card/border only for card/button.
+  const handleSidebarMouseLeave = useCallback(() => {
+    // Optional: auto-collapse on leave
+  }, []);
+
+  // Modern sidebar implementation (single, glassmorphism, animated, responsive)
   return (
-    <aside
-      className={`h-full ${sidebarWidth} flex flex-col bg-white dark:bg-[#161b22] border-r border-border transition-all duration-300`}
+    <motion.aside
+      className={`h-full ${isCollapsed ? 'w-16' : 'w-64'} flex flex-col bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-r border-white/20 dark:border-white/10 transition-all duration-300 shadow-xl shadow-blue-500/10 dark:shadow-purple-500/20`}
       onMouseEnter={handleSidebarMouseEnter}
       onMouseLeave={handleSidebarMouseLeave}
+      initial={{ x: -20, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      transition={{ duration: 0.3 }}
     >
-      <div className="flex items-center justify-between h-16 px-4 border-b border-border flex-shrink-0 bg-muted/60 dark:bg-[#23272f] rounded-b-xl shadow-sm">
-        <h1 className={`text-xl font-bold tracking-tight transition-opacity duration-300 ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}> 
+      {/* Header with glassmorphism */}
+      <div className="flex items-center justify-between h-16 px-4 border-b border-white/20 dark:border-white/10 flex-shrink-0 bg-gradient-to-r from-blue-50/50 to-emerald-50/50 dark:from-blue-950/50 dark:to-emerald-950/50 backdrop-blur-sm">
+        <motion.h1 
+          className={`text-xl font-display font-black bg-gradient-to-r from-gray-900 via-blue-800 to-emerald-800 dark:from-white dark:via-blue-300 dark:to-emerald-300 bg-clip-text text-transparent tracking-tight transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}
+          animate={{ opacity: isCollapsed ? 0 : 1 }}
+          transition={{ duration: 0.2 }}
+        > 
           Classic Offset
-        </h1>
+        </motion.h1>
         <div className="flex items-center gap-2">
           <SidebarControl />
           {isDocked && setIsCollapsed && (
-            <button
+            <motion.button
               onClick={() => setCollapsed(!isCollapsed)}
-              className="p-2 rounded-lg hover:bg-primary/10 transition-colors"
+              className="p-2 rounded-xl hover:bg-white/50 dark:hover:bg-gray-800/50 transition-all duration-200 backdrop-blur-sm"
               aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
-            </button>
+              <motion.div
+                animate={{ rotate: isCollapsed ? 0 : 180 }}
+                transition={{ duration: 0.2 }}
+              >
+                <ChevronRight size={20} className="text-gray-600 dark:text-gray-400" />
+              </motion.div>
+            </motion.button>
           )}
           {!isDocked && (
-            <button
+            <motion.button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-destructive/10 transition-colors lg:hidden"
+              className="p-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 lg:hidden"
               aria-label="Close sidebar"
+              whileHover={{ scale: 1.05, rotate: 90 }}
+              whileTap={{ scale: 0.95 }}
             >
-              <X size={20} />
-            </button>
+              <X size={20} className="text-red-500" />
+            </motion.button>
           )}
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
-        {navGroups.map((group) => {
+      <nav className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+        {navGroups.map((group, groupIndex) => {
           // Filter items based on user role
           const filteredItems = group.items.filter(item => 
             !item.requiredRole || (userProfile?.role === item.requiredRole || userProfile?.role === 'Owner')
@@ -212,69 +239,123 @@ const Sidebar: React.FC<SidebarProps> = ({
           if (filteredItems.length === 0) return null;
           
           return (
-            <div key={group.name} className="space-y-1">
-              <button
+            <motion.div 
+              key={group.name} 
+              className="space-y-2"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2, delay: groupIndex * 0.1 }}
+            >
+              <motion.button
                 onClick={() => toggleGroup(group.name)}
-                className={`w-full flex items-center px-3 py-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground rounded-lg transition-colors ${
-                  expandedGroups.includes(group.name) && !isCollapsed ? 'bg-muted/50' : ''
+                className={`w-full flex items-center px-4 py-3 text-sm font-display font-semibold text-gray-700 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-xl transition-all duration-200 backdrop-blur-sm group ${
+                  expandedGroups.includes(group.name) && !isCollapsed ? 'bg-white/30 dark:bg-gray-800/30 shadow-sm' : ''
                 }`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
-                <span className="flex items-center justify-center">
+                <motion.span 
+                  className="flex items-center justify-center p-2 rounded-lg bg-gradient-to-br from-blue-500/10 to-emerald-500/10 group-hover:from-blue-500/20 group-hover:to-emerald-500/20 transition-all duration-200"
+                  whileHover={{ rotate: 5 }}
+                >
                   {group.icon}
-                </span>
+                </motion.span>
                 {!isCollapsed && (
                   <>
-                    <span className="ml-3 flex-1 text-left">{group.name}</span>
-                    <ChevronDown
-                      size={16}
-                      className={`transform transition-transform duration-200 ${expandedGroups.includes(group.name) ? 'rotate-180' : ''}`}
-                    />
+                    <span className="ml-4 flex-1 text-left tracking-wide">{group.name}</span>
+                    <motion.div
+                      animate={{ rotate: expandedGroups.includes(group.name) ? 180 : 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <ChevronDown
+                        size={16}
+                        className="text-gray-500 dark:text-gray-400"
+                      />
+                    </motion.div>
                   </>
                 )}
-              </button>
+              </motion.button>
               <AnimatePresence>
                 {(expandedGroups.includes(group.name) || isCollapsed) && (
                   <motion.div
                     initial={isCollapsed ? {} : { height: 0, opacity: 0 }}
                     animate={isCollapsed ? {} : { height: 'auto', opacity: 1 }}
                     exit={isCollapsed ? {} : { height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className={`space-y-1 overflow-hidden ${isCollapsed ? '' : 'pl-4 border-l-2 border-border ml-3'}`}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className={`space-y-1 overflow-hidden ${isCollapsed ? '' : 'pl-4 border-l-2 border-gradient-to-b from-blue-200 to-emerald-200 dark:from-blue-800 dark:to-emerald-800 ml-4'}`}
                   >
-                    {filteredItems.map((item) => (
-                      <NavLink
+                    {filteredItems.map((item, itemIndex) => (
+                      <motion.div
                         key={item.path}
-                        to={item.path}
-                        onClick={handleLinkClick}
-                        className={({ isActive }) => twMerge(
-                          'flex items-center px-3 py-2 my-1 rounded-lg text-sm transition-colors duration-200',
-                          isActive
-                            ? 'bg-primary/10 text-primary font-semibold'
-                            : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                          isCollapsed && 'justify-center'
-                        )}
-                        title={isCollapsed ? item.name : undefined}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.2, delay: itemIndex * 0.05 }}
                       >
-                        <span className="flex items-center justify-center">{item.icon}</span>
-                        {!isCollapsed && <span className="ml-3">{item.name}</span>}
-                      </NavLink>
+                        <NavLink
+                          to={item.path}
+                          onClick={handleLinkClick}
+                          className={({ isActive }) => twMerge(
+                            'flex items-center px-4 py-3 my-1 rounded-xl text-sm font-sans transition-all duration-200 group relative overflow-hidden',
+                            isActive
+                              ? 'bg-gradient-to-r from-blue-500/20 to-emerald-500/20 text-blue-700 dark:text-blue-300 font-semibold shadow-lg shadow-blue-500/20 border border-blue-200/50 dark:border-blue-800/50'
+                              : 'text-gray-600 dark:text-gray-400 hover:bg-white/40 dark:hover:bg-gray-800/40 hover:text-gray-900 dark:hover:text-gray-100',
+                            isCollapsed && 'justify-center'
+                          )}
+                          title={isCollapsed ? item.name : undefined}
+                        >
+                          {/* Active indicator */}
+                          <motion.div
+                            className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-emerald-500 rounded-r-full"
+                            initial={{ scaleY: 0 }}
+                            animate={{ scaleY: location.pathname === item.path ? 1 : 0 }}
+                            transition={{ duration: 0.2 }}
+                          />
+                          
+                          <motion.span 
+                            className="flex items-center justify-center"
+                            whileHover={{ scale: 1.1 }}
+                            transition={{ duration: 0.1 }}
+                          >
+                            {item.icon}
+                          </motion.span>
+                          {!isCollapsed && (
+                            <motion.span 
+                              className="ml-3 tracking-wide"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              {item.name}
+                            </motion.span>
+                          )}
+                        </NavLink>
+                      </motion.div>
                     ))}
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
+            </motion.div>
           );
         })}
       </nav>
       
-      {/* Version info */}
+      {/* Enhanced footer with glassmorphism */}
       {!isCollapsed && (
-        <div className="p-4 text-xs text-muted-foreground border-t border-border">
-          <p>Classic Offset v1.0.0</p>
-          <p>© 2025 All rights reserved</p>
-        </div>
+        <motion.div 
+          className="p-4 text-xs text-gray-500 dark:text-gray-400 border-t border-white/20 dark:border-white/10 bg-gradient-to-r from-blue-50/30 to-emerald-50/30 dark:from-blue-950/30 dark:to-emerald-950/30 backdrop-blur-sm"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+        >
+          <p className="font-display font-semibold text-gray-700 dark:text-gray-300 mb-1">Classic Offset v2.0.0</p>
+          <p className="font-sans">© 2025 All rights reserved</p>
+          <div className="mt-2 flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+            <span className="font-medium">System Online</span>
+          </div>
+        </motion.div>
       )}
-    </aside>
+    </motion.aside>
   );
 };
 

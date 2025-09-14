@@ -8,7 +8,7 @@ import Button from '../ui/Button';
 import CustomerSelect from '../users/CustomerSelect';
 import { supabase } from '@/lib/supabaseClient';
 import { useUser } from '@/context/UserContext';
-import { Loader2, PlusCircle, User, Calendar, ShoppingBag, Palette, DollarSign, StickyNote } from 'lucide-react';
+import { Loader2, PlusCircle, User, Calendar, ShoppingBag, Palette, DollarSign, StickyNote, Calculator } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { db } from '@/lib/firebaseClient';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -51,6 +51,11 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
         productId: '',
         quantity: '1',
         rate: '0',
+        subtotal: '0',
+        serviceChargeType: 'none',
+        serviceChargeValue: '0',
+        serviceChargeAmount: '0',
+        serviceChargeDescription: '',
         totalAmount: '0',
         amountReceived: '0',
         designNeeded: 'No',
@@ -87,19 +92,36 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
     useEffect(() => {
         const qty = parseInt(formData.quantity || '0');
         const rate = parseFloat(formData.rate || '0');
-        setFormData(prev => ({ ...prev, totalAmount: (qty * rate).toFixed(2) }));
-    }, [formData.quantity, formData.rate]);
+        const subtotal = qty * rate;
+        
+        // Calculate service charge
+        let serviceChargeAmount = 0;
+        if (formData.serviceChargeType === 'percentage') {
+            serviceChargeAmount = (subtotal * parseFloat(formData.serviceChargeValue || '0')) / 100;
+        } else if (formData.serviceChargeType === 'fixed') {
+            serviceChargeAmount = parseFloat(formData.serviceChargeValue || '0');
+        }
+        
+        const totalAmount = subtotal + serviceChargeAmount;
+        
+        setFormData(prev => ({ 
+            ...prev, 
+            subtotal: subtotal.toFixed(2),
+            serviceChargeAmount: serviceChargeAmount.toFixed(2),
+            totalAmount: totalAmount.toFixed(2)
+        }));
+    }, [formData.quantity, formData.rate, formData.serviceChargeType, formData.serviceChargeValue]);
 
     useEffect(() => {
         setFilteredProducts(
             formData.orderType ? products.filter(p => p.category === formData.orderType) : products
         );
-        setFormData(prev => ({...prev, productId: '', rate: '0'}));
+        setFormData(prev => ({...prev, productId: '', rate: '0', subtotal: '0', serviceChargeAmount: '0', totalAmount: '0'}));
     }, [formData.orderType, products]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { id, value } = e.target;
-        const newFormData = { ...formData, [id]: value };
+        let newFormData = { ...formData, [id]: value };
 
         if (id === 'productId' && value) {
             const selectedProduct = products.find(p => p.id === parseInt(value));
@@ -107,6 +129,17 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
                 newFormData.rate = String(selectedProduct.unit_price);
             }
         }
+
+        // Reset service charge values when type is set to 'none'
+        if (id === 'serviceChargeType' && value === 'none') {
+            newFormData = {
+                ...newFormData,
+                serviceChargeValue: '0',
+                serviceChargeAmount: '0',
+                serviceChargeDescription: ''
+            };
+        }
+
         setFormData(newFormData);
     };
 
@@ -139,9 +172,14 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
                 customer_id: formData.customerId,
                 customer_name: formData.customerName,
                 order_type: formData.orderType,
-                product_id: parseInt(formData.productId),
+                product_id: formData.productId, // Remove parseInt() - keep as string/uuid
                 quantity: parseInt(formData.quantity),
                 rate: parseFloat(formData.rate),
+                subtotal: parseFloat(formData.subtotal),
+                service_charge_type: formData.serviceChargeType,
+                service_charge_value: parseFloat(formData.serviceChargeValue) || 0,
+                service_charge_amount: parseFloat(formData.serviceChargeAmount) || 0,
+                service_charge_description: formData.serviceChargeDescription || null,
                 total_amount: parseFloat(formData.totalAmount),
                 amount_received: parseFloat(formData.amountReceived) || 0,
                 balance_amount: parseFloat(formData.totalAmount) - (parseFloat(formData.amountReceived) || 0),
@@ -236,7 +274,67 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <Input id="quantity" label="Quantity *" type="number" min="1" value={formData.quantity} onChange={handleInputChange} required />
                             <Input id="rate" label="Rate (₹) *" type="number" value={formData.rate} onChange={handleInputChange} required />
-                            <Input id="totalAmount" label="Total (₹)" type="number" value={formData.totalAmount} readOnly className="bg-gray-100 dark:bg-gray-700" />
+                            <Input id="subtotal" label="Subtotal (₹)" type="number" value={formData.subtotal} readOnly className="bg-gray-100 dark:bg-gray-700" />
+                        </div>
+                    </div>
+                </Card>
+
+                <Card className="p-0 overflow-hidden">
+                    <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-b dark:border-gray-700 flex items-center gap-3">
+                        <Calculator className="w-5 h-5 text-gray-500" />
+                        <h3 className="font-semibold text-lg text-gray-800 dark:text-gray-200">Service Charge</h3>
+                    </div>
+                    <div className="p-6 space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <Select 
+                                id="serviceChargeType" 
+                                label="Service Charge Type" 
+                                options={[
+                                    { value: 'none', label: 'No Service Charge' },
+                                    { value: 'percentage', label: 'Percentage (%)' },
+                                    { value: 'fixed', label: 'Fixed Amount (₹)' }
+                                ]} 
+                                value={formData.serviceChargeType} 
+                                onChange={handleInputChange} 
+                            />
+                            {formData.serviceChargeType !== 'none' && (
+                                <>
+                                    <Input 
+                                        id="serviceChargeValue" 
+                                        label={formData.serviceChargeType === 'percentage' ? 'Percentage (%)' : 'Fixed Amount (₹)'} 
+                                        type="number" 
+                                        step="0.01"
+                                        min="0"
+                                        value={formData.serviceChargeValue} 
+                                        onChange={handleInputChange} 
+                                        placeholder={formData.serviceChargeType === 'percentage' ? 'e.g., 10' : 'e.g., 500'}
+                                    />
+                                    <Input 
+                                        id="serviceChargeAmount" 
+                                        label="Service Charge (₹)" 
+                                        type="number" 
+                                        value={formData.serviceChargeAmount} 
+                                        readOnly 
+                                        className="bg-gray-100 dark:bg-gray-700" 
+                                    />
+                                </>
+                            )}
+                        </div>
+                        {formData.serviceChargeType !== 'none' && (
+                            <Input 
+                                id="serviceChargeDescription" 
+                                label="Service Charge Description" 
+                                type="text" 
+                                value={formData.serviceChargeDescription} 
+                                onChange={handleInputChange} 
+                                placeholder="e.g., Rush order, Design consultation, Extra handling"
+                            />
+                        )}
+                        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                            <div className="flex justify-between items-center text-lg font-semibold">
+                                <span className="text-gray-700 dark:text-gray-300">Final Total Amount:</span>
+                                <span className="text-blue-600 dark:text-blue-400">₹ {formData.totalAmount}</span>
+                            </div>
                         </div>
                     </div>
                 </Card>

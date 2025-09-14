@@ -54,9 +54,9 @@ const FinancialSummary: React.FC<FinancialSummaryProps> = ({ data, previousData,
   // Show a skeleton UI while data is loading
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         {Array(5).fill(0).map((_, i) => (
-          <div key={i} className="h-32 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse"></div>
+          <div key={i} className="h-24 sm:h-32 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse"></div>
         ))}
       </div>
     );
@@ -65,10 +65,10 @@ const FinancialSummary: React.FC<FinancialSummaryProps> = ({ data, previousData,
   // If there's no data for the current month, show an informative message
   if (!data) {
     return (
-        <div className="col-span-1 lg:col-span-5 bg-white dark:bg-gray-800 p-8 rounded-xl text-center shadow-sm">
-            <Info size={40} className="mx-auto text-gray-400 mb-4" />
-            <h4 className="font-semibold text-lg text-gray-700 dark:text-gray-200">No Financial Data</h4>
-            <p className="text-sm text-gray-500 dark:text-gray-400">There were no orders or expenses recorded for this month.</p>
+                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+            <Info className="mx-auto mb-4 text-gray-400 dark:text-gray-500" size={48} />
+            <h4 className="font-display font-semibold text-lg text-gray-700 dark:text-gray-200 tracking-tight">No Financial Data</h4>
+            <p className="text-sm font-sans text-gray-500 dark:text-gray-400 mt-1">There were no orders or expenses recorded for this month.</p>
         </div>
     );
   }
@@ -83,7 +83,7 @@ const FinancialSummary: React.FC<FinancialSummaryProps> = ({ data, previousData,
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5">
+    <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-5">
       {metrics.map(metric => {
         const trend = calculateTrend(metric.value, metric.previousValue ?? 0);
         // For expenses, an increase is a negative trend
@@ -94,21 +94,22 @@ const FinancialSummary: React.FC<FinancialSummaryProps> = ({ data, previousData,
         const trendDarkColor = trend.isNeutral ? 'dark:bg-gray-600 dark:text-gray-200' : (isPositiveTrend ? 'dark:bg-green-800/30 dark:text-green-300' : 'dark:bg-red-800/30 dark:text-red-300');
 
         return (
-          <div key={metric.title} className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm hover:shadow-lg transition-shadow duration-300 border border-gray-200 dark:border-gray-700">
+          <div key={metric.title} className="bg-white dark:bg-gray-800 p-3 sm:p-4 lg:p-5 rounded-xl shadow-sm hover:shadow-lg transition-shadow duration-300 border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{metric.title}</p>
-              <div className="p-2 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                {React.cloneElement(metric.icon, { size: 22 })}
+              <p className="text-xs sm:text-sm font-sans font-medium text-gray-500 dark:text-gray-400 tracking-wide uppercase">{metric.title}</p>
+              <div className="p-1.5 sm:p-2 bg-slate-100 dark:bg-slate-700 rounded-lg">
+                {React.cloneElement(metric.icon, { size: 18 })}
               </div>
             </div>
             <div className="mt-2">
-              <h3 className="text-3xl font-bold text-gray-900 dark:text-white">
+              <h3 className="text-xl sm:text-2xl lg:text-3xl font-display font-bold text-gray-900 dark:text-white tracking-tight">
                 {metric.isCurrency && '₹'}
                 <AnimatedCounter to={metric.value} isCurrency={metric.isCurrency} />
               </h3>
-              <div className={`mt-2 flex items-center text-xs font-semibold ${trendColor} ${trendDarkColor} px-2 py-1 rounded-full w-fit`}>
-                <TrendIcon size={14} className="mr-1" />
-                <span>{trend.value.toFixed(0)}% vs last month</span>
+              <div className={`mt-2 flex items-center text-xs font-sans font-semibold ${trendColor} ${trendDarkColor} px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full w-fit tracking-wide`}>
+                <TrendIcon size={12} className="mr-1" />
+                <span className="hidden sm:inline">{trend.value.toFixed(0)}% vs last month</span>
+                <span className="sm:hidden">{trend.value.toFixed(0)}%</span>
               </div>
             </div>
           </div>

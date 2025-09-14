@@ -65,7 +65,7 @@ const ActivityLogFeed: React.FC = () => {
   if (loading) {
     return (
       <Card>
-        <div className="p-4 text-center">Loading Activities...</div>
+        <div className="p-4 text-center font-sans font-medium text-gray-600 dark:text-gray-300">Loading Activities...</div>
       </Card>
     );
   }
@@ -74,11 +74,11 @@ const ActivityLogFeed: React.FC = () => {
     <Card>
         <div className="p-4 border-b dark:border-gray-700 flex items-center gap-2">
             <List size={18} />
-            <h3 className="font-semibold">Live Team Activity</h3>
+            <h3 className="font-display font-semibold tracking-tight">Live Team Activity</h3>
         </div>
         <div className="max-h-96 overflow-y-auto p-2">
         {activities.length === 0 ? (
-          <p className="p-4 text-center text-gray-500">No recent activities.</p>
+          <p className="p-4 text-center text-gray-500 font-sans font-medium">No recent activities.</p>
         ) : (
           <motion.ul 
             className="space-y-3"
@@ -96,8 +96,8 @@ const ActivityLogFeed: React.FC = () => {
                     <Activity size={16} className="text-gray-500"/>
                 </div>
                 <div className="flex-1">
-                    <p className="text-sm text-gray-800 dark:text-gray-200">{activity.message}</p>
-                    <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <p className="text-sm font-sans text-gray-800 dark:text-gray-200 leading-relaxed">{activity.message}</p>
+                    <div className="flex items-center gap-4 text-xs font-sans font-medium text-gray-500 dark:text-gray-400 mt-1 tracking-wide">
                         <div className="flex items-center gap-1.5"><User size={12}/> {activity.user}</div>
                         <div className="flex items-center gap-1.5"><Clock size={12}/> {activity.timestamp ? timeAgo(activity.timestamp.toDate()) : 'just now'}</div>
                     </div>

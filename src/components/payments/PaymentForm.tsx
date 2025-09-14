@@ -229,12 +229,38 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onSuccess }) => {
         <Select id="orderId" label="Order *" value={formData.orderId} onChange={handleOrderChange} options={filteredOrders.map(o => ({ value: String(o.id), label: `Order #${o.id} - Due: ₹${o.balance_amount.toLocaleString('en-IN')}` }))} placeholder="Select an order" required disabled={!formData.customerId || loading} />
         {selectedOrder && (
           <div className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700">
-            <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">Order Details</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-              <div><span className="text-blue-700 dark:text-blue-300">Total:</span><div className="font-semibold">₹{(selectedOrder.total_amount || 0).toLocaleString('en-IN')}</div></div>
-              <div><span className="text-blue-700 dark:text-blue-300">Paid:</span><div className="font-semibold text-green-600">₹{(selectedOrder.amount_received || 0).toLocaleString('en-IN')}</div></div>
-              <div><span className="text-blue-700 dark:text-blue-300">Due:</span><div className="font-semibold text-red-600">₹{(selectedOrder.balance_amount || 0).toLocaleString('en-IN')}</div></div>
-            </div>
+            <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-3">Order Details</h4>
+            
+            {/* Service Charge Breakdown if applicable */}
+            {selectedOrder.subtotal && selectedOrder.service_charge_amount > 0 ? (
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-blue-700 dark:text-blue-300">Subtotal:</span>
+                  <span className="font-semibold">₹{(selectedOrder.subtotal || 0).toLocaleString('en-IN')}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-blue-700 dark:text-blue-300">
+                    Service Charge ({selectedOrder.service_charge_description || 'Additional Fee'}):
+                  </span>
+                  <span className="font-semibold">₹{(selectedOrder.service_charge_amount || 0).toLocaleString('en-IN')}</span>
+                </div>
+                <hr className="border-blue-200 dark:border-blue-600" />
+                <div className="flex justify-between font-bold">
+                  <span className="text-blue-700 dark:text-blue-300">Total:</span>
+                  <span>₹{(selectedOrder.total_amount || 0).toLocaleString('en-IN')}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4 mt-3">
+                  <div><span className="text-blue-700 dark:text-blue-300">Paid:</span><div className="font-semibold text-green-600">₹{(selectedOrder.amount_received || 0).toLocaleString('en-IN')}</div></div>
+                  <div><span className="text-blue-700 dark:text-blue-300">Due:</span><div className="font-semibold text-red-600">₹{(selectedOrder.balance_amount || 0).toLocaleString('en-IN')}</div></div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                <div><span className="text-blue-700 dark:text-blue-300">Total:</span><div className="font-semibold">₹{(selectedOrder.total_amount || 0).toLocaleString('en-IN')}</div></div>
+                <div><span className="text-blue-700 dark:text-blue-300">Paid:</span><div className="font-semibold text-green-600">₹{(selectedOrder.amount_received || 0).toLocaleString('en-IN')}</div></div>
+                <div><span className="text-blue-700 dark:text-blue-300">Due:</span><div className="font-semibold text-red-600">₹{(selectedOrder.balance_amount || 0).toLocaleString('en-IN')}</div></div>
+              </div>
+            )}
           </div>
         )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

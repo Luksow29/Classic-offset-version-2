@@ -16,7 +16,7 @@ const Skeleton: React.FC<SkeletonProps> = ({
   height,
   animation = 'pulse',
 }) => {
-  const baseClasses = 'bg-muted/60 dark:bg-muted/40';
+  const baseClasses = 'bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 relative overflow-hidden';
   
   const variantClasses = {
     text: 'h-4 w-full rounded',
@@ -45,7 +45,11 @@ const Skeleton: React.FC<SkeletonProps> = ({
         className
       )}
       style={styles}
-    />
+    >
+      {animation === 'wave' && (
+        <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/20 dark:via-gray-400/20 to-transparent" />
+      )}
+    </div>
   );
 };
 

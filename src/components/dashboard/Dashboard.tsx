@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
-import { GripVertical, Bolt, Calendar, RefreshCw, AlertTriangle } from 'lucide-react';
+import { GripVertical, Bolt, Calendar, RefreshCw, AlertTriangle, FileText, Users, Package, CreditCard } from 'lucide-react';
 import toast from 'react-hot-toast';
 const DashboardMetrics = lazy(() => import('./DashboardMetrics'));
 const RevenueChart = lazy(() => import('./RevenueChart'));
@@ -15,6 +15,8 @@ import { motion } from 'framer-motion';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
+import SkeletonCard from '../ui/SkeletonCard';
+import FloatingActionButton from '../ui/FloatingActionButton';
 const ReportDrilldownModal = lazy(() => import('./ReportDrilldownModal'));
 const OrderStatusCard = lazy(() => import('./OrderStatusCard'));
 const OrdersChart = lazy(() => import('./OrdersChart'));
@@ -26,31 +28,40 @@ import { useRealtimeOrders } from '@/hooks/useRealtimeOrders';
 import { useRealtimePayments } from '@/hooks/useRealtimePayments';
 import { handleSupabaseError } from '@/lib/supabaseErrorHandler';
 
-const SkeletonCard = ({ className }: { className?: string }) => (
-    <div className={`bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse ${className}`} />
-);
-
 const DraggableDashboardCard = ({ title, children, provided, isDragging }) => (
-    <Card ref={provided.innerRef} {...provided.draggableProps} className={`transition-shadow duration-200 ${isDragging ? 'shadow-2xl' : 'shadow-md'}`}>
-        <div className="flex justify-between items-center p-4 border-b">
-            <h3 className="font-semibold">{title}</h3>
-            <div {...provided.dragHandleProps} className="cursor-grab p-2">
-                <GripVertical className="h-5 w-5 text-gray-400" />
+    <Card 
+        ref={provided.innerRef} 
+        {...provided.draggableProps} 
+        className={`transition-all duration-300 transform hover:scale-[1.02] ${
+            isDragging 
+                ? 'shadow-2xl shadow-blue-500/25 scale-105 rotate-1' 
+                : 'shadow-xl shadow-blue-500/10 hover:shadow-2xl hover:shadow-blue-500/20'
+        } bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-2xl overflow-hidden`}
+    >
+        <div className="flex justify-between items-center p-6 border-b border-gray-100/50 dark:border-gray-700/50 bg-gradient-to-r from-blue-50/50 to-emerald-50/50 dark:from-blue-950/50 dark:to-emerald-950/50">
+            <h3 className="font-display font-bold text-lg bg-gradient-to-r from-gray-800 to-blue-600 dark:from-gray-200 dark:to-blue-400 bg-clip-text text-transparent">
+                {title}
+            </h3>
+            <div 
+                {...provided.dragHandleProps} 
+                className="cursor-grab p-2 rounded-lg hover:bg-white/50 dark:hover:bg-gray-800/50 transition-colors duration-200 group"
+            >
+                <GripVertical className="h-5 w-5 text-gray-400 group-hover:text-blue-500 transition-colors duration-200" />
             </div>
         </div>
-        <div className="p-4">
+        <div className="p-6">
             {children}
         </div>
     </Card>
 );
 
 const componentList = [
-    { id: 'metrics', title: 'Key Metrics', gridClass: 'lg:col-span-3' },
-    { id: 'financialSummary', title: 'Financial Summary', gridClass: 'lg:col-span-3' },
-    { id: 'revenueChart', title: 'Revenue Over Time', gridClass: 'lg:col-span-2' },
-    { id: 'ordersChart', title: 'Recent Orders', gridClass: 'lg:col-span-1' },
-    { id: 'orderStatus', title: 'Pending Orders', gridClass: 'lg:col-span-3' },
-    { id: 'activityFeed', title: 'Activity Feed', gridClass: 'lg:col-span-3' },
+    { id: 'metrics', title: 'Key Metrics', gridClass: 'md:col-span-2 lg:col-span-3' },
+    { id: 'financialSummary', title: 'Financial Summary', gridClass: 'md:col-span-2 lg:col-span-3' },
+    { id: 'revenueChart', title: 'Revenue Over Time', gridClass: 'md:col-span-1 lg:col-span-2' },
+    { id: 'ordersChart', title: 'Recent Orders', gridClass: 'md:col-span-1 lg:col-span-1' },
+    { id: 'orderStatus', title: 'Pending Orders', gridClass: 'md:col-span-2 lg:col-span-3' },
+    { id: 'activityFeed', title: 'Activity Feed', gridClass: 'md:col-span-2 lg:col-span-3' },
 ];
 
 const DEFAULT_ORDER = ['metrics', 'financialSummary', 'revenueChart', 'ordersChart', 'orderStatus', 'activityFeed'];
@@ -205,26 +216,32 @@ const Dashboard: React.FC = () => {
 
     if (error) {
         return (
-            <Card className="m-4 p-6 text-center text-red-600 bg-red-50 dark:bg-red-900/30">
-                <AlertTriangle className="mx-auto h-12 w-12" />
-                <h3 className="mt-2 text-lg font-medium">Something went wrong</h3>
-                <p className="mt-1 text-sm whitespace-pre-line">{error}</p>
-            </Card>
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 dark:from-slate-900 dark:via-slate-800 dark:to-emerald-950 flex items-center justify-center p-6">
+                <Card className="max-w-md p-8 text-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-red-200/50 dark:border-red-800/50 shadow-xl">
+                    <AlertTriangle className="mx-auto h-16 w-16 text-red-500 dark:text-red-400 mb-4" />
+                    <h3 className="text-xl font-bold text-red-700 dark:text-red-300 mb-2">Something went wrong</h3>
+                    <p className="text-sm text-red-600 dark:text-red-400 whitespace-pre-line leading-relaxed">{error}</p>
+                </Card>
+            </div>
         );
     }
 
     if (loading && !data) {
         return (
-            <div className="p-6 space-y-6">
-                <div className="flex justify-between items-center">
-                    <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-1/3 animate-pulse"></div>
-                    <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg w-40 animate-pulse"></div>
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <SkeletonCard className="lg:col-span-3 h-28" />
-                    <SkeletonCard className="lg:col-span-3 h-40" />
-                    <SkeletonCard className="lg:col-span-2 h-80" />
-                    <SkeletonCard className="lg:col-span-1 h-80" />
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 dark:from-slate-900 dark:via-slate-800 dark:to-emerald-950">
+                <div className="p-6 space-y-6">
+                    <div className="flex justify-between items-center max-w-5xl mx-auto">
+                        <div className="h-12 bg-gradient-to-r from-blue-200 to-emerald-200 dark:from-blue-800 dark:to-emerald-800 rounded-2xl w-1/3 animate-pulse"></div>
+                        <div className="h-12 bg-gradient-to-r from-gray-200 to-blue-200 dark:from-gray-800 dark:to-blue-800 rounded-2xl w-40 animate-pulse"></div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 max-w-7xl mx-auto">
+                        <SkeletonCard variant="metric" className="md:col-span-2 lg:col-span-3" />
+                        <SkeletonCard variant="table" className="md:col-span-2 lg:col-span-3" />
+                        <SkeletonCard variant="chart" className="md:col-span-1 lg:col-span-2" />
+                        <SkeletonCard variant="chart" className="md:col-span-1 lg:col-span-1" />
+                        <SkeletonCard variant="table" className="md:col-span-2 lg:col-span-3" />
+                        <SkeletonCard variant="default" className="md:col-span-2 lg:col-span-3" />
+                    </div>
                 </div>
             </div>
         );
@@ -242,12 +259,13 @@ const Dashboard: React.FC = () => {
                     />
                 )}
             </Suspense>
-            <div className="p-4 sm:p-6 space-y-6 bg-slate-50 dark:bg-slate-900">
-                {/* Quick Actions Subtle Box */}
-                <div className="max-w-3xl mx-auto -mt-4 mb-6">
-                    <div className="flex flex-wrap justify-center items-center gap-2 p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80">
-                        <Bolt className="w-5 h-5 text-gray-400 dark:text-gray-500 mr-1" />
-                        <span className="font-semibold text-gray-700 dark:text-gray-200 mr-3 text-base">Quick Actions</span>
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 dark:from-slate-900 dark:via-slate-800 dark:to-emerald-950">
+                <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
+                    {/* Quick Actions Glassmorphism Box */}
+                    <div className="max-w-3xl mx-auto -mt-2 md:-mt-4 mb-4 md:mb-6">
+                        <div className="flex flex-wrap justify-center items-center gap-2 p-3 md:p-4 rounded-2xl border border-white/20 dark:border-white/10 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl shadow-lg shadow-blue-500/10 dark:shadow-purple-500/20">
+                            <Bolt className="w-4 h-4 md:w-5 md:h-5 text-blue-500 dark:text-blue-400 mr-1" />
+                            <span className="font-display font-semibold text-gray-700 dark:text-gray-200 mr-2 md:mr-3 text-sm md:text-base bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent tracking-wide">Quick Actions</span>
                         <Button onClick={() => setIsOrderModalOpen(true)} variant="primary" size="sm">
                             + Add Order
                         </Button>
@@ -260,22 +278,37 @@ const Dashboard: React.FC = () => {
                         <Button onClick={() => setIsProductModalOpen(true)} variant="secondary" size="sm">
                             + Add Product
                         </Button>
-                    </div>
-                </div>
-                {/* Dashboard Title and Controls */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 max-w-5xl mx-auto">
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Dashboard</h1>
-                        <p className="text-gray-500 dark:text-gray-400">Welcome back, {userProfile?.name || 'Owner'}!</p>
-                    </div>
-                    <div className="flex items-center gap-2 mt-2 sm:mt-0">
-                        <RealtimeStatus />
-                        <div className="relative">
-                            <Calendar className="w-4 h-4 text-gray-400 absolute top-1/2 left-3 -translate-y-1/2" />
-                            <input type="month" value={currentMonth} onChange={(e) => setCurrentMonth(e.target.value)} className="input bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 rounded-lg p-2 pl-9 text-sm" />
                         </div>
-                        <Button onClick={resetLayout} variant="outline" size="sm"><RefreshCw className="w-4 h-4 mr-2" /> Reset</Button>
                     </div>
+                    
+                    {/* Dashboard Title and Controls */}
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 max-w-5xl mx-auto">
+                        <div className="space-y-2">
+                            <h1 className="text-4xl font-display font-black bg-gradient-to-r from-gray-900 via-blue-800 to-emerald-800 dark:from-white dark:via-blue-300 dark:to-emerald-300 bg-clip-text text-transparent tracking-tight">
+                                Dashboard
+                            </h1>
+                            <p className="text-gray-600 dark:text-gray-300 font-sans font-medium tracking-wide">Welcome back, {userProfile?.name || 'Owner'}! ✨</p>
+                        </div>
+                        <div className="flex items-center gap-3 mt-2 sm:mt-0">
+                            <RealtimeStatus />
+                            <div className="relative">
+                                <Calendar className="w-4 h-4 text-blue-500 dark:text-blue-400 absolute top-1/2 left-3 -translate-y-1/2" />
+                                <input 
+                                    type="month" 
+                                    value={currentMonth} 
+                                    onChange={(e) => setCurrentMonth(e.target.value)} 
+                                    className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-xl p-3 pl-10 text-sm font-medium shadow-lg focus:ring-2 focus:ring-blue-500/20 transition-all duration-200" 
+                                />
+                            </div>
+                            <Button 
+                                onClick={resetLayout} 
+                                variant="outline" 
+                                size="sm"
+                                className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl border-white/20 dark:border-white/10 hover:bg-white/90 dark:hover:bg-gray-900/90 shadow-lg transition-all duration-200"
+                            >
+                                <RefreshCw className="w-4 h-4 mr-2" /> Reset
+                            </Button>
+                        </div>
                 </div>
                 {/* Add Order Modal */}
                 <Modal isOpen={isOrderModalOpen} onClose={() => setIsOrderModalOpen(false)} title="Add New Order" size="2xl">
@@ -301,10 +334,11 @@ const Dashboard: React.FC = () => {
                         <ProductForm />
                     </Suspense>
                 </Modal>
+                
                 <DragDropContext onDragEnd={onDragEnd}>
                     <Droppable droppableId="dashboard">
                         {(provided) => (
-                            <div {...provided.droppableProps} ref={provided.innerRef} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div {...provided.droppableProps} ref={provided.innerRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8 max-w-7xl mx-auto">
                                 {componentOrder.map((id, index) => {
                                     const componentInfo = componentList.find(c => c.id === id);
                                     if (!componentInfo) return null;
@@ -312,7 +346,16 @@ const Dashboard: React.FC = () => {
                                         <Draggable key={id} draggableId={id} index={index}>
                                             {(provided, snapshot) => (
                                                 <div className={`${componentInfo.gridClass}`}>
-                                                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: index * 0.05 }}>
+                                                    <motion.div 
+                                                        initial={{ opacity: 0, y: 30, scale: 0.95 }} 
+                                                        animate={{ opacity: 1, y: 0, scale: 1 }} 
+                                                        transition={{ 
+                                                            duration: 0.6, 
+                                                            delay: index * 0.1,
+                                                            type: "spring",
+                                                            stiffness: 100
+                                                        }}
+                                                    >
                                                         <DraggableDashboardCard title={componentInfo.title} provided={provided} isDragging={snapshot.isDragging}>
                                                             {renderComponent(id)}
                                                         </DraggableDashboardCard>
@@ -327,6 +370,42 @@ const Dashboard: React.FC = () => {
                         )}
                     </Droppable>
                 </DragDropContext>
+                </div>
+                
+                {/* Floating Action Button for Quick Actions */}
+                <FloatingActionButton
+                    actions={[
+                        {
+                            id: 'add-order',
+                            label: 'Add Order',
+                            icon: <FileText size={20} />,
+                            onClick: () => setIsOrderModalOpen(true),
+                            color: 'bg-blue-500 hover:bg-blue-600'
+                        },
+                        {
+                            id: 'add-customer',
+                            label: 'Add Customer',
+                            icon: <Users size={20} />,
+                            onClick: () => setIsCustomerModalOpen(true),
+                            color: 'bg-green-500 hover:bg-green-600'
+                        },
+                        {
+                            id: 'add-payment',
+                            label: 'Add Payment',
+                            icon: <CreditCard size={20} />,
+                            onClick: () => setIsPaymentModalOpen(true),
+                            color: 'bg-purple-500 hover:bg-purple-600'
+                        },
+                        {
+                            id: 'add-product',
+                            label: 'Add Product',
+                            icon: <Package size={20} />,
+                            onClick: () => setIsProductModalOpen(true),
+                            color: 'bg-orange-500 hover:bg-orange-600'
+                        }
+                    ]}
+                    position="bottom-right"
+                />
             </div>
         </>
     );

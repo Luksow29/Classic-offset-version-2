@@ -24,6 +24,45 @@ input, select, textarea, .form-input, .form-select, .form-textarea {
   border-radius: 0.5rem;
   margin-bottom: 0.25rem;
 }
+
+/* Mobile-specific enhancements */
+@media (max-width: 640px) {
+  /* Larger touch targets for mobile */
+  button, .btn, input[type="button"], input[type="submit"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Better spacing for mobile forms */
+  input, select, textarea, .form-input, .form-select, .form-textarea {
+    padding: 0.75rem;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  /* Mobile-friendly tables */
+  .table-mobile-stack {
+    display: block;
+  }
+  
+  .table-mobile-stack thead {
+    display: none;
+  }
+  
+  .table-mobile-stack tbody, 
+  .table-mobile-stack tr, 
+  .table-mobile-stack td {
+    display: block;
+  }
+  
+  .table-mobile-stack tr {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 0.5rem;
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+  }
+}
+
 .form-heading, .form-title, .form-section-title, .form-header {
   margin-bottom: 1.5rem;
   margin-top: 0.5rem;
@@ -59,6 +98,63 @@ input:focus, select:focus, textarea:focus, .form-input:focus, .form-select:focus
 @tailwind utilities;
 
 @layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+  
+  /* Typography Hierarchy */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+  }
+  
+  /* Mobile-specific improvements */
+  @media (max-width: 640px) {
+    /* Ensure minimum touch target sizes for mobile */
+    button, input[type="button"], input[type="submit"], .btn, .button {
+      min-height: 44px;
+    }
+    
+    /* Better scrolling on mobile */
+    .main-content {
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Reduce font sizes slightly on very small screens */
+    .dashboard-card h3, .card-title {
+      font-size: 1rem;
+    }
+    
+    /* Increase touch targets for mobile dashboard interactions */
+    .metric-card, .dashboard-metric {
+      min-height: 80px;
+    }
+  }
+  
+  /* Extra small breakpoint for very narrow screens */
+  @media (max-width: 480px) {
+    .container, .max-w-7xl {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+    
+    /* Stack chart elements vertically on very small screens */
+    .chart-stats {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+  }
+  
   :root {
     --background: 210 20% 98%; /* Subtle off-white for main bg */
     --foreground: 222.2 84% 4.9%;

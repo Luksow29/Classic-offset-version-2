@@ -58,8 +58,8 @@ const OrderStatusCard: React.FC<OrderStatusCardProps> = ({ orders, loading, erro
       return (
         <div className="text-center py-6 text-red-600">
           <AlertTriangle className="mx-auto h-8 w-8 mb-2" />
-          <p className="text-sm font-semibold">Could not load orders</p>
-          <p className="text-xs">{error}</p>
+          <p className="text-sm font-display font-semibold tracking-tight">Could not load orders</p>
+          <p className="text-xs font-sans">{error}</p>
         </div>
       );
     }
@@ -68,8 +68,8 @@ const OrderStatusCard: React.FC<OrderStatusCardProps> = ({ orders, loading, erro
       return (
         <div className="text-center py-6 text-green-600">
           <CheckCircle className="mx-auto h-8 w-8 mb-2" />
-          <p className="font-semibold">All caught up!</p>
-          <p className="text-sm">No pending orders found.</p>
+          <p className="font-display font-semibold tracking-tight">All caught up!</p>
+          <p className="text-sm font-sans">No pending orders found.</p>
         </div>
       );
     }
@@ -81,15 +81,15 @@ const OrderStatusCard: React.FC<OrderStatusCardProps> = ({ orders, loading, erro
           return (
             <li key={order.id} className="p-4 flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
               <div>
-                <Link to={`/orders`} className="text-sm font-semibold text-gray-800 dark:text-white hover:underline">
+                <Link to={`/orders`} className="text-sm font-display font-semibold text-gray-800 dark:text-white hover:underline tracking-tight">
                   #{order.id} – {order.customer_name}
                 </Link>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <p className="text-xs font-sans text-gray-500 dark:text-gray-400 mt-1 tracking-wide">
                   {new Date(order.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                 </p>
               </div>
               <span
-                className={`text-xs px-3 py-1 rounded-full font-medium flex items-center gap-1.5 ${config.className}`}
+                className={`text-xs font-sans px-3 py-1 rounded-full font-medium flex items-center gap-1.5 tracking-wide ${config.className}`}
               >
                 {config.icon}
                 {order.status}
