@@ -18,7 +18,13 @@ interface Order {
   customer_name: string;
   total_amount: number;
   amount_received: number;
-  balance_amount: number; 
+  balance_amount: number;
+  // Service charge fields
+  subtotal?: number | null;
+  service_charge_type?: string | null;
+  service_charge_value?: number | null;
+  service_charge_amount?: number | null;
+  service_charge_description?: string | null;
 }
 
 interface PaymentFormProps {

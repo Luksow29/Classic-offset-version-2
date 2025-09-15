@@ -73,6 +73,12 @@ export interface Order {
   deleted_at: string | null; // timestamptz
   designer_id: string | null; // UUID
   updated_at: string | null; // timestamptz
+  // Service charge fields
+  subtotal?: number | null; // numeric
+  service_charge_type?: string | null;
+  service_charge_value?: number | null; // numeric
+  service_charge_amount?: number | null; // numeric
+  service_charge_description?: string | null;
 }
 
 export interface Material {
