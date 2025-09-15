@@ -114,17 +114,17 @@ const PaymentManagementTable: React.FC = () => {
 
       if (error) throw error;
 
-      const grouped = (data || []).reduce((acc, item) => {
+  const grouped = (data || []).reduce((acc, item) => {
         const orderId = item.order_id;
         if (!acc[orderId]) {
           acc[orderId] = {
             order_id: orderId,
-            customer_name: item.customer_name,
-            customer_phone: item.customer_phone,
-            order_total_amount: item.order_total_amount,
-            order_amount_paid: item.order_amount_paid,
-            order_balance_due: item.order_balance_due,
-            status: item.order_status,
+    customer_name: item.customer_name || 'Unknown',
+    customer_phone: item.customer_phone || '',
+    order_total_amount: Number(item.order_total_amount ?? 0),
+    order_amount_paid: Number(item.order_amount_paid ?? 0),
+    order_balance_due: Number(item.order_balance_due ?? 0),
+    status: item.order_status || 'Due',
             payments: [],
           };
         }
@@ -133,18 +133,18 @@ const PaymentManagementTable: React.FC = () => {
             id: item.payment_id,
             customer_id: item.customer_id,
             order_id: item.order_id,
-            amount_paid: item.payment_amount,
-            due_date: item.payment_due_date,
-            status: item.payment_status,
+    amount_paid: Number(item.payment_amount ?? 0),
+    due_date: item.payment_due_date || new Date().toISOString().split('T')[0],
+    status: item.payment_status || 'Due',
             payment_method: item.payment_method,
             notes: item.payment_notes,
             created_at: item.payment_created_at,
             updated_at: item.payment_updated_at,
             customer_name: item.customer_name,
             customer_phone: item.customer_phone,
-            order_total_amount: item.order_total_amount,
-            order_amount_paid: item.order_amount_paid,
-            order_balance_due: item.order_balance_due,
+    order_total_amount: Number(item.order_total_amount ?? 0),
+    order_amount_paid: Number(item.order_amount_paid ?? 0),
+    order_balance_due: Number(item.order_balance_due ?? 0),
           });
         }
         return acc;
@@ -611,9 +611,9 @@ const PaymentManagementTable: React.FC = () => {
                         #{group.order_id}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-right font-medium">₹{group.order_total_amount.toLocaleString()}</td>
-                    <td className="px-4 py-3 text-right font-medium text-green-600">₹{group.order_amount_paid.toLocaleString()}</td>
-                    <td className="px-4 py-3 text-right font-medium text-red-600">₹{group.order_balance_due.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-right font-medium">₹{Number(group.order_total_amount ?? 0).toLocaleString('en-IN')}</td>
+                    <td className="px-4 py-3 text-right font-medium text-green-600">₹{Number(group.order_amount_paid ?? 0).toLocaleString('en-IN')}</td>
+                    <td className="px-4 py-3 text-right font-medium text-red-600">₹{Number(group.order_balance_due ?? 0).toLocaleString('en-IN')}</td>
                     <td className="px-4 py-3 text-center">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(group.status)}`}>
                         {group.status}
@@ -634,7 +634,7 @@ const PaymentManagementTable: React.FC = () => {
                             />
                           </td>
                           <td colSpan={3}></td>
-                          <td className="px-4 py-3 text-right font-medium text-green-600">₹{payment.amount_paid.toLocaleString()}</td>
+                          <td className="px-4 py-3 text-right font-medium text-green-600">₹{Number(payment.amount_paid ?? 0).toLocaleString('en-IN')}</td>
                           <td></td>
                           <td></td>
                           <td className="px-4 py-3">
@@ -689,7 +689,7 @@ const PaymentManagementTable: React.FC = () => {
               </span>
               <div className="flex items-center gap-2">
                 <Filter size={16} />
-                <span>Total Value: ₹{filteredAndSortedPayments.reduce((sum, g) => sum + g.order_amount_paid, 0).toLocaleString()}</span>
+                <span>Total Value: ₹{filteredAndSortedPayments.reduce((sum, g) => sum + Number(g.order_amount_paid ?? 0), 0).toLocaleString('en-IN')}</span>
               </div>
             </div>
           </div>

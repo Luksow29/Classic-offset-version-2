@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/collapsible";
 import { OrderStatusTimeline } from "./OrderStatusTimeline";
 import { Skeleton } from "@/components/ui/skeleton";
+import ServiceChargeDisplay from "./ServiceChargeDisplay";
 
 interface DisplayOrder {
   id: number;
@@ -39,6 +40,10 @@ interface DisplayOrder {
   status: string;
   rejection_reason?: string | null;
   is_request: boolean;
+  service_charges?: any[];
+  pricing_status?: string;
+  original_amount?: number;
+  quote_sent_at?: string;
 }
 
 interface StatusLog {
@@ -103,24 +108,71 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
       const { data: ordersData, error: ordersError } = await supabase.from("orders").select("*").eq("customer_id", customerId).order("date", { ascending: false });
       if (ordersError) throw ordersError;
       
-      const { data: rejectedRequests, error: requestsError } = await supabase.from("order_requests").select("*").eq("customer_id", customerId).eq("status", "rejected");
+      // Fetch rejected requests with service charge information
+      const { data: rejectedRequests, error: requestsError } = await supabase
+        .from("order_requests")
+        .select("id, created_at, request_data, rejection_reason, service_charges, admin_total_amount, pricing_status, quote_sent_at, quote_response_at")
+        .eq("customer_id", customerId)
+        .eq("status", "rejected");
       if (requestsError) throw requestsError;
+      
+      // Fetch pending and quoted requests with service charge information
+      const { data: pendingRequests, error: pendingError } = await supabase
+        .from("order_requests")
+        .select("id, created_at, request_data, status, service_charges, admin_total_amount, pricing_status, quote_sent_at, quote_response_at")
+        .eq("customer_id", customerId)
+        .in("status", ["pending", "pending_approval", "quoted", "accepted"]);
+      if (pendingError) throw pendingError;
       
       const mappedRejected = rejectedRequests.map(req => {
         const data = typeof req.request_data === 'object' && req.request_data !== null ? req.request_data as Record<string, any> : {};
+        const serviceCharges = Array.isArray(req.service_charges) ? req.service_charges : [];
+        const originalAmount = data.totalAmount ?? 0;
+        const finalAmount = req.admin_total_amount ?? originalAmount;
+        
         return {
           id: req.id,
           date: req.created_at,
           order_type: data.orderType ?? '',
           quantity: data.quantity ?? 0,
-          total_amount: data.totalAmount ?? 0,
+          total_amount: finalAmount,
+          original_amount: originalAmount,
           amount_received: 0,
-          balance_amount: data.totalAmount ?? 0,
+          balance_amount: finalAmount,
           delivery_date: data.deliveryDate ?? '',
           notes: data.notes ?? '',
           status: 'Rejected',
           rejection_reason: req.rejection_reason,
           is_request: true,
+          service_charges: serviceCharges,
+          pricing_status: req.pricing_status || 'rejected',
+          quote_sent_at: req.quote_sent_at,
+        };
+      });
+
+      const mappedPending = pendingRequests.map(req => {
+        const data = typeof req.request_data === 'object' && req.request_data !== null ? req.request_data as Record<string, any> : {};
+        const serviceCharges = Array.isArray(req.service_charges) ? req.service_charges : [];
+        const originalAmount = data.totalAmount ?? 0;
+        const finalAmount = req.admin_total_amount ?? originalAmount;
+        
+        return {
+          id: req.id,
+          date: req.created_at,
+          order_type: data.orderType ?? '',
+          quantity: data.quantity ?? 0,
+          total_amount: finalAmount,
+          original_amount: originalAmount,
+          amount_received: 0,
+          balance_amount: finalAmount,
+          delivery_date: data.deliveryDate ?? '',
+          notes: data.notes ?? '',
+          status: req.status === 'quoted' ? 'Quote Received' : 
+                  req.status === 'accepted' ? 'Quote Accepted' : 'Pending Review',
+          is_request: true,
+          service_charges: serviceCharges,
+          pricing_status: req.pricing_status || 'pending',
+          quote_sent_at: req.quote_sent_at,
         };
       });
 
@@ -145,7 +197,7 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
         ...order, status: latestStatuses[order.id] || "Pending", is_request: false,
       }));
 
-      const combinedList = [...ordersWithStatus, ...mappedRejected].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      const combinedList = [...ordersWithStatus, ...mappedRejected, ...mappedPending].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
       setOrders(combinedList);
       setStatusHistories(histories);
@@ -317,6 +369,20 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
                       </div></div>
                     </div>
                   </div>
+                  
+                  {/* Service Charge Display for requests */}
+                  {order.is_request && (
+                    <div className="mt-6">
+                      <ServiceChargeDisplay 
+                        order={order}
+                        customerId={customerId}
+                        onResponseSubmitted={() => {
+                          setIsLoading(true);
+                          fetchOrdersAndHistory();
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
               </CollapsibleContent>
             </Card>

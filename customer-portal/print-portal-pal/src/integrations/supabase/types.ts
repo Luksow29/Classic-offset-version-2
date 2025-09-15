@@ -576,29 +576,44 @@ export type Database = {
       }
       order_requests: {
         Row: {
+          admin_total_amount: number | null
           created_at: string
           customer_id: string
           id: number
+          pricing_status: string | null
+          quote_response_at: string | null
+          quote_sent_at: string | null
           rejection_reason: string | null
           request_data: Json
+          service_charges: Json | null
           status: string
           user_id: string
         }
         Insert: {
+          admin_total_amount?: number | null
           created_at?: string
           customer_id: string
           id?: number
+          pricing_status?: string | null
+          quote_response_at?: string | null
+          quote_sent_at?: string | null
           rejection_reason?: string | null
           request_data: Json
+          service_charges?: Json | null
           status?: string
           user_id?: string
         }
         Update: {
+          admin_total_amount?: number | null
           created_at?: string
           customer_id?: string
           id?: number
+          pricing_status?: string | null
+          quote_response_at?: string | null
+          quote_sent_at?: string | null
           rejection_reason?: string | null
           request_data?: Json
+          service_charges?: Json | null
           status?: string
           user_id?: string
         }
@@ -1725,6 +1740,40 @@ export type Database = {
         Returns: {
           id: number
         }[]
+      }
+      approve_order_request_with_service_charges: {
+        Args: { request_id: number }
+        Returns: {
+          id: number
+        }[]
+      }
+      add_service_charge_to_request: {
+        Args: {
+          request_id: number
+          charge_description: string
+          charge_amount: number
+          charge_type: string
+        }
+        Returns: undefined
+      }
+      customer_accept_quote: {
+        Args: { request_id: number }
+        Returns: undefined
+      }
+      customer_reject_quote: {
+        Args: { request_id: number }
+        Returns: undefined
+      }
+      remove_service_charge_from_request: {
+        Args: {
+          request_id: number
+          charge_id: string
+        }
+        Returns: undefined
+      }
+      send_quote_to_customer: {
+        Args: { request_id: number }
+        Returns: undefined
       }
       check_login_attempts: {
         Args: { p_user_id: string }
