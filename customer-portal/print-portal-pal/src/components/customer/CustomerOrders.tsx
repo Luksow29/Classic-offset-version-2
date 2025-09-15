@@ -176,9 +176,19 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
         };
       });
 
-      const orderIds = ordersData.map(order => order.id);
-      const { data: historyData, error: historyError } = await supabase.from("order_status_log").select("*").in("order_id", orderIds);
-      if (historyError) throw historyError;
+      // Only query history if we actually have order IDs
+      const orderIds = (ordersData || []).map(order => order.id);
+      let historyData: any[] | null = [];
+      if (orderIds.length > 0) {
+        const { data: hData, error: historyError } = await supabase
+          .from("order_status_log")
+          .select("*")
+          .in("order_id", orderIds);
+        if (historyError) throw historyError;
+        historyData = hData;
+      } else {
+        historyData = [];
+      }
       
       const histories: { [key: number]: StatusLog[] } = {};
       const latestStatuses: { [key:number]: string } = {};
@@ -193,8 +203,18 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
         });
       }
       
-      const ordersWithStatus: DisplayOrder[] = ordersData.map(order => ({
-        ...order, status: latestStatuses[order.id] || "Pending", is_request: false,
+      const ordersWithStatus: DisplayOrder[] = (ordersData || []).map(order => ({
+        id: order.id,
+        date: order.date || order.created_at || new Date().toISOString(),
+        order_type: order.order_type || "",
+        quantity: Number((order as any).quantity ?? 0),
+        total_amount: Number((order as any).total_amount ?? 0),
+        amount_received: Number((order as any).amount_received ?? 0),
+        balance_amount: Number((order as any).balance_amount ?? (Number((order as any).total_amount ?? 0) - Number((order as any).amount_received ?? 0))),
+        delivery_date: (order as any).delivery_date || "",
+        notes: (order as any).notes ?? "",
+        status: latestStatuses[order.id] || "Pending",
+        is_request: false,
       }));
 
       const combinedList = [...ordersWithStatus, ...mappedRejected, ...mappedPending].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -227,7 +247,13 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
     );
   };
 
-  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '-';
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return '-';
+    return d.toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
+  };
+  const formatCurrency = (val: any) => Number(val ?? 0).toLocaleString('en-IN');
 
   // Sorting/filtering logic
   const filteredOrders = statusFilter ? orders.filter(o => o.status === statusFilter) : orders;
@@ -358,9 +384,9 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
                     ) : <div className="text-sm text-muted-foreground">{t('orders.request_pending')}</div>}
                     <div className="space-y-6">
                       <div><h4 className="font-semibold mb-2">{t('orders.payment_details')}</h4><div className="bg-muted/50 p-4 rounded-lg space-y-2 text-sm">
-                        <div className="flex justify-between"><span>{t('orders.total')}</span><span className="font-semibold">₹{order.total_amount.toLocaleString()}</span></div>
-                        <div className="flex justify-between"><span>{t('orders.paid')}</span><span className="text-green-600">₹{order.amount_received.toLocaleString()}</span></div>
-                        <div className="flex justify-between font-semibold"><span>{t('orders.balance')}</span><span className={order.balance_amount > 0 ? "text-orange-600" : ""}>₹{order.balance_amount.toLocaleString()}</span></div>
+                        <div className="flex justify-between"><span>{t('orders.total')}</span><span className="font-semibold">₹{formatCurrency(order.total_amount)}</span></div>
+                        <div className="flex justify-between"><span>{t('orders.paid')}</span><span className="text-green-600">₹{formatCurrency(order.amount_received)}</span></div>
+                        <div className="flex justify-between font-semibold"><span>{t('orders.balance')}</span><span className={order.balance_amount > 0 ? "text-orange-600" : ""}>₹{formatCurrency(order.balance_amount)}</span></div>
                       </div></div>
                       <div><h4 className="font-semibold mb-2">{t('orders.details')}</h4><div className="space-y-2 text-sm text-muted-foreground">
                         <div><strong>{t('orders.type')}</strong> {order.order_type}</div>
