@@ -41,13 +41,42 @@ const ServiceChargeManager: React.FC<ServiceChargeManagerProps> = ({
 
   const addChargeMutation = useMutation({
     mutationFn: async ({ description, amount, type }: { description: string; amount: number; type: string }) => {
-      const { error } = await supabase.rpc('add_service_charge_to_request', {
-        request_id: requestId,
+      // Generate a client-side id for the charge
+      const chargeId = (typeof crypto !== 'undefined' && 'randomUUID' in crypto) ? (crypto as any).randomUUID() : `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+
+      // Fetch current charges to avoid overwriting
+      const { data: rows, error: fetchError } = await supabase
+        .from('order_requests')
+        .select('service_charges')
+        .eq('id', requestId)
+        .limit(1)
+        .maybeSingle();
+      if (fetchError) throw fetchError;
+
+      const existingCharges: any[] = Array.isArray(rows?.service_charges) ? rows!.service_charges as any[] : [];
+      const newCharge = {
+        id: chargeId,
         description,
         amount,
-        charge_type: type
-      });
-      if (error) throw error;
+        type,
+        added_at: new Date().toISOString()
+      };
+      const updatedCharges = [...existingCharges, newCharge];
+
+      // Recalculate final total on the client (originalAmount + sum(updatedCharges))
+      const sumCharges = updatedCharges.reduce((s, c: any) => s + (Number(c.amount) || 0), 0);
+      const newAdminTotal = (Number(adminTotalAmount ?? 0) > 0 ? Number(adminTotalAmount) : Number(originalAmount || 0)) + sumCharges;
+
+      const { error: updateError } = await supabase
+        .from('order_requests')
+        .update({
+          service_charges: updatedCharges,
+          admin_total_amount: newAdminTotal,
+          pricing_status: 'quoted',
+        })
+        .eq('id', requestId)
+        .in('pricing_status', ['pending', 'quoted']);
+      if (updateError) throw updateError;
     },
     onSuccess: () => {
       toast.success('Service charge added successfully');
@@ -63,11 +92,31 @@ const ServiceChargeManager: React.FC<ServiceChargeManagerProps> = ({
 
   const removeChargeMutation = useMutation({
     mutationFn: async (chargeId: string) => {
-      const { error } = await supabase.rpc('remove_service_charge_from_request', {
-        request_id: requestId,
-        charge_id: chargeId
-      });
-      if (error) throw error;
+      // Fetch current charges
+      const { data: rows, error: fetchError } = await supabase
+        .from('order_requests')
+        .select('service_charges')
+        .eq('id', requestId)
+        .limit(1)
+        .maybeSingle();
+      if (fetchError) throw fetchError;
+
+      const existingCharges: any[] = Array.isArray(rows?.service_charges) ? rows!.service_charges as any[] : [];
+      const updatedCharges = existingCharges.filter((c: any) => c.id !== chargeId);
+      const sumCharges = updatedCharges.reduce((s, c: any) => s + (Number(c.amount) || 0), 0);
+      const newAdminTotal = (Number(adminTotalAmount ?? 0) > 0 ? Number(adminTotalAmount) : Number(originalAmount || 0)) + sumCharges;
+      const newPricingStatus = updatedCharges.length === 0 ? 'pending' : 'quoted';
+
+      const { error: updateError } = await supabase
+        .from('order_requests')
+        .update({
+          service_charges: updatedCharges,
+          admin_total_amount: newAdminTotal,
+          pricing_status: newPricingStatus,
+        })
+        .eq('id', requestId)
+        .in('pricing_status', ['pending', 'quoted']);
+      if (updateError) throw updateError;
     },
     onSuccess: () => {
       toast.success('Service charge removed');
@@ -81,9 +130,14 @@ const ServiceChargeManager: React.FC<ServiceChargeManagerProps> = ({
 
   const sendQuoteMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.rpc('send_quote_to_customer', {
-        request_id: requestId
-      });
+      const { error } = await supabase
+        .from('order_requests')
+        .update({
+          pricing_status: 'quoted',
+          quote_sent_at: new Date().toISOString(),
+        })
+        .eq('id', requestId)
+        .in('pricing_status', ['pending', 'quoted']);
       if (error) throw error;
     },
     onSuccess: () => {
