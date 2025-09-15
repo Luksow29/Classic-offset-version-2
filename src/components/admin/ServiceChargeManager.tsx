@@ -64,8 +64,9 @@ const ServiceChargeManager: React.FC<ServiceChargeManagerProps> = ({
       const updatedCharges = [...existingCharges, newCharge];
 
       // Recalculate final total on the client (originalAmount + sum(updatedCharges))
-      const sumCharges = updatedCharges.reduce((s, c: any) => s + (Number(c.amount) || 0), 0);
-      const newAdminTotal = (Number(adminTotalAmount ?? 0) > 0 ? Number(adminTotalAmount) : Number(originalAmount || 0)) + sumCharges;
+  const sumCharges = updatedCharges.reduce((s, c: any) => s + (Number(c.amount) || 0), 0);
+  // Always base admin total on original amount to avoid double-counting existing charges
+  const newAdminTotal = Number(originalAmount || 0) + sumCharges;
 
       const { error: updateError } = await supabase
         .from('order_requests')
@@ -103,8 +104,9 @@ const ServiceChargeManager: React.FC<ServiceChargeManagerProps> = ({
 
       const existingCharges: any[] = Array.isArray(rows?.service_charges) ? rows!.service_charges as any[] : [];
       const updatedCharges = existingCharges.filter((c: any) => c.id !== chargeId);
-      const sumCharges = updatedCharges.reduce((s, c: any) => s + (Number(c.amount) || 0), 0);
-      const newAdminTotal = (Number(adminTotalAmount ?? 0) > 0 ? Number(adminTotalAmount) : Number(originalAmount || 0)) + sumCharges;
+  const sumCharges = updatedCharges.reduce((s, c: any) => s + (Number(c.amount) || 0), 0);
+  // Always base admin total on original amount to avoid double-counting existing charges
+  const newAdminTotal = Number(originalAmount || 0) + sumCharges;
       const newPricingStatus = updatedCharges.length === 0 ? 'pending' : 'quoted';
 
       const { error: updateError } = await supabase
