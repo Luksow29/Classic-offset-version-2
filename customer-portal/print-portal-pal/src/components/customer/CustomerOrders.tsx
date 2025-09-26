@@ -231,17 +231,44 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
   
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      "Pending": { variant: "secondary" as const, icon: Clock, color: "text-yellow-600" },
-      "In Progress": { variant: "default" as const, icon: Package, color: "text-blue-600" },
-      "Completed": { variant: "default" as const, icon: CheckCircle, color: "text-green-600" },
-      "Delivered": { variant: "default" as const, icon: Truck, color: "text-green-600" },
-      "Rejected": { variant: "destructive" as const, icon: XCircle, color: "text-red-600" },
+      "Pending": { 
+        icon: Clock, 
+        className: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 border-yellow-200 dark:border-yellow-800 hover:bg-yellow-200 dark:hover:bg-yellow-900/50" 
+      },
+      "Pending Review": { 
+        icon: Clock, 
+        className: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 border-yellow-200 dark:border-yellow-800 hover:bg-yellow-200 dark:hover:bg-yellow-900/50" 
+      },
+      "In Progress": { 
+        icon: Package, 
+        className: "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-800 hover:bg-blue-200 dark:hover:bg-blue-900/50" 
+      },
+      "Completed": { 
+        icon: CheckCircle, 
+        className: "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 border-green-200 dark:border-green-800 hover:bg-green-200 dark:hover:bg-green-900/50" 
+      },
+      "Delivered": { 
+        icon: Truck, 
+        className: "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 border-green-200 dark:border-green-800 hover:bg-green-200 dark:hover:bg-green-900/50" 
+      },
+      "Quote Received": { 
+        icon: AlertTriangle, 
+        className: "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-800 hover:bg-blue-200 dark:hover:bg-blue-900/50" 
+      },
+      "Quote Accepted": { 
+        icon: CheckCircle, 
+        className: "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 border-green-200 dark:border-green-800 hover:bg-green-200 dark:hover:bg-green-900/50" 
+      },
+      "Rejected": { 
+        icon: XCircle, 
+        className: "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 border-red-200 dark:border-red-800 hover:bg-red-200 dark:hover:bg-red-900/50" 
+      },
     };
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig["Pending"];
     const Icon = config.icon;
     return (
-      <Badge variant={config.variant} className="flex items-center space-x-1 whitespace-nowrap">
-        <Icon className={`h-3 w-3 ${config.color}`} />
+      <Badge className={`flex items-center space-x-1 whitespace-nowrap border ${config.className}`}>
+        <Icon className="h-3 w-3" />
         <span>{status}</span>
       </Badge>
     );

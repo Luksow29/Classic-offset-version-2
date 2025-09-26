@@ -146,16 +146,33 @@ export default function CustomerInvoices({ customerId }: CustomerInvoicesProps) 
 
   const getPaymentStatusBadge = (status: string) => {
     const statusConfig = {
-      "Paid": { variant: "default" as const, color: "text-green-600", description: "Invoice fully paid" },
-      "Due": { variant: "destructive" as const, color: "text-red-600", description: "Payment due" },
-      "Partial": { variant: "secondary" as const, color: "text-orange-600", description: "Partially paid" },
+      "Paid": { 
+        variant: "default" as const, 
+        className: "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-200 dark:border-green-800 hover:bg-green-200 dark:hover:bg-green-900/50", 
+        description: "Invoice fully paid" 
+      },
+      "Due": { 
+        variant: "destructive" as const, 
+        className: "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-200 dark:border-red-800 hover:bg-red-200 dark:hover:bg-red-900/50", 
+        description: "Payment due" 
+      },
+      "Partial": { 
+        variant: "secondary" as const, 
+        className: "bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 border-orange-200 dark:border-orange-800 hover:bg-orange-200 dark:hover:bg-orange-900/50", 
+        description: "Partially paid" 
+      },
+      "Overdue": { 
+        variant: "destructive" as const, 
+        className: "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-200 dark:border-red-800 hover:bg-red-200 dark:hover:bg-red-900/50", 
+        description: "Payment overdue" 
+      },
     };
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig["Due"];
     return (
       <Tooltip>
         <TooltipTrigger asChild>
           <span>
-            <Badge variant={config.variant} className={config.color}>{status}</Badge>
+            <Badge variant={config.variant} className={config.className}>{status}</Badge>
           </span>
         </TooltipTrigger>
         <TooltipContent>

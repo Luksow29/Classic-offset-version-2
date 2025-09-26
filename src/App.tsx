@@ -51,6 +51,7 @@ const WeeklyProgress = lazy(() => import('./components/enhancements/WeeklyProgre
 const SmartInventory = lazy(() => import('./components/inventory/SmartInventory'));
 const AdvancedCRM = lazy(() => import('./components/crm/AdvancedCRM'));
 const LoyaltyProgram = lazy(() => import('./components/loyalty/LoyaltyProgram'));
+const CustomerSupportPage = lazy(() => import('./components/admin/CustomerSupportPage'));
 
 // Helper function to wrap routes with Suspense and ErrorBoundary
 const Suspended = (element: React.ReactNode) => (
@@ -94,6 +95,7 @@ const router = createBrowserRouter(
         <Route path="/smart-inventory" element={Suspended(<SmartInventory />)} />
         <Route path="/advanced-crm" element={Suspended(<AdvancedCRM />)} />
         <Route path="/loyalty-program" element={Suspended(<LoyaltyProgram />)} />
+        <Route path="/customer-support" element={Suspended(<CustomerSupportPage />)} />
       </Route>
 
       {/* 404 page */}
