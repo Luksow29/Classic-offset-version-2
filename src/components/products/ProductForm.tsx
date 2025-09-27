@@ -37,7 +37,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ editingProduct, onSave, onCan
         image_url: editingProduct.image_url || '',
       });
       if (editingProduct.image_url) {
-        setImagePreview(editingProduct.image_url);
+        // Construct the full public URL
+        const { data } = supabase.storage.from('product_images').getPublicUrl(editingProduct.image_url);
+        setImagePreview(data.publicUrl);
       } else {
         setImagePreview(null);
       }
@@ -81,11 +83,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ editingProduct, onSave, onCan
       return null;
     }
 
-    const { data } = supabase.storage
-      .from('product_images')
-      .getPublicUrl(filePath);
-
-    return data.publicUrl;
+    return filePath;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

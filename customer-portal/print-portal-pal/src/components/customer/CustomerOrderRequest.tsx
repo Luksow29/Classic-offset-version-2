@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Loader2, ShoppingBag, Palette, StickyNote, CalendarIcon, Calculator, User, ImageIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import ProductDetailModal from './ProductDetailModal';
 
 // Define the shape of the customer object being passed in
 interface Customer {
@@ -48,7 +49,7 @@ const OrderRequestSchema = z.object({
 
 type OrderRequestFormValues = z.infer<typeof OrderRequestSchema>;
 
-interface Product {
+export interface Product {
     id: number;
     name: string;
     unit_price: number;
@@ -64,6 +65,8 @@ const CustomerOrderRequestForm: React.FC<CustomerOrderRequestProps> = ({ custome
     const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
     const [orderTypeOptions, setOrderTypeOptions] = useState<string[]>([]);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalProduct, setModalProduct] = useState<Product | null>(null);
 
     const form = useForm<OrderRequestFormValues>({
         resolver: zodResolver(OrderRequestSchema),
@@ -127,12 +130,22 @@ const CustomerOrderRequestForm: React.FC<CustomerOrderRequestProps> = ({ custome
 
     useEffect(() => {
         const fetchInitialData = async () => {
-            const { data, error } = await supabase.from('products').select('id, name, unit_price, category, image_url');
+            const { data, error } = await supabase.from('products').select('id, name, unit_price, category, image_url, description');
             if (error) {
                 toast({ title: "Error", description: "Could not fetch products.", variant: "destructive" });
             } else if (data) {
-                console.log('Fetched products:', data); // DEBUG: Log fetched products
-                setProducts(data);
+                const productsWithPublicUrls = data.map(product => {
+                    if (product.image_url) {
+                        // Defensively reconstruct the public URL to handle inconsistent data
+                        const pathParts = product.image_url.split('/');
+                        const filePath = pathParts[pathParts.length - 1];
+                        const { data: { publicUrl } } = supabase.storage.from('product_images').getPublicUrl(filePath);
+                        return { ...product, image_url: publicUrl };
+                    }
+                    return product;
+                });
+                console.log('Fetched products:', productsWithPublicUrls); // DEBUG: Log fetched products
+                setProducts(productsWithPublicUrls);
                 const categories = [...new Set(data.map(p => p.category).filter(Boolean))];
                 setOrderTypeOptions(categories);
             }
@@ -288,7 +301,10 @@ const CustomerOrderRequestForm: React.FC<CustomerOrderRequestProps> = ({ custome
                                         <Card 
                                             key={p.id} 
                                             className={`cursor-pointer transition-all duration-200 ${selectedProductId === String(p.id) ? 'border-primary ring-2 ring-primary' : 'hover:shadow-md'}`}
-                                            onClick={() => setValue('productId', String(p.id))}
+                                            onClick={() => {
+                                                setModalProduct(p);
+                                                setIsModalOpen(true);
+                                            }}
                                         >
                                             <CardContent className="p-4">
                                                 {p.image_url ? (
@@ -489,6 +505,13 @@ const CustomerOrderRequestForm: React.FC<CustomerOrderRequestProps> = ({ custome
                     </div>
                 </form>
             </Form>
+
+            <ProductDetailModal
+                product={modalProduct}
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSelect={(productId) => setValue('productId', productId)}
+            />
         </div>
     );
 };
