@@ -145,6 +145,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         { name: 'WhatsApp', path: '/whatsapp', icon: <MessageCircle size={18} /> },
         { name: 'Team Chat', path: '/team-chat', icon: <MessageSquare size={18} /> },
         { name: 'Customer Support', path: '/customer-support', icon: <MessageCircle size={18} /> },
+        { name: 'Order Chat Admin', path: '/order-chat-admin', icon: <Package size={18} /> },
         { name: 'AI Agent', path: '/ai-agent', icon: <Sparkles size={18} /> },
       ],
     },

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,7 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { Loader2, ShoppingBag, Palette, StickyNote, CalendarIcon, Calculator, User } from 'lucide-react';
+import { Loader2, ShoppingBag, Palette, StickyNote, CalendarIcon, Calculator, User, ImageIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 // Define the shape of the customer object being passed in
@@ -55,6 +54,7 @@ interface Product {
     unit_price: number;
     category: string;
     description?: string;
+    image_url?: string;
 }
 
 const CustomerOrderRequestForm: React.FC<CustomerOrderRequestProps> = ({ customer, reorderData, setReorderData }) => {
@@ -127,10 +127,11 @@ const CustomerOrderRequestForm: React.FC<CustomerOrderRequestProps> = ({ custome
 
     useEffect(() => {
         const fetchInitialData = async () => {
-            const { data, error } = await supabase.from('products').select('id, name, unit_price, category');
+            const { data, error } = await supabase.from('products').select('id, name, unit_price, category, image_url');
             if (error) {
                 toast({ title: "Error", description: "Could not fetch products.", variant: "destructive" });
             } else if (data) {
+                console.log('Fetched products:', data); // DEBUG: Log fetched products
                 setProducts(data);
                 const categories = [...new Set(data.map(p => p.category).filter(Boolean))];
                 setOrderTypeOptions(categories);
@@ -264,9 +265,12 @@ const CustomerOrderRequestForm: React.FC<CustomerOrderRequestProps> = ({ custome
                                             <SelectContent>
                                                 {filteredProducts.map(p => (
                                                     <SelectItem key={p.id} value={String(p.id)} className="py-3">
-                                                        <div className="flex flex-col">
-                                                            <span className="font-medium">{p.name}</span>
-                                                            <span className="text-sm text-muted-foreground">₹{p.unit_price.toLocaleString('en-IN')} per unit</span>
+                                                        <div className="flex items-center gap-4">
+                                                            {p.image_url && <img src={p.image_url} alt={p.name} className="w-12 h-12 object-cover rounded-md" />}
+                                                            <div className="flex flex-col">
+                                                                <span className="font-medium">{p.name}</span>
+                                                                <span className="text-sm text-muted-foreground">₹{p.unit_price.toLocaleString('en-IN')} per unit</span>
+                                                            </div>
                                                         </div>
                                                     </SelectItem>
                                                 ))}
@@ -276,6 +280,31 @@ const CustomerOrderRequestForm: React.FC<CustomerOrderRequestProps> = ({ custome
                                     </FormItem>
                                 )}/>
                             </div>
+
+                            {/* Product Showcase */}
+                            {selectedOrderType && (
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                    {filteredProducts.map(p => (
+                                        <Card 
+                                            key={p.id} 
+                                            className={`cursor-pointer transition-all duration-200 ${selectedProductId === String(p.id) ? 'border-primary ring-2 ring-primary' : 'hover:shadow-md'}`}
+                                            onClick={() => setValue('productId', String(p.id))}
+                                        >
+                                            <CardContent className="p-4">
+                                                {p.image_url ? (
+                                                    <img src={p.image_url} alt={p.name} className="w-full h-32 object-contain rounded-md mb-4" />
+                                                ) : (
+                                                    <div className="w-full h-32 bg-gray-200 dark:bg-gray-700 flex items-center justify-center rounded-md mb-4">
+                                                        <ImageIcon className="h-12 w-12 text-gray-400" />
+                                                    </div>
+                                                )}
+                                                <h4 className="font-semibold text-sm">{p.name}</h4>
+                                                <p className="text-xs text-muted-foreground">₹{p.unit_price.toLocaleString('en-IN')}</p>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                </div>
+                            )}
 
                             {/* Quantity and Pricing */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

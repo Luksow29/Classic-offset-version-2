@@ -23,9 +23,11 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { OrderStatusTimeline } from "./OrderStatusTimeline";
 import { Skeleton } from "@/components/ui/skeleton";
 import ServiceChargeDisplay from "./ServiceChargeDisplay";
+import OrderChat from "@/components/chat/OrderChat";
+import { OrderTimeline } from "@shared/order-timeline";
+import { useOrderTimeline } from "@/hooks/useOrderTimeline";
 
 interface DisplayOrder {
   id: number;
@@ -44,12 +46,6 @@ interface DisplayOrder {
   pricing_status?: string;
   original_amount?: number;
   quote_sent_at?: string;
-}
-
-interface StatusLog {
-  order_id: number;
-  status: string;
-  updated_at: string;
 }
 
 interface CustomerOrdersProps {
@@ -74,11 +70,25 @@ const OrderCardSkeleton = () => (
 
 import { RefreshCw } from "lucide-react";
 
+const OrderActivityTimeline = ({ orderId }: { orderId: number }) => {
+  const { events, isLoading, error, refresh } = useOrderTimeline(orderId, { enabled: Boolean(orderId) });
+
+  return (
+    <OrderTimeline
+      events={events}
+      isLoading={isLoading}
+      error={error}
+      onRetry={refresh}
+      title="Order Activity"
+      emptyMessage="No updates recorded for this order yet."
+    />
+  );
+};
+
 export default function CustomerOrders({ customerId, onQuickReorder }: CustomerOrdersProps) {
   const { t } = useTranslation();
   const [orders, setOrders] = useState<DisplayOrder[]>([]);
   const [products, setProducts] = useState<any[]>([]);
-  const [statusHistories, setStatusHistories] = useState<{ [key: number]: StatusLog[] }>({});
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   // Pagination
@@ -190,16 +200,20 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
         historyData = [];
       }
       
-      const histories: { [key: number]: StatusLog[] } = {};
-      const latestStatuses: { [key:number]: string } = {};
+      const latestStatuses: { [key:number]: { status: string; updated_at: string } } = {};
 
       if (historyData) {
         historyData.forEach(log => {
-          if (!histories[log.order_id] || new Date(log.updated_at) > new Date(histories[log.order_id][0].updated_at)) {
-             latestStatuses[log.order_id] = log.status;
+          if (!log.order_id) return;
+          const existing = latestStatuses[log.order_id];
+          const currentUpdatedAt = log.updated_at ? new Date(log.updated_at).getTime() : 0;
+          const existingUpdatedAt = existing?.updated_at ? new Date(existing.updated_at).getTime() : -1;
+          if (!existing || currentUpdatedAt > existingUpdatedAt) {
+            latestStatuses[log.order_id] = {
+              status: log.status,
+              updated_at: log.updated_at || new Date(0).toISOString(),
+            };
           }
-          if (!histories[log.order_id]) histories[log.order_id] = [];
-          histories[log.order_id].push(log);
         });
       }
       
@@ -213,14 +227,13 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
         balance_amount: Number((order as any).balance_amount ?? (Number((order as any).total_amount ?? 0) - Number((order as any).amount_received ?? 0))),
         delivery_date: (order as any).delivery_date || "",
         notes: (order as any).notes ?? "",
-        status: latestStatuses[order.id] || "Pending",
+        status: latestStatuses[order.id]?.status || "Pending",
         is_request: false,
       }));
 
       const combinedList = [...ordersWithStatus, ...mappedRejected, ...mappedPending].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
       setOrders(combinedList);
-      setStatusHistories(histories);
 
     } catch (error: any) {
       toast({ variant: "destructive", title: "Error", description: "Failed to fetch order history." });
@@ -407,7 +420,10 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
                   )}
                   <div className="grid md:grid-cols-2 gap-6">
                     {!order.is_request ? (
-                      <div><h4 className="font-semibold mb-3">{t('orders.history')}</h4><OrderStatusTimeline history={statusHistories[order.id] || []} /></div>
+                      <div>
+                        <h4 className="font-semibold mb-3">{t('orders.history')}</h4>
+                        <OrderActivityTimeline orderId={order.id} />
+                      </div>
                     ) : <div className="text-sm text-muted-foreground">{t('orders.request_pending')}</div>}
                     <div className="space-y-6">
                       <div><h4 className="font-semibold mb-2">{t('orders.payment_details')}</h4><div className="bg-muted/50 p-4 rounded-lg space-y-2 text-sm">
@@ -436,6 +452,17 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
                       />
                     </div>
                   )}
+                  
+                  {/* Order Chat Component */}
+                  <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300">Need help with this order?</h4>
+                      <OrderChat 
+                        orderId={order.id}
+                        orderNumber={`#${order.id}`}
+                      />
+                    </div>
+                  </div>
                 </div>
               </CollapsibleContent>
             </Card>

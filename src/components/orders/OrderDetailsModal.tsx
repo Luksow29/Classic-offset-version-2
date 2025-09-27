@@ -4,9 +4,11 @@ import { supabase } from '@/lib/supabaseClient';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import Card from '../ui/Card'; // FIX: Missing Card component import added
-import { Calendar, User, Package, DollarSign, Phone, MapPin, FileText, Clock, Loader2, Pencil, Printer, Truck, CheckCircle } from 'lucide-react';
+import { Calendar, User, Package, DollarSign, Phone, MapPin, FileText, Clock, Loader2, Pencil } from 'lucide-react';
 import { Order } from '@/types';
 import OrderStatusStepper from './OrderStatusStepper';
+import { OrderTimeline } from '@/shared/order-timeline';
+import { useOrderTimeline } from '@/hooks/useOrderTimeline';
 
 interface OrderDetailsModalProps {
   isOpen: boolean;
@@ -21,26 +23,16 @@ interface OrderDetails extends Order {
   status?: string; // Add status property
 }
 
-interface StatusHistory {
-  id: string;
-  status: 'Pending' | 'Design' | 'Printing' | 'Delivered';
-  updated_by: string;
-  updated_at: string;
-  notes?: string;
-}
-
-const statusIcons = {
-    Pending: <Pencil className="w-5 h-5 text-yellow-500" />,
-    Design: <Printer className="w-5 h-5 text-blue-500" />,
-    Printing: <Truck className="w-5 h-5 text-purple-500" />,
-    Delivered: <CheckCircle className="w-5 h-5 text-green-500" />,
-};
-
 const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ isOpen, onClose, orderId }) => {
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
-  const [statusHistory, setStatusHistory] = useState<StatusHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const {
+    events: timelineEvents,
+    isLoading: timelineLoading,
+    error: timelineError,
+    refresh: refreshTimeline,
+  } = useOrderTimeline(orderId, { enabled: isOpen });
 
   useEffect(() => {
     if (isOpen && orderId) {
@@ -65,7 +57,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ isOpen, onClose, 
         .eq('order_id', orderId)
         .order('updated_at', { ascending: false });
       if (historyError) throw historyError;
-      
+
       const { data: designerData, error: designerError } = orderData.designer_id 
         ? await supabase.from('employees').select('name').eq('id', orderData.designer_id).single()
         : { data: null, error: null };
@@ -81,7 +73,6 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ isOpen, onClose, 
         designer_name: designerData?.name,
         status: historyData?.[0]?.status || 'Pending', // Get latest status from history
       });
-      setStatusHistory(historyData || []);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch order details');
     } finally {
@@ -144,25 +135,13 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ isOpen, onClose, 
           </section>
           
           <section>
-            <h3 className="font-semibold text-lg text-gray-800 dark:text-white flex items-center gap-2 mb-3"><Clock className="w-5 h-5 text-primary-500" /> History</h3>
-            <Card className="p-4">
-              {statusHistory.length > 0 ? (
-                <div className="relative space-y-4">
-                   <div className="absolute left-4 top-2 bottom-2 w-0.5 bg-gray-200 dark:bg-gray-700"></div>
-                   {statusHistory.map((entry) => (
-                    <div key={entry.id} className="relative flex items-start gap-4 pl-10">
-                       <div className="absolute left-0 top-1.5 w-8 h-8 flex items-center justify-center bg-gray-100 dark:bg-gray-600 rounded-full ring-4 ring-white dark:ring-gray-800">
-                           {statusIcons[entry.status as keyof typeof statusIcons]}
-                       </div>
-                       <div>
-                         <p className="font-medium">{entry.status}</p>
-                         <p className="text-xs text-gray-500">by {entry.updated_by} on {new Date(entry.updated_at).toLocaleString('en-GB')}</p>
-                       </div>
-                    </div>
-                   ))}
-                </div>
-              ) : <p className="text-sm text-center text-gray-500 py-4">No status history found.</p>}
-            </Card>
+            <h3 className="font-semibold text-lg text-gray-800 dark:text-white flex items-center gap-2 mb-3"><Clock className="w-5 h-5 text-primary-500" /> Activity Timeline</h3>
+            <OrderTimeline
+              events={timelineEvents}
+              isLoading={timelineLoading}
+              error={timelineError}
+              onRetry={refreshTimeline}
+            />
           </section>
 
           <div className="flex justify-end gap-3 pt-4">

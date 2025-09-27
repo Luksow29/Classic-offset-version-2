@@ -21,6 +21,9 @@ const CustomerSupport = lazy(() => import("./pages/CustomerSupportPage"));
 const CustomerProfile = lazy(() => import("./pages/CustomerProfilePage"));
 const CustomerContact = lazy(() => import("./pages/CustomerContactPage"));
 
+const NotificationTestPage = lazy(() => import("./pages/NotificationTest"));
+const NotificationPreferencesPage = lazy(() => import("./pages/NotificationPreferences"));
+
 // Suspense wrapper component
 const Suspended = (Component: React.ComponentType) => (
   <Suspense fallback={
@@ -49,6 +52,8 @@ const router = createBrowserRouter(
         <Route path="/customer-portal/support" element={Suspended(CustomerSupport)} />
         <Route path="/customer-portal/profile" element={Suspended(CustomerProfile)} />
         <Route path="/customer-portal/contact" element={Suspended(CustomerContact)} />
+  <Route path="/customer-portal/notifications" element={Suspended(NotificationTestPage)} />
+  <Route path="/customer-portal/notification-preferences" element={Suspended(NotificationPreferencesPage)} />
       </Route>
 
       {/* Catch-all route */}

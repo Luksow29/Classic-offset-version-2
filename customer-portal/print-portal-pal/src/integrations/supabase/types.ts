@@ -1507,6 +1507,48 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          channels: string[] | null
+          created_at: string | null
+          enabled: boolean | null
+          id: string
+          notification_type: string
+          quiet_hours_end: string | null
+          quiet_hours_start: string | null
+          timezone: string | null
+          updated_at: string | null
+          user_id: string
+          user_type: string
+        }
+        Insert: {
+          channels?: string[] | null
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          notification_type: string
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          timezone?: string | null
+          updated_at?: string | null
+          user_id: string
+          user_type: string
+        }
+        Update: {
+          channels?: string[] | null
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          notification_type?: string
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          timezone?: string | null
+          updated_at?: string | null
+          user_id?: string
+          user_type?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string | null
@@ -1539,6 +1581,158 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      order_chat_messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          file_name: string | null
+          file_size: number | null
+          file_type: string | null
+          file_url: string | null
+          id: string
+          is_read: boolean | null
+          message_type: string
+          read_at: string | null
+          sender_id: string
+          sender_type: string
+          thread_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          is_read?: boolean | null
+          message_type?: string
+          read_at?: string | null
+          sender_id: string
+          sender_type: string
+          thread_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          is_read?: boolean | null
+          message_type?: string
+          read_at?: string | null
+          sender_id?: string
+          sender_type?: string
+          thread_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_chat_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "order_chat_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_chat_threads: {
+        Row: {
+          created_at: string | null
+          customer_id: string
+          id: string
+          last_message_at: string | null
+          order_id: number
+          priority: string
+          status: string
+          subject: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id: string
+          id?: string
+          last_message_at?: string | null
+          order_id: number
+          priority?: string
+          status?: string
+          subject?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string
+          id?: string
+          last_message_at?: string | null
+          order_id?: number
+          priority?: string
+          status?: string
+          subject?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_chat_threads_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "all_order_summary"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "order_chat_threads_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "order_payment_summary"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "order_chat_threads_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "order_payment_summary_view"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "order_chat_threads_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "order_payments_view"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "order_chat_threads_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "order_summary_with_dues"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "order_chat_threads_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_chat_threads_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "payment_summary_view"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "order_chat_threads_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "unfinished_order_status"
+            referencedColumns: ["order_id"]
+          },
+        ]
       }
       order_materials: {
         Row: {
@@ -1634,6 +1828,66 @@ export type Database = {
             referencedColumns: ["order_id"]
           },
         ]
+      }
+      order_messages: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          deleted_at: string | null
+          edited_at: string | null
+          file_name: string | null
+          file_size: number | null
+          file_type: string | null
+          file_url: string | null
+          id: string
+          message_type: string | null
+          metadata: Json | null
+          order_id: number
+          read_at: string | null
+          read_by_recipient: boolean | null
+          reply_to_message_id: string | null
+          sender_id: string
+          sender_type: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          edited_at?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          message_type?: string | null
+          metadata?: Json | null
+          order_id: number
+          read_at?: string | null
+          read_by_recipient?: boolean | null
+          reply_to_message_id?: string | null
+          sender_id: string
+          sender_type: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          edited_at?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          message_type?: string | null
+          metadata?: Json | null
+          order_id?: number
+          read_at?: string | null
+          read_by_recipient?: boolean | null
+          reply_to_message_id?: string | null
+          sender_id?: string
+          sender_type?: string
+        }
+        Relationships: []
       }
       order_requests: {
         Row: {
@@ -2091,6 +2345,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: number
+          image_url: string | null
           name: string
           unit_price: number
         }
@@ -2099,6 +2354,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: number
+          image_url?: string | null
           name: string
           unit_price: number
         }
@@ -2107,8 +2363,51 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: number
+          image_url?: string | null
           name?: string
           unit_price?: number
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth_key: string
+          browser_info: Json | null
+          created_at: string | null
+          endpoint: string
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          last_used: string | null
+          p256dh_key: string
+          user_id: string
+          user_type: string
+        }
+        Insert: {
+          auth_key: string
+          browser_info?: Json | null
+          created_at?: string | null
+          endpoint: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_used?: string | null
+          p256dh_key: string
+          user_id: string
+          user_type: string
+        }
+        Update: {
+          auth_key?: string
+          browser_info?: Json | null
+          created_at?: string | null
+          endpoint?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_used?: string | null
+          p256dh_key?: string
+          user_id?: string
+          user_type?: string
         }
         Relationships: []
       }
@@ -3032,6 +3331,21 @@ export type Database = {
           },
         ]
       }
+      order_activity_timeline: {
+        Row: {
+          actor_id: string | null
+          actor_name: string | null
+          actor_type: string | null
+          event_id: string | null
+          event_type: string | null
+          message: string | null
+          metadata: Json | null
+          occurred_at: string | null
+          order_id: number | null
+          title: string | null
+        }
+        Relationships: []
+      }
       order_payment_summary: {
         Row: {
           amount_received: number | null
@@ -3400,9 +3714,24 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: number
+          image_url: string | null
           name: string
           unit_price: number
         }[]
+      }
+      create_notification: {
+        Args: {
+          data_param?: Json
+          message_text: string
+          notification_type: string
+          order_id_param?: number
+          priority_param?: string
+          recipient_id_param?: string
+          recipient_type_param: string
+          sender_id_param?: string
+          title_text: string
+        }
+        Returns: string
       }
       create_order_with_payment: {
         Args: {
@@ -3649,6 +3978,15 @@ export type Database = {
         Args: { p_order_id: number }
         Returns: Json
       }
+      get_order_message_summary: {
+        Args: { order_id_param: number; user_uuid: string }
+        Returns: {
+          last_message_at: string
+          last_message_from: string
+          total_messages: number
+          unread_messages: number
+        }[]
+      }
       get_orders_report: {
         Args: { end_date: string; order_status?: string; start_date: string }
         Returns: {
@@ -3741,6 +4079,10 @@ export type Database = {
           total_spent: number
         }[]
       }
+      get_unread_notification_count: {
+        Args: { user_type_param?: string; user_uuid: string }
+        Returns: number
+      }
       get_user_notifications: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -3804,6 +4146,10 @@ export type Database = {
         Args: { p_reader_type: string; p_ticket_id: string }
         Returns: undefined
       }
+      mark_notifications_as_read: {
+        Args: { notification_ids: string[]; user_uuid: string }
+        Returns: number
+      }
       match_documents: {
         Args: {
           match_count: number
@@ -3848,6 +4194,10 @@ export type Database = {
         Returns: {
           id: number
         }[]
+      }
+      test_notification_system: {
+        Args: { test_user_id?: string }
+        Returns: string
       }
       trigger_missing_payments: {
         Args: Record<PropertyKey, never>

@@ -17,6 +17,14 @@ const ProductViewModal: React.FC<ProductViewModalProps> = ({ isOpen, onClose, pr
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={product.name} size="lg">
       <div className="space-y-4 pt-2">
+        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-lg mb-4">
+          <img
+            src={product.image_url || '/placeholder.svg'}
+            alt={product.name}
+            className="w-full h-auto object-contain rounded-lg"
+          />
+        </div>
+
         <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
           <Tag className="w-5 h-5 text-primary-600 dark:text-primary-400" />
           <div>

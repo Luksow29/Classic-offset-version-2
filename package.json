@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "supabase:start": "supabase start",
-    "supabase:stop": "supabase stop", 
+    "supabase:stop": "supabase stop",
     "supabase:reset": "supabase db reset",
     "supabase:status": "supabase status"
   },
@@ -45,7 +45,8 @@
     "remark-gfm": "^4.0.1",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",

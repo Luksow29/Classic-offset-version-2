@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Package, Receipt, MessageCircle, User,
   X, ChevronLeft, ChevronRight, ChevronDown, ClipboardList,
-  Home, ShoppingCart, CreditCard, Phone, Settings, Headphones
+  Home, ShoppingCart, CreditCard, Phone, Settings, Headphones, Bell
 } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
 
@@ -62,6 +62,14 @@ const CustomerSidebar: React.FC<CustomerSidebarProps> = ({
       items: [
         { name: 'Chat Support', path: '/customer-portal/support', icon: <MessageCircle size={18} /> },
         { name: 'Contact Us', path: '/customer-portal/contact', icon: <Phone size={18} /> },
+      ],
+    },
+    {
+      name: 'Settings',
+      icon: <Settings size={20} />,
+      items: [
+        { name: 'Notifications', path: '/customer-portal/notifications', icon: <Bell size={18} /> },
+        { name: 'Notification Preferences', path: '/customer-portal/notification-preferences', icon: <Settings size={18} /> },
       ],
     },
   ];
