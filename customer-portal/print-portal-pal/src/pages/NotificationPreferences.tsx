@@ -34,15 +34,37 @@ export default function NotificationPreferences() {
 
   async function fetchPreferences() {
     setLoading(true);
-    // Replace with actual user id fetch
     const user = await supabase.auth.getUser();
     const userId = user.data.user?.id;
-    if (!userId) return;
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+
     const { data, error } = await supabase
       .from('notification_preferences')
       .select('*')
       .eq('user_id', userId);
-    if (!error && data) setPreferences(data);
+
+    if (!error && data) {
+      const userPreferences = new Map(data.map(p => [p.notification_type, p]));
+      const allPreferences = NOTIFICATION_TYPES.map(type => {
+        return userPreferences.get(type) || {
+          notification_type: type,
+          channels: ['in_app'],
+          enabled: true,
+        };
+      });
+      setPreferences(allPreferences);
+    } else {
+      // If there's an error or no data, initialize with defaults
+      const defaultPreferences = NOTIFICATION_TYPES.map(type => ({
+        notification_type: type,
+        channels: ['in_app'],
+        enabled: true,
+      }));
+      setPreferences(defaultPreferences);
+    }
     setLoading(false);
   }
 

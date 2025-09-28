@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,8 +54,9 @@ export default function NotificationTest() {
   // Check server status
   useEffect(() => {
     const checkServerStatus = async () => {
+      const functionUrl = import.meta.env.VITE_PUSH_FUNCTION_URL || `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-notifications`;
       try {
-        const response = await fetch('http://localhost:3002/health');
+        const response = await fetch(functionUrl);
         if (response.ok) {
           setServerStatus('online');
         } else {
@@ -76,7 +78,12 @@ export default function NotificationTest() {
     
     setLoadingSubscriptions(true);
     try {
-      const response = await fetch('http://localhost:3002/api/subscriptions');
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-notifications/subscriptions`, {
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         setSubscriptions(data.subscriptions || []);
@@ -106,14 +113,18 @@ export default function NotificationTest() {
 
     setSendingCustom(true);
     try {
-      const response = await fetch('http://localhost:3002/api/send-notification', {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-notifications/send-notification`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
         },
         body: JSON.stringify({
           userId: 'test-user-123',
-          notification: customMessage
+          title: customMessage.title,
+          body: customMessage.body,
+          data: { url: customMessage.url }
         })
       });
 
@@ -140,17 +151,16 @@ export default function NotificationTest() {
     if (serverStatus !== 'online' || subscriptions.length === 0) return;
 
     try {
-      const response = await fetch('http://localhost:3002/api/broadcast', {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-notifications/broadcast`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
         },
         body: JSON.stringify({
-          notification: {
-            title: 'Broadcast Message',
-            body: 'This message was sent to all subscribed users',
-            icon: '/icon-192x192.svg'
-          }
+          title: 'Broadcast Message',
+          body: 'This message was sent to all subscribed users'
         })
       });
 

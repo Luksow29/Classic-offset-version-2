@@ -82,49 +82,52 @@ export const useRealtimeDashboard = () => {
     // Initial load
     refreshMetrics();
 
-    // Set up real-time subscriptions for key tables that affect metrics
-    const paymentsChannel = supabase
-      .channel('dashboard_payments')
+    // Debounce the refresh function to avoid race conditions and excessive calls
+    let timeoutId: any;
+    const debouncedRefresh = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        console.log('Debounced metrics refresh triggered.');
+        refreshMetrics();
+      }, 1000); // 1-second delay to allow DB transaction to complete
+    };
+
+    // Set up a single real-time channel for all dashboard-related tables
+    const dashboardChannel = supabase
+      .channel('dashboard-realtime')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'payments' },
-        () => {
-          console.log('💰 Payment change detected, refreshing metrics...');
-          refreshMetrics();
+        (payload) => {
+          console.log('💰 Payment change detected, queueing refresh...', payload);
+          debouncedRefresh();
         }
       )
-      .subscribe();
-
-    const ordersChannel = supabase
-      .channel('dashboard_orders')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'orders' },
-        () => {
-          console.log('📦 Order change detected, refreshing metrics...');
-          refreshMetrics();
+        (payload) => {
+          console.log('📦 Order change detected, queueing refresh...', payload);
+          debouncedRefresh();
         }
       )
-      .subscribe();
-
-    const expensesChannel = supabase
-      .channel('dashboard_expenses')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'expenses' },
-        () => {
-          console.log('💸 Expense change detected, refreshing metrics...');
-          refreshMetrics();
+        (payload) => {
+          console.log('💸 Expense change detected, queueing refresh...', payload);
+          debouncedRefresh();
         }
       )
-      .subscribe();
-
-    setIsConnected(true);
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          setIsConnected(true);
+        }
+      });
 
     return () => {
-      supabase.removeChannel(paymentsChannel);
-      supabase.removeChannel(ordersChannel);
-      supabase.removeChannel(expensesChannel);
+      supabase.removeChannel(dashboardChannel);
+      clearTimeout(timeoutId);
     };
   }, []);
 

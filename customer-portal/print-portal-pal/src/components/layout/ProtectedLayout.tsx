@@ -14,58 +14,68 @@ const ProtectedLayout: React.FC = () => {
   const location = useLocation();
 
   useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
+    let isMounted = true;
+
+    const fetchUserAndCustomer = async (sessionUser: any) => {
+      if (!sessionUser) {
+        if (isMounted) {
+          setUser(null);
+          setCustomer(null);
           setLoading(false);
-          return;
         }
+        return;
+      }
 
-        setUser(session.user);
+      // Set user immediately
+      if (isMounted) {
+        setUser(sessionUser);
+      }
 
-        // Try to get customer data
+      // Fetch customer data
+      try {
         const { data: customerData, error } = await supabase
           .from("customers")
           .select("*")
-          .eq("user_id", session.user.id)
+          .eq("user_id", sessionUser.id)
           .single();
 
-        if (!error && customerData) {
-          setCustomer(customerData);
+        if (error && error.code !== 'PGRST116') { // Ignore 'not found' errors
+          throw error;
+        }
+        
+        if (isMounted) {
+          setCustomer(customerData || null);
         }
       } catch (error) {
-        console.error('Auth initialization error:', error);
+        console.error('Error fetching customer data:', error);
+        if (isMounted) {
+          setCustomer(null);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
-    initializeAuth();
+    // Check initial session on component mount
+    const checkInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      await fetchUserAndCustomer(session?.user);
+    };
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        try {
-          const { data: customerData } = await supabase
-            .from("customers")
-            .select("*")
-            .eq("user_id", session.user.id)
-            .single();
-          
-          setCustomer(customerData);
-        } catch (error) {
-          console.error('Error fetching customer data:', error);
-        }
-      } else {
-        setCustomer(null);
-      }
+    checkInitialSession();
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      fetchUserAndCustomer(session?.user);
     });
 
-    return () => subscription.unsubscribe();
+    // Cleanup subscription on unmount
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   if (loading) {

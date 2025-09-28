@@ -109,7 +109,7 @@ BEGIN
   END;
 
   -- Calculate remaining balance
-  remaining_balance := COALESCE(order_info.total_amount, 0) - COALESCE(NEW.amount_paid, 0);
+  remaining_balance := COALESCE(order_info.total_amount, 0) - (COALESCE(order_info.amount_received, 0) + COALESCE(NEW.amount_paid, 0));
 
   -- Notify customer about payment confirmation (only if customer has user_id)
   IF customer_user_id IS NOT NULL THEN

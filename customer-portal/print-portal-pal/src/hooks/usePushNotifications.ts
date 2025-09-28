@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 // VAPID public key from environment
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
@@ -186,10 +187,12 @@ export const usePushNotifications = (userId?: string) => {
 
       // Send subscription to backend server
       try {
-        const response = await fetch('http://localhost:3002/api/subscribe', {
+        const { data: { session } } = await supabase.auth.getSession();
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-notifications/subscribe`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`
           },
           body: JSON.stringify({
             subscription: subscriptionData,
@@ -256,13 +259,16 @@ export const usePushNotifications = (userId?: string) => {
 
       // Notify backend server
       try {
-        const response = await fetch('http://localhost:3002/api/unsubscribe', {
+        const { data: { session } } = await supabase.auth.getSession();
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-notifications/unsubscribe`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`
           },
           body: JSON.stringify({
-            userId: userId
+            userId: userId,
+            endpoint: state.subscription?.endpoint
           }),
         });
 
@@ -316,10 +322,12 @@ export const usePushNotifications = (userId?: string) => {
     }
 
     try {
-      const response = await fetch('http://localhost:3002/api/send-notification', {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-notifications/send-notification`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
         },
         body: JSON.stringify({
           userId: userId,
