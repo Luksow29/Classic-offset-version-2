@@ -21,5 +21,6 @@
     "fs",
     "http",
     "net"
-  ]
+  ],
+  "chat.agent.maxRequests": 50
 }
