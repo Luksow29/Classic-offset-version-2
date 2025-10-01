@@ -1,8 +1,8 @@
 // supabase/functions/custom-ai-agent/index.ts
-// Cache-busting comment: 2025-07-13T10:00:00Z
-import { serve } from "http/server";
-import { createClient } from "@supabase/supabase-js";
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold, FunctionDeclarationSchemaType } from "@google/generative-ai";
+// Cache-busting comment: 2025-10-01T10:00:00Z
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold, FunctionDeclarationSchemaType } from "https://esm.sh/@google/generative-ai@0.15.0";
 
 // --- CLIENTS SETUP ---
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -102,7 +102,7 @@ serve(async (req) => {
     const latestUserMessage = history[history.length - 1]?.parts[0]?.text;
     if (!latestUserMessage) return new Response(JSON.stringify({ error: "User message is missing." }), { status: 400 });
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest", tools: classicTools, systemInstruction: classicSystemInstruction, safetySettings });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", tools: classicTools, systemInstruction: classicSystemInstruction, safetySettings });
     const chat = model.startChat({ history: history.slice(0, -1) });
     let result = await chat.sendMessage(latestUserMessage);
 
