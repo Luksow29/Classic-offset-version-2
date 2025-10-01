@@ -1,0 +1,311 @@
+[
+  {
+    "functionDeclarations": [
+      {
+        "name": "perform_web_search",
+        "description": "Use for ANY question not about internal business data. You MUST use this for general knowledge, news, or trends. If you don't know, search.",
+        "parameters": {
+          "type": "OBJECT",
+          "properties": {
+            "query": {
+              "type": "STRING",
+              "description": "The search query."
+            }
+          },
+          "required": [
+            "query"
+          ]
+        }
+      },
+      {
+        "name": "generate_whatsapp_link",
+        "description": "Generates a WhatsApp Web URL with a pre-filled message.",
+        "parameters": {
+          "type": "OBJECT",
+          "properties": {
+            "phone": {
+              "type": "STRING",
+              "description": "The customer's phone number, including country code but no '+' sign."
+            },
+            "text": {
+              "type": "STRING",
+              "description": "The message to be sent."
+            }
+          },
+          "required": [
+            "phone",
+            "text"
+          ]
+        }
+      },
+      {
+        "name": "get_daily_briefing",
+        "description": "Provides a summary of today's business activities: new orders, revenue, new customers, and low stock alerts.",
+        "parameters": {
+          "type": "OBJECT",
+          "properties": {}
+        }
+      },
+      {
+        "name": "getCustomerDetails",
+        "description": "Get customer details by name, including their UUID.",
+        "parameters": {
+          "type": "OBJECT",
+          "properties": {
+            "customer_name": {
+              "type": "STRING"
+            }
+          },
+          "required": [
+            "customer_name"
+          ]
+        }
+      },
+      {
+        "name": "getAllCustomers",
+        "description": "Get a list of all customers in the database.",
+        "parameters": {
+          "type": "OBJECT",
+          "properties": {}
+        }
+      },
+      {
+        "name": "getProductDetails",
+        "description": "Get details for a specific product by its name, including price.",
+        "parameters": {
+          "type": "OBJECT",
+          "properties": {
+            "product_name": {
+              "type": "STRING",
+              "description": "The name of the product to search for."
+            }
+          },
+          "required": ["product_name"]
+        }
+      },
+      {
+        "name": "getAllProducts",
+        "description": "Get a list of all products in the database.",
+        "parameters": {
+          "type": "OBJECT",
+          "properties": {}
+        }
+      },
+      {
+        "name": "getOrdersForCustomer",
+        "description": "Get all orders for a customer by ID.",
+        "parameters": {
+          "type": "OBJECT",
+          "properties": {
+            "customer_id": {
+              "type": "STRING"
+            }
+          },
+          "required": [
+            "customer_id"
+          ]
+        }
+      },
+      {
+        "name": "getPaymentsForCustomer",
+        "description": "Get all payments for a customer by ID.",
+        "parameters": {
+          "type": "OBJECT",
+          "properties": {
+            "customer_id": {
+              "type": "STRING"
+            }
+          },
+          "required": [
+            "customer_id"
+          ]
+        }
+      },
+      {
+        "name": "getFinancialSummary",
+        "description": "Get financial summary for a month (YYYY-MM).",
+        "parameters": {
+          "type": "OBJECT",
+          "properties": {
+            "month": {
+              "type": "STRING"
+            }
+          },
+          "required": [
+            "month"
+          ]
+        }
+      },
+      {
+        "name": "getRecentDuePayments",
+        "description": "Get recent due payments.",
+        "parameters": {
+          "type": "OBJECT",
+          "properties": {}
+        }
+      },
+      {
+        "name": "getLowStockMaterials",
+        "description": "Get low stock materials.",
+        "parameters": {
+          "type": "OBJECT",
+          "properties": {}
+        }
+      },
+      {
+        "name": "getTopSpendingCustomersByMonth",
+        "description": "Get top spending customers for a specific month (YYYY-MM).",
+        "parameters": {
+          "type": "OBJECT",
+          "properties": {
+            "month": {
+              "type": "STRING"
+            },
+            "limit": {
+              "type": "NUMBER"
+            }
+          },
+          "required": [
+            "month",
+            "limit"
+          ]
+        }
+      },
+      {
+        "name": "getTopSpendingCustomersOverall",
+        "description": "Get top spending customers overall for all time.",
+        "parameters": {
+          "type": "OBJECT",
+          "properties": {
+            "limit": {
+              "type": "NUMBER",
+              "description": "The number of customers to return. Defaults to 5."
+            }
+          },
+          "required": []
+        }
+      },
+      {
+        "name": "createNewCustomer",
+        "description": "Create a new customer.",
+        "parameters": {
+          "type": "OBJECT",
+          "properties": {
+            "name": {
+              "type": "STRING"
+            },
+            "phone": {
+              "type": "STRING"
+            },
+            "address": {
+              "type": "STRING"
+            }
+          },
+          "required": [
+            "name",
+            "phone"
+          ]
+        }
+      },
+      {
+        "name": "createNewProduct",
+        "description": "Create a new product in the database.",
+        "parameters": {
+          "type": "OBJECT",
+          "properties": {
+            "name": {
+              "type": "STRING",
+              "description": "The name of the new product."
+            },
+            "unit_price": {
+              "type": "NUMBER",
+              "description": "The price per unit of the new product."
+            },
+            "description": {
+              "type": "STRING",
+              "description": "An optional description for the product."
+            },
+            "category": {
+              "type": "STRING",
+              "description": "An optional category for the product."
+            }
+          },
+          "required": ["name", "unit_price"]
+        }
+      },
+      {
+        "name": "createNewOrder",
+        "description": "Create a new order for a customer.",
+        "parameters": {
+          "type": "OBJECT",
+          "properties": {
+            "customer_id": {
+              "type": "STRING",
+              "description": "The UUID of the customer."
+            },
+            "product_id": {
+              "type": "NUMBER",
+              "description": "The ID of the product."
+            },
+            "quantity": {
+              "type": "NUMBER",
+              "description": "The quantity of the product being ordered."
+            },
+            "total_amount": {
+              "type": "NUMBER",
+              "description": "The total calculated amount for the order."
+            },
+            "design_needed": {
+              "type": "BOOLEAN",
+              "description": "Whether design service is needed. Defaults to false."
+            },
+            "notes": {
+              "type": "STRING",
+              "description": "Optional notes for the order."
+            }
+          },
+          "required": ["customer_id", "product_id", "quantity", "total_amount"]
+        }
+      },
+      {
+        "name": "getCurrentDate",
+        "description": "Gets the current date in YYYY-MM-DD format.",
+        "parameters": {
+          "type": "OBJECT",
+          "properties": {}
+        }
+      },
+      {
+        "name": "logNewExpense",
+        "description": "Log a new expense.",
+        "parameters": {
+          "type": "OBJECT",
+          "properties": {
+            "expense_type": {
+              "type": "STRING"
+            },
+            "amount": {
+              "type": "NUMBER"
+            },
+            "paid_to": {
+              "type": "STRING"
+            }
+          },
+          "required": [
+            "expense_type",
+            "amount",
+            "paid_to"
+          ]
+        }
+      },
+      {
+        "name": "get_all_due_payments_summary",
+        "description": "Provides a summary of all customers with outstanding dues, including the total number of customers and the total amount due.",
+        "parameters": {
+          "type": "OBJECT",
+          "properties": {}
+        }
+      }
+    ]
+  }
+]
