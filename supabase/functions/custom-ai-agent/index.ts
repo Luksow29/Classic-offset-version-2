@@ -1,7 +1,7 @@
 // supabase/functions/custom-ai-agent/index.ts
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { GoogleGenerativeAI } from "npm:@google/generative-ai@^0.11.0";
+import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.21.0";
 
 // Import configurations from JSON files
 import classicTools from './tools.json' with {
@@ -248,12 +248,10 @@ serve(async (req)=>{
     if (!history) throw new Error("History is required.");
     
     const model = genAI.getGenerativeModel({
-      model: "gemini-pro",
-      tools: classicTools,
-      systemInstruction: classicSystemInstruction
-    });
-    
-    const chat = model.startChat({
+      model: "models/gemini-2.5-flash",
+      systemInstruction: classicSystemInstruction,
+      tools: classicTools
+    });    const chat = model.startChat({
       history: history.slice(0, -1)
     });
     
