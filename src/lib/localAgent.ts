@@ -21,11 +21,14 @@ interface LocalAgentResponse {
     completion_tokens: number;
     total_tokens: number;
   };
+  // Helper property for easy access to content
+  content?: string;
 }
 
 interface LocalAgentConfig {
   baseUrl: string;
   timeout: number;
+  model: string;
 }
 
 class LocalAgentService {
@@ -35,6 +38,7 @@ class LocalAgentService {
     this.config = {
       baseUrl: 'http://192.168.3.25:1234', // Updated to your network IP
       timeout: 30000,
+      model: 'qwen/qwen3-vl-4b', // Default model
       ...config,
     };
   }
@@ -79,7 +83,12 @@ class LocalAgentService {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      return await response.json();
+      const data = await response.json();
+      // Add content property for easy access
+      if (data.choices && data.choices[0] && data.choices[0].message) {
+        data.content = data.choices[0].message.content;
+      }
+      return data;
     } catch (error) {
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
@@ -216,6 +225,13 @@ class LocalAgentService {
       console.warn('Could not fetch models from LM Studio:', error);
       return ['qwen/qwen3-vl-4b']; // Default fallback
     }
+  }
+
+  /**
+   * Set the current model for the local agent
+   */
+  setModel(model: string): void {
+    this.config.model = model;
   }
 
   /**

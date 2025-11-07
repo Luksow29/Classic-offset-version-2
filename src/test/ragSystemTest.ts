@@ -101,5 +101,8 @@ EXPECTED FLOW:
 
 // Export for browser console use
 if (typeof window !== 'undefined') {
-  window.testRAGSystem = testRAGSystem;
+  (window as unknown as { testRAGSystem: typeof testRAGSystem }).testRAGSystem = testRAGSystem;
 }
+
+// Export the test function
+export { testRAGSystem };

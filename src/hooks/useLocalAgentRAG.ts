@@ -222,12 +222,12 @@ export const useLocalAgentRAG = (options: UseLocalAgentRAGOptions = {}): UseLoca
       );
 
       for await (const chunk of stream) {
-        if (chunk.content) {
+        if (chunk) {
           setMessages(prev => {
             const newMessages = [...prev];
             const lastMessage = newMessages[newMessages.length - 1];
             if (lastMessage.role === 'assistant') {
-              lastMessage.content += chunk.content;
+              lastMessage.content += chunk;
             }
             return newMessages;
           });
@@ -283,12 +283,12 @@ export const useLocalAgentRAG = (options: UseLocalAgentRAGOptions = {}): UseLoca
         );
 
         for await (const chunk of stream) {
-          if (chunk.content) {
+          if (chunk) {
             setMessages(prev => {
               const newMessages = [...prev];
               const lastMessage = newMessages[newMessages.length - 1];
               if (lastMessage.role === 'assistant') {
-                lastMessage.content += chunk.content;
+                lastMessage.content += chunk;
               }
               return newMessages;
             });
