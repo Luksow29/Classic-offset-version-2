@@ -8,6 +8,7 @@ export interface EnvironmentConfig {
   isNetlify: boolean;
   lmStudioAvailable: boolean;
   baseUrl: string;
+  proxyUrl?: string;
   fallbackMode: boolean;
 }
 
@@ -34,12 +35,14 @@ class EnvironmentService {
     
     // Get LM Studio URL from environment
     const lmStudioUrl = import.meta.env.VITE_LM_STUDIO_BASE_URL || 'http://192.168.3.25:1234';
+    const proxyUrl = import.meta.env.VITE_LM_STUDIO_PROXY_URL || '';
     
     return {
       isProduction,
       isNetlify,
       lmStudioAvailable: false, // Will be checked dynamically
       baseUrl: lmStudioUrl,
+      proxyUrl: proxyUrl || undefined,
       fallbackMode: isProduction && isNetlify // Enable fallback for production deploys
     };
   }
@@ -50,11 +53,28 @@ class EnvironmentService {
 
   async checkLMStudioAvailability(): Promise<boolean> {
     try {
-      const response = await fetch(`${this.config.baseUrl}/v1/models`, {
-        method: 'GET',
-        mode: 'cors',
-        signal: AbortSignal.timeout(3000),
-      });
+      const signal = AbortSignal.timeout(3000);
+      let response: Response;
+
+      if (this.config.proxyUrl) {
+        response = await fetch(this.config.proxyUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            path: '/v1/models',
+            method: 'GET',
+          }),
+          signal,
+        });
+      } else {
+        response = await fetch(`${this.config.baseUrl}/v1/models`, {
+          method: 'GET',
+          mode: 'cors',
+          signal,
+        });
+      }
       
       this.config.lmStudioAvailable = response.ok;
       return response.ok;
@@ -77,19 +97,19 @@ class EnvironmentService {
       return `
 🌐 **Netlify Deployment Detected**
 
-LM Studio is not accessible from remote deployments. Here are your options:
+The hosted app now talks to LM Studio through a secure serverless proxy (Netlify Function / Supabase Edge Function).
+If you see this message it means the proxy cannot reach your LM Studio instance.
 
-**Option 1: Enable Remote Access (Recommended)**
-1. On your local machine, start LM Studio
-2. Go to Settings → Network → Enable CORS
-3. Set up port forwarding on your router (port 1234)
-4. Update VITE_LM_STUDIO_BASE_URL with your public IP
+✅ Verify the proxy function is deployed and configured with:
+- LM_STUDIO_BASE_URL (your tunnel / public endpoint)
+- LM_STUDIO_API_KEY (if required)
 
-**Option 2: Use Fallback Mode**
-The app will use business data without AI processing when LM Studio is unavailable.
+🖥️ On your machine:
+1. Start LM Studio and load a model
+2. Ensure your public tunnel / forwarded port is online
+3. Test from the serverless function: \`curl <proxy-url> -d '{"path":"/v1/models","method":"GET"}'\`
 
-**Option 3: Local Development**
-For full functionality, run the app locally: \`npm run dev\`
+🔁 For local-only usage run \`npm run dev\` which connects directly.
       `.trim();
     } else {
       return `

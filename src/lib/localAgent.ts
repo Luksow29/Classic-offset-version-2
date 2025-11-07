@@ -36,6 +36,7 @@ interface LocalAgentConfig {
 class LocalAgentService {
   private config: LocalAgentConfig;
   private environmentService: EnvironmentService;
+  private proxyUrl: string | null;
 
   constructor(config: Partial<LocalAgentConfig> = {}) {
     this.environmentService = EnvironmentService.getInstance();
@@ -43,6 +44,7 @@ class LocalAgentService {
     // Environment-based configuration for different deployment environments
     const defaultBaseUrl = import.meta.env.VITE_LM_STUDIO_BASE_URL || 'http://192.168.3.25:1234';
     const defaultModel = import.meta.env.VITE_LM_STUDIO_MODEL || 'qwen/qwen3-vl-4b';
+    const proxyUrl = import.meta.env.VITE_LM_STUDIO_PROXY_URL || '';
     
     this.config = {
       baseUrl: defaultBaseUrl,
@@ -50,6 +52,8 @@ class LocalAgentService {
       model: defaultModel,
       ...config,
     };
+
+    this.proxyUrl = proxyUrl ? proxyUrl : null;
   }
 
   /**
@@ -72,26 +76,15 @@ class LocalAgentService {
     } = options;
 
     try {
-      const response = await fetch(`${this.config.baseUrl}/v1/chat/completions`, {
-        method: 'POST',
-        mode: 'cors',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model,
-          messages,
-          temperature,
-          max_tokens: maxTokens,
-          stream,
-        }),
-        signal: AbortSignal.timeout(this.config.timeout),
-      });
+      const payload = {
+        model,
+        messages,
+        temperature,
+        max_tokens: maxTokens,
+        stream,
+      };
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
+      const response = await this.requestLMStudio('/v1/chat/completions', 'POST', payload);
       const data = await response.json();
       // Add content property for easy access
       if (data.choices && data.choices[0] && data.choices[0].message) {
@@ -140,26 +133,15 @@ class LocalAgentService {
     } = options;
 
     try {
-      const response = await fetch(`${this.config.baseUrl}/v1/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
-        body: JSON.stringify({
-          model,
-          messages,
-          temperature,
-          max_tokens: maxTokens,
-          stream: true,
-        }),
-        mode: 'cors',
-        signal: AbortSignal.timeout(this.config.timeout),
-      });
+      const payload = {
+        model,
+        messages,
+        temperature,
+        max_tokens: maxTokens,
+        stream: true,
+      };
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      const response = await this.requestLMStudio('/v1/chat/completions', 'POST', payload, true);
 
       const reader = response.body?.getReader();
       if (!reader) {
@@ -221,20 +203,7 @@ class LocalAgentService {
    */
   async getModels(): Promise<string[]> {
     try {
-      const response = await fetch(`${this.config.baseUrl}/v1/models`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
-        mode: 'cors',
-        signal: AbortSignal.timeout(5000),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
+      const response = await this.requestLMStudio('/v1/models', 'GET', undefined, false, 5000);
       const data = await response.json();
       return data.data?.map((model: { id: string }) => model.id) || [];
     } catch (error) {
@@ -322,6 +291,63 @@ CAPABILITIES:
 
 Always consider the printing business context in your responses and provide practical, actionable advice.`
     };
+  }
+
+  private async requestLMStudio(
+    path: string,
+    method: 'GET' | 'POST',
+    payload?: unknown,
+    stream = false,
+    timeout = this.config.timeout
+  ): Promise<Response> {
+    const signal = AbortSignal.timeout(timeout);
+
+    if (this.proxyUrl) {
+      const response = await fetch(this.proxyUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          path,
+          method,
+          payload,
+          stream,
+        }),
+        signal,
+      });
+
+      if (!response.ok) {
+        if (stream) {
+          throw new Error(`Proxy stream error: ${response.status}`);
+        }
+        const errorText = await response.text();
+        throw new Error(errorText || `Proxy error ${response.status}`);
+      }
+
+      return response;
+    }
+
+    const url = `${this.config.baseUrl}${path}`;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+    };
+
+    const response = await fetch(url, {
+      method,
+      headers,
+      body: method === 'POST' ? JSON.stringify(payload ?? {}) : undefined,
+      mode: 'cors',
+      signal,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || `HTTP error! status: ${response.status}`);
+    }
+
+    return response;
   }
 }
 

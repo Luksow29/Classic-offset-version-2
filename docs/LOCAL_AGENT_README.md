@@ -126,7 +126,24 @@ function CustomAgent() {
 ## 🛠️ Configuration
 
 ### Environment Variables
-No environment variables needed - connects directly to localhost:1234
+
+| Variable | Purpose | Local Value | Remote Value |
+| --- | --- | --- | --- |
+| `VITE_LM_STUDIO_BASE_URL` | Direct LM Studio endpoint | `http://192.168.3.25:1234` | Internal LM Studio URL / tunnel |
+| `VITE_LM_STUDIO_PROXY_URL` | **New:** Supabase/Netlify proxy endpoint that the browser can call | *(leave empty)* | `https://<project>.supabase.co/functions/v1/lm-studio-proxy` |
+| `VITE_LM_STUDIO_MODEL` | Default model id | `qwen/qwen3-vl-4b` | same |
+
+> When `VITE_LM_STUDIO_PROXY_URL` is set, the frontend never talks to LM Studio directly.  
+> All `/v1/chat/completions` and `/v1/models` requests go through the secure proxy.
+
+### Serverless Proxy (Netlify / Supabase Edge)
+
+1. Deploy the `supabase/functions/lm-studio-proxy` function.
+2. Set these secrets for the function:
+   - `LM_STUDIO_BASE_URL` – your LM Studio public/tunnel URL  
+   - `LM_STUDIO_API_KEY` – optional if LM Studio requires it
+3. In Netlify builds, set `VITE_LM_STUDIO_PROXY_URL` to the Supabase function URL.  
+4. (Optional) If you prefer Netlify Functions, reuse the same handler logic.
 
 ### Customizing the Base URL
 ```tsx

@@ -12,6 +12,23 @@
 
 ## 🔧 **Solution Options**
 
+### ✅ **Current Approach: Supabase/Netlify Proxy**
+
+The hosted app no longer hits LM Studio directly from the browser.  
+Instead, we proxy every `/v1/*` request through a serverless function.
+
+1. Deploy `supabase/functions/lm-studio-proxy`
+2. Set Supabase secrets:
+   - `LM_STUDIO_BASE_URL` → your tunnel / public LM Studio endpoint  
+   - `LM_STUDIO_API_KEY` → optional
+3. Update Netlify envs:
+   ```bash
+   VITE_LM_STUDIO_PROXY_URL=https://<project>.supabase.co/functions/v1/lm-studio-proxy
+   ```
+4. The frontend automatically switches to proxy mode when this variable is set.
+
+> Prefer Netlify Functions? Copy the same handler logic into `/.netlify/functions/lm-studio-proxy` and set `VITE_LM_STUDIO_PROXY_URL=/.netlify/functions/lm-studio-proxy`.
+
 ### **Option 1: Public IP + Port Forwarding (Recommended)**
 
 1. **Get Your Public IP**:
