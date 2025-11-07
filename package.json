@@ -6,8 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:remote": "cp .env.remote .env && npm run build",
+    "build:local": "cp .env.local .env && npm run build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "preview:remote": "cp .env.remote .env && vite preview",
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
     "supabase:reset": "supabase db reset",

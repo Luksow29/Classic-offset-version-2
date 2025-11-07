@@ -1,3 +1,5 @@
+import EnvironmentService from './environmentConfig';
+
 interface LocalAgentMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -33,12 +35,19 @@ interface LocalAgentConfig {
 
 class LocalAgentService {
   private config: LocalAgentConfig;
+  private environmentService: EnvironmentService;
 
   constructor(config: Partial<LocalAgentConfig> = {}) {
+    this.environmentService = EnvironmentService.getInstance();
+    
+    // Environment-based configuration for different deployment environments
+    const defaultBaseUrl = import.meta.env.VITE_LM_STUDIO_BASE_URL || 'http://192.168.3.25:1234';
+    const defaultModel = import.meta.env.VITE_LM_STUDIO_MODEL || 'qwen/qwen3-vl-4b';
+    
     this.config = {
-      baseUrl: 'http://192.168.3.25:1234', // Updated to your network IP
+      baseUrl: defaultBaseUrl,
       timeout: 30000,
-      model: 'qwen/qwen3-vl-4b', // Default model
+      model: defaultModel,
       ...config,
     };
   }
@@ -90,6 +99,13 @@ class LocalAgentService {
       }
       return data;
     } catch (error) {
+      // Check environment and provide appropriate error message
+      const isAvailable = await this.environmentService.checkLMStudioAvailability();
+      
+      if (!isAvailable && this.environmentService.shouldUseFallback()) {
+        throw new Error(this.environmentService.getConnectionErrorMessage());
+      }
+      
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
           throw new Error('Request timeout - LM Studio might not be running');
@@ -97,9 +113,9 @@ class LocalAgentService {
         if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
           // Check if it's likely a CORS error
           if (error.message.includes('CORS') || error.message.includes('Access-Control-Allow-Origin')) {
-            throw new Error('CORS configuration required - please enable CORS in LM Studio settings for http://localhost:5173');
+            throw new Error('CORS configuration required - please enable CORS in LM Studio settings');
           }
-          throw new Error('Cannot connect to LM Studio - make sure it\'s running on localhost:1234 with CORS enabled');
+          throw new Error(this.environmentService.getConnectionErrorMessage());
         }
       }
       throw error;
@@ -238,16 +254,21 @@ class LocalAgentService {
    * Check if LM Studio is running and accessible
    */
   async isHealthy(): Promise<boolean> {
-    try {
-      const response = await fetch(`${this.config.baseUrl}/v1/models`, {
-        method: 'GET',
-        mode: 'cors',
-        signal: AbortSignal.timeout(3000),
-      });
-      return response.ok;
-    } catch {
-      return false;
-    }
+    return await this.environmentService.checkLMStudioAvailability();
+  }
+
+  /**
+   * Get environment-specific setup instructions
+   */
+  getSetupInstructions() {
+    return this.environmentService.getSetupInstructions();
+  }
+
+  /**
+   * Get current environment configuration
+   */
+  getEnvironmentInfo() {
+    return this.environmentService.getConfig();
   }
 
   /**
