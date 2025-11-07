@@ -136,6 +136,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         isOpen={isCommandPaletteOpen} 
         onClose={closeCommandPalette} 
       />
+
+      {/* Local Agent Widget - Available from any page */}
+      {/* Uncomment to enable the floating widget everywhere */}
+      {/* <LocalAgentWidget /> */}
     </div>
   );
 };

@@ -43,6 +43,7 @@ const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const SettingsPage = lazy(() => import('./components/settings/SettingsPage'));
 const TeamChatPage = lazy(() => import('./pages/TeamChatPage'));
 const AdminContentManagement = lazy(() => import('@/pages/AdminContentManagement'));
+const LocalAgentPage = lazy(() => import('./pages/LocalAgentPage'));
 const AIAgentPage = lazy(() => import('./pages/AIAgentPage'));
 const InsightsPage = lazy(() => import('./pages/ComprehensiveInsightsPage'));
 const ReportsPage = lazy(() => import('./pages/ReportsPage'));
@@ -87,7 +88,8 @@ const router = createBrowserRouter(
         <Route path="/whatsapp" element={Suspended(<WhatsAppDashboard />)} />
         <Route path="/settings" element={Suspended(<SettingsPage />)} />
         <Route path="/team-chat" element={Suspended(<TeamChatPage />)} />
-        <Route path="/ai-agent" element={Suspended(<AIAgentPage />)} />
+        <Route path="/classic-assistant" element={Suspended(<AIAgentPage />)} />
+        <Route path="/local-agent" element={Suspended(<LocalAgentPage />)} />
         <Route path="/admin/content" element={Suspended(<AdminContentManagement />)} />
         <Route path="/insights" element={Suspended(<InsightsPage />)} />
         <Route path="/reports" element={Suspended(<ReportsPage />)} />

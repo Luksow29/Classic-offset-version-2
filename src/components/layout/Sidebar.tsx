@@ -5,9 +5,9 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, FileText, DollarSign, Package, Users, UserCircle,
-  AlertCircle, ActivitySquare, FileSignature, Boxes, X, ChevronLeft, ChevronRight,
+  ActivitySquare, FileSignature, Boxes, X, ChevronRight,
   Briefcase, BarChart3, ChevronDown, MessageCircle, Settings, MessageSquare, Sparkles, Lightbulb, Brain, Rocket, Gift,
-  CreditCard, Award, TrendingUp, Calendar, PieChart, FileBarChart, Target, Clock, Zap, Filter
+  CreditCard, Award, TrendingUp, PieChart, FileBarChart, Target, Clock, Zap
 } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
 import { useUser } from '@/context/UserContext';
@@ -46,7 +46,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   // Listen for SidebarControl changes
   useEffect(() => {
-    function handleSidebarModeChange(e: any) {
+    function handleSidebarModeChange(e: CustomEvent<string>) {
       setSidebarMode(e.detail);
     }
     window.addEventListener('sidebarModeChange', handleSidebarModeChange);
@@ -146,9 +146,16 @@ const Sidebar: React.FC<SidebarProps> = ({
         { name: 'Team Chat', path: '/team-chat', icon: <MessageSquare size={18} /> },
         { name: 'Customer Support', path: '/customer-support', icon: <MessageCircle size={18} /> },
         { name: 'Order Chat Admin', path: '/order-chat-admin', icon: <Package size={18} /> },
-        { name: 'AI Agent', path: '/ai-agent', icon: <Sparkles size={18} /> },
       ],
     },
+    {
+      name: 'AI Assistant',
+      icon: <Brain size={20} />,
+      items: [
+        { name: 'Classic Assistant', path: '/classic-assistant', icon: <Brain size={18} /> },
+        { name: 'Local AI Agent', path: '/local-agent', icon: <Sparkles size={18} /> },
+      ],
+    }, // Added Classic Assistant with Gemini & Perplexity integration
   ];
 
   const toggleGroup = (groupName: string) => {

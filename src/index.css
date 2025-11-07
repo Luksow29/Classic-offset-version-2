@@ -333,7 +333,7 @@ input:focus, select:focus, textarea:focus, .form-input:focus, .form-select:focus
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  @apply bg-transparent;
+  @apply bg-gray-100 dark:bg-gray-800 rounded-full;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
@@ -344,6 +344,47 @@ input:focus, select:focus, textarea:focus, .form-input:focus, .form-select:focus
   @apply bg-gray-400 dark:bg-gray-500;
 }
 
+/* Force scrollbar to always be visible */
+.chat-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #9ca3af #f3f4f6;
+}
+
+.dark .chat-scrollbar {
+  scrollbar-color: #4b5563 #1f2937;
+}
+
+.chat-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
+.dark .chat-scrollbar::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 4px;
+}
+
+.dark .chat-scrollbar::-webkit-scrollbar-thumb {
+  background: #4b5563;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+.dark .chat-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #374151;
+}
+
 /* Hide scrollbar for clean UI in some components */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
@@ -352,6 +393,46 @@ input:focus, select:focus, textarea:focus, .form-input:focus, .form-select:focus
 .scrollbar-hide {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
+}
+
+/* Enhanced chat scrollbar - always visible */
+.chat-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+.chat-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-track {
+  background: rgba(156, 163, 175, 0.1);
+  border-radius: 4px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.5);
+  border-radius: 4px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.7);
+}
+
+.dark .chat-scrollbar {
+  scrollbar-color: rgba(75, 85, 99, 0.7) transparent;
+}
+
+.dark .chat-scrollbar::-webkit-scrollbar-track {
+  background: rgba(75, 85, 99, 0.2);
+}
+
+.dark .chat-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(75, 85, 99, 0.7);
+}
+
+.dark .chat-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(75, 85, 99, 0.9);
 }
 
 /* Animation utilities */
