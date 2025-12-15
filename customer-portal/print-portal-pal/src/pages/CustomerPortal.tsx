@@ -7,12 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  User, 
-  Package, 
-  Receipt, 
-  MessageCircle, 
-  LogOut, 
+import {
+  User,
+  Package,
+  Receipt,
+  MessageCircle,
+  LogOut,
   ClipboardList
 } from "lucide-react";
 import CustomerOrders from "@/components/customer/CustomerOrders";
@@ -20,6 +20,7 @@ import CustomerInvoices from "@/components/customer/CustomerInvoices";
 import CustomerSupport from "@/components/customer/CustomerSupport";
 import CustomerProfile from "@/components/customer/CustomerProfile";
 import CustomerRequests from "@/components/customer/CustomerRequests";
+import ProductLibrary from "@/components/customer/ProductLibrary";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Tables } from "@/integrations/supabase/types";
 import DashboardWidgets from "@/components/customer/DashboardWidgets";
@@ -59,7 +60,7 @@ export default function CustomerPortal() {
 
       } catch (error: any) {
         console.error("Portal initialization error:", error);
-        
+
         // Check if it's a missing customer record issue
         if (error.code === 'PGRST116' || error.message?.includes('No rows returned')) {
           // Customer record doesn't exist, show recovery screen
@@ -67,7 +68,7 @@ export default function CustomerPortal() {
           setIsLoading(false);
           return;
         }
-        
+
         await supabase.auth.signOut();
         navigate("/"); // Go to index page on error
         toast({
@@ -94,7 +95,7 @@ export default function CustomerPortal() {
     navigate("/"); // Go to index page after sign out
     toast({ title: "Signed Out" });
   };
-  
+
   // Handler to trigger quick re-order from CustomerOrders
   const [reorderData, setReorderData] = useState<any | null>(null);
   const handleQuickReorder = (order: any) => {
@@ -137,20 +138,24 @@ export default function CustomerPortal() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
+
         {/* Pass the tab controller function to the widgets */}
         <DashboardWidgets customerId={customer.id} setActiveTab={setActiveTab} />
 
         {/* Control the Tabs component with state */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5">
-          <TabsTrigger value="orders"><Package className="h-4 w-4 mr-2" />{t('portal.tab_orders')}</TabsTrigger>
-          <TabsTrigger value="requests"><ClipboardList className="h-4 w-4 mr-2" />{t('portal.tab_requests')}</TabsTrigger>
-          <TabsTrigger value="invoices"><Receipt className="h-4 w-4 mr-2" />{t('portal.tab_invoices')}</TabsTrigger>
-          <TabsTrigger value="support"><MessageCircle className="h-4 w-4 mr-2" />{t('portal.tab_support')}</TabsTrigger>
-          <TabsTrigger value="profile"><User className="h-4 w-4 mr-2" />{t('portal.tab_profile')}</TabsTrigger>
-        </TabsList>
-          
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6">
+            <TabsTrigger value="showcase"><Package className="h-4 w-4 mr-2" />{t('portal.tab_showcase', 'Design Library')}</TabsTrigger>
+            <TabsTrigger value="orders"><Package className="h-4 w-4 mr-2" />{t('portal.tab_orders')}</TabsTrigger>
+            <TabsTrigger value="requests"><ClipboardList className="h-4 w-4 mr-2" />{t('portal.tab_requests')}</TabsTrigger>
+            <TabsTrigger value="invoices"><Receipt className="h-4 w-4 mr-2" />{t('portal.tab_invoices')}</TabsTrigger>
+            <TabsTrigger value="support"><MessageCircle className="h-4 w-4 mr-2" />{t('portal.tab_support')}</TabsTrigger>
+            <TabsTrigger value="profile"><User className="h-4 w-4 mr-2" />{t('portal.tab_profile')}</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="showcase" className="mt-6">
+            <ProductLibrary />
+          </TabsContent>
           <TabsContent value="orders" className="mt-6">
             <CustomerOrders customerId={customer.id} onQuickReorder={handleQuickReorder} />
           </TabsContent>

@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { localAgent, LocalAgentMessage } from '../lib/localAgent';
-import { ragService, LocalRAGService } from '../lib/ragServices';
+import { ragService } from '../lib/ragServices';
 
 interface UseLocalAgentRAGOptions {
   systemPrompt?: string;
@@ -63,15 +63,6 @@ export const useLocalAgentRAG = (options: UseLocalAgentRAGOptions = {}): UseLoca
   const [isBusinessQuery, setIsBusinessQuery] = useState(false);
   const [businessContext, setBusinessContext] = useState<string | null>(null);
 
-  // Initialize
-  useEffect(() => {
-    const initializeAgent = async () => {
-      await checkHealth();
-      await loadModels();
-    };
-    initializeAgent();
-  }, []);
-
   const checkHealth = useCallback(async () => {
     try {
       const healthy = await localAgent.isHealthy();
@@ -95,6 +86,15 @@ export const useLocalAgentRAG = (options: UseLocalAgentRAGOptions = {}): UseLoca
       console.error('Failed to load models:', err);
     }
   }, [currentModel]);
+
+  // Initialize
+  useEffect(() => {
+    const initializeAgent = async () => {
+      await checkHealth();
+      await loadModels();
+    };
+    initializeAgent();
+  }, [checkHealth, loadModels]);
 
   const setModel = useCallback((model: string) => {
     setCurrentModel(model);

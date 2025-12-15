@@ -1,7 +1,7 @@
-// @ts-nocheck
-import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { GripVertical, Bolt, Calendar, RefreshCw, AlertTriangle, FileText, Users, Package, CreditCard } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { supabase } from '@/lib/supabaseClient';
 const DashboardMetrics = lazy(() => import('./DashboardMetrics'));
 const RevenueChart = lazy(() => import('./RevenueChart'));
 import Modal from '../ui/Modal';
@@ -9,7 +9,6 @@ const OrderForm = lazy(() => import('../orders/OrderForm'));
 const CustomerForm = lazy(() => import('../customers/CustomerForm'));
 const PaymentForm = lazy(() => import('../payments/PaymentForm'));
 const ProductForm = lazy(() => import('../products/ProductForm'));
-import { supabase } from '@/lib/supabaseClient';
 import { useUser } from '@/context/UserContext';
 import { motion } from 'framer-motion';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
@@ -23,33 +22,42 @@ const OrdersChart = lazy(() => import('./OrdersChart'));
 const FinancialSummary = lazy(() => import('./summary/FinancialSummary'));
 const ActivityLogFeed = lazy(() => import('./ActivityLogFeed'));
 import RealtimeStatus from '../ui/RealtimeStatus';
-import { useRealtimeDashboard } from '@/hooks/useRealtimeDashboard';
 import { useRealtimeOrders } from '@/hooks/useRealtimeOrders';
 import { useRealtimePayments } from '@/hooks/useRealtimePayments';
-import { handleSupabaseError } from '@/lib/supabaseErrorHandler';
+import { useDashboardData } from '@/hooks/useDashboardData';
+import type { DraggableProvided } from '@hello-pangea/dnd';
 
-const DraggableDashboardCard = ({ title, children, provided, isDragging }) => (
-    <Card 
-        ref={provided.innerRef} 
-        {...provided.draggableProps} 
-        className={`transition-all duration-300 transform hover:scale-[1.02] ${
-            isDragging 
-                ? 'shadow-2xl shadow-blue-500/25 scale-105 rotate-1' 
-                : 'shadow-xl shadow-blue-500/10 hover:shadow-2xl hover:shadow-blue-500/20'
-        } bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-2xl overflow-hidden`}
+interface DraggableDashboardCardProps {
+    title: string;
+    children: React.ReactNode;
+    provided: DraggableProvided;
+    isDragging: boolean;
+}
+
+const DraggableDashboardCard: React.FC<DraggableDashboardCardProps> = ({ title, children, provided, isDragging }) => (
+    <Card
+        ref={provided.innerRef}
+        {...provided.draggableProps}
+        className={`transition-all duration-500 transform ${isDragging
+            ? 'shadow-2xl shadow-blue-500/30 scale-[1.02] rotate-1 ring-2 ring-blue-400/50'
+            : 'shadow-lg hover:shadow-xl hover:shadow-blue-500/15 hover:-translate-y-1'
+            } bg-white/90 dark:bg-gray-900/90 backdrop-blur-2xl border border-gray-200/60 dark:border-gray-700/60 rounded-3xl overflow-hidden`}
     >
-        <div className="flex justify-between items-center p-6 border-b border-gray-100/50 dark:border-gray-700/50 bg-gradient-to-r from-blue-50/50 to-emerald-50/50 dark:from-blue-950/50 dark:to-emerald-950/50">
-            <h3 className="font-display font-bold text-lg bg-gradient-to-r from-gray-800 to-blue-600 dark:from-gray-200 dark:to-blue-400 bg-clip-text text-transparent">
-                {title}
-            </h3>
-            <div 
-                {...provided.dragHandleProps} 
-                className="cursor-grab p-2 rounded-lg hover:bg-white/50 dark:hover:bg-gray-800/50 transition-colors duration-200 group"
+        <div className="flex justify-between items-center px-6 py-5 border-b border-gray-100/80 dark:border-gray-800/80 bg-gradient-to-r from-slate-50/90 via-blue-50/50 to-indigo-50/90 dark:from-slate-900/90 dark:via-blue-950/50 dark:to-indigo-950/90">
+            <div className="flex items-center gap-3">
+                <div className="w-1.5 h-6 rounded-full bg-gradient-to-b from-blue-500 to-indigo-600" />
+                <h3 className="font-display font-bold text-lg text-gray-800 dark:text-gray-100">
+                    {title}
+                </h3>
+            </div>
+            <div
+                {...provided.dragHandleProps}
+                className="cursor-grab active:cursor-grabbing p-2.5 rounded-xl hover:bg-white/80 dark:hover:bg-gray-800/80 transition-all duration-200 group border border-transparent hover:border-gray-200/50 dark:hover:border-gray-700/50"
             >
-                <GripVertical className="h-5 w-5 text-gray-400 group-hover:text-blue-500 transition-colors duration-200" />
+                <GripVertical className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors duration-200" />
             </div>
         </div>
-        <div className="p-6">
+        <div className="p-6 bg-gradient-to-b from-transparent to-slate-50/30 dark:to-slate-900/30">
             {children}
         </div>
     </Card>
@@ -68,9 +76,6 @@ const DEFAULT_ORDER = ['metrics', 'financialSummary', 'revenueChart', 'ordersCha
 
 const Dashboard: React.FC = () => {
     const { userProfile } = useUser();
-    const [data, setData] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [currentMonth, setCurrentMonth] = useState(new Date().toISOString().slice(0, 7));
     const [componentOrder, setComponentOrder] = useState<string[]>(() => {
         try {
@@ -80,85 +85,45 @@ const Dashboard: React.FC = () => {
             return DEFAULT_ORDER;
         }
     });
+
+    // React Query Hook
+    const {
+        data,
+        isLoading: loading,
+        error: queryError,
+        refetch: refreshDashboard
+    } = useDashboardData(userProfile?.id, currentMonth);
+
+    // Map error to string if possible, or null
+    const error = queryError instanceof Error ? queryError.message : (queryError ? String(queryError) : null);
+
     const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
     const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
     const [drilldownOpen, setDrilldownOpen] = useState(false);
     const [drilldownType, setDrilldownType] = useState<string | null>(null);
-    const [drilldownFilters, setDrilldownFilters] = useState<any>(null);
+    const [drilldownFilters, setDrilldownFilters] = useState<Record<string, unknown> | null>(null);
 
-    // Real-time hooks
-    const { metrics: realtimeMetrics, refreshMetrics } = useRealtimeDashboard();
-    
     // Set up realtime order updates
     useRealtimeOrders((update) => {
         console.log('📦 Order status updated in dashboard:', update);
         // Refresh dashboard data when orders are updated
-        fetchDashboardData(currentMonth);
+        refreshDashboard();
     });
 
     // Set up realtime payment updates
     useRealtimePayments((payment) => {
         console.log('💰 Payment received in dashboard:', payment);
         // Refresh dashboard data when payments are received
-        fetchDashboardData(currentMonth);
+        refreshDashboard();
     });
 
-    const handleMetricDrilldown = (type: string, filters?: any) => {
+    const handleMetricDrilldown = (type: string, filters?: Record<string, unknown>) => {
         setDrilldownType(type);
         setDrilldownFilters(filters || null);
         setDrilldownOpen(true);
     };
-
-    const fetchDashboardData = useCallback(async (month: string) => {
-        setLoading(true);
-        setError(null);
-        try {
-            const previousMonthDate = new Date(month);
-            previousMonthDate.setMonth(previousMonthDate.getMonth() - 1);
-            const previousMonth = previousMonthDate.toISOString().slice(0, 7);
-            if (!userProfile?.id) throw new Error('User ID not found in userProfile');
-            const [pendingOrdersResponse, dailyOrdersResponse, currentMonthSummaryResponse, previousMonthSummaryResponse, revenueResponse, consolidatedMetricsResponse] = await Promise.all([
-                supabase.rpc('get_recent_pending_orders'),
-                supabase.rpc('get_daily_order_counts', { days_to_check: 7 }),
-                supabase.rpc('get_financial_summary', { p_user_id: userProfile.id, p_month: month }),
-                supabase.rpc('get_financial_summary', { p_user_id: userProfile.id, p_month: previousMonth }),
-                supabase.from('orders').select('amount_received, date').gte('date', `${month}-01`).eq('is_deleted', false),
-                supabase.rpc('get_dashboard_metrics_table'),
-            ]);
-            const responses = [pendingOrdersResponse, dailyOrdersResponse, currentMonthSummaryResponse, previousMonthSummaryResponse, revenueResponse, consolidatedMetricsResponse];
-            const firstError = responses.find(res => res.error);
-            if (firstError?.error) throw firstError.error;
-            
-            // Debug: Log the metrics response
-            console.log('Dashboard Metrics Response:', consolidatedMetricsResponse);
-            console.log('Dashboard Metrics Data:', consolidatedMetricsResponse.data);
-            
-            const revenueByDate = (revenueResponse.data || []).reduce((acc, order) => {
-                const date = new Date(order.date).toISOString().split('T')[0];
-                acc[date] = (acc[date] || 0) + (order.amount_received || 0);
-                return acc;
-            }, {});
-            setData({
-                dailyOrdersChartData: dailyOrdersResponse.data || [],
-                pendingOrders: pendingOrdersResponse.data || [],
-                financialSummaryData: currentMonthSummaryResponse.data?.[0] || null,
-                previousFinancialSummaryData: previousMonthSummaryResponse.data?.[0] || null,
-                revenueChartData: Object.entries(revenueByDate).map(([date, value]) => ({ date, value })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
-                consolidatedMetrics: consolidatedMetricsResponse.data?.[0] || null,
-            });
-        } catch (error) {
-            console.error('Error fetching dashboard data:', error);
-            setError(error instanceof Error ? error.message : 'Failed to fetch dashboard data');
-        } finally {
-            setLoading(false);
-        }
-    }, [userProfile?.id]);
-
-    useEffect(() => {
-        fetchDashboardData(currentMonth);
-    }, [currentMonth, fetchDashboardData]);
 
     useEffect(() => {
         localStorage.setItem('dashboardOrder', JSON.stringify(componentOrder));
@@ -206,11 +171,31 @@ const Dashboard: React.FC = () => {
                 return <ActivityLogFeed />;
             }
             case 'orderStatus': {
-                return <OrderStatusCard orders={data.pendingOrders} loading={loading} error={error} onStatusUpdated={() => fetchDashboardData(currentMonth)} />;
+                return <OrderStatusCard orders={data.pendingOrders} loading={loading} error={error} onStatusUpdated={() => refreshDashboard()} />;
             }
             default: {
                 return null;
             }
+        }
+    };
+
+    interface ProductData {
+        name: string;
+        category?: string;
+        description?: string;
+        unit_price: number;
+    }
+
+    const handleProductSave = async (productData: ProductData) => {
+        try {
+            const { error } = await supabase.from('products').insert([productData]);
+            if (error) throw error;
+            toast.success('Product added successfully');
+            setIsProductModalOpen(false);
+            refreshDashboard();
+        } catch (error) {
+            console.error('Error saving product:', error);
+            toast.error('Failed to save product');
         }
     };
 
@@ -259,119 +244,162 @@ const Dashboard: React.FC = () => {
                     />
                 )}
             </Suspense>
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 dark:from-slate-900 dark:via-slate-800 dark:to-emerald-950">
-                <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950/30">
+                {/* Decorative background elements */}
+                <div className="fixed inset-0 overflow-hidden pointer-events-none">
+                    <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-blue-400/20 to-indigo-400/20 rounded-full blur-3xl" />
+                    <div className="absolute top-1/2 -left-40 w-80 h-80 bg-gradient-to-br from-purple-400/15 to-pink-400/15 rounded-full blur-3xl" />
+                    <div className="absolute -bottom-20 right-1/3 w-72 h-72 bg-gradient-to-br from-emerald-400/15 to-teal-400/15 rounded-full blur-3xl" />
+                </div>
+                
+                <div className="relative p-4 sm:p-6 md:p-8 space-y-6 md:space-y-8">
                     {/* Quick Actions Glassmorphism Box */}
-                    <div className="max-w-3xl mx-auto -mt-2 md:-mt-4 mb-4 md:mb-6">
-                        <div className="flex flex-wrap justify-center items-center gap-2 p-3 md:p-4 rounded-2xl border border-white/20 dark:border-white/10 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl shadow-lg shadow-blue-500/10 dark:shadow-purple-500/20">
-                            <Bolt className="w-4 h-4 md:w-5 md:h-5 text-blue-500 dark:text-blue-400 mr-1" />
-                            <span className="font-display font-semibold text-gray-700 dark:text-gray-200 mr-2 md:mr-3 text-sm md:text-base bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent tracking-wide">Quick Actions</span>
-                        <Button onClick={() => setIsOrderModalOpen(true)} variant="primary" size="sm">
-                            + Add Order
-                        </Button>
-                        <Button onClick={() => setIsCustomerModalOpen(true)} variant="secondary" size="sm">
-                            + Add Customer
-                        </Button>
-                        <Button onClick={() => setIsPaymentModalOpen(true)} variant="secondary" size="sm">
-                            + Add Payment
-                        </Button>
-                        <Button onClick={() => setIsProductModalOpen(true)} variant="secondary" size="sm">
-                            + Add Product
-                        </Button>
+                    <div className="max-w-4xl mx-auto">
+                        <div className="flex flex-wrap justify-center items-center gap-3 p-4 md:p-5 rounded-2xl border border-white/40 dark:border-gray-700/40 bg-white/70 dark:bg-gray-900/70 backdrop-blur-2xl shadow-xl shadow-blue-500/5">
+                            <div className="flex items-center gap-2 mr-2 md:mr-4">
+                                <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30">
+                                    <Bolt className="w-4 h-4 text-white" />
+                                </div>
+                                <span className="font-display font-bold text-gray-800 dark:text-gray-100 text-sm md:text-base">Quick Actions</span>
+                            </div>
+                            <div className="flex flex-wrap justify-center gap-2">
+                                <Button onClick={() => setIsOrderModalOpen(true)} variant="primary" size="sm" className="shadow-lg shadow-blue-500/20 hover:shadow-xl hover:shadow-blue-500/30 transition-all">
+                                    + Add Order
+                                </Button>
+                                <Button onClick={() => setIsCustomerModalOpen(true)} variant="secondary" size="sm" className="hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
+                                    + Add Customer
+                                </Button>
+                                <Button onClick={() => setIsPaymentModalOpen(true)} variant="secondary" size="sm" className="hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
+                                    + Add Payment
+                                </Button>
+                                <Button onClick={() => setIsProductModalOpen(true)} variant="secondary" size="sm" className="hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
+                                    + Add Product
+                                </Button>
+                            </div>
                         </div>
                     </div>
-                    
+
                     {/* Dashboard Title and Controls */}
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 max-w-5xl mx-auto">
-                        <div className="space-y-2">
-                            <h1 className="text-4xl font-display font-black bg-gradient-to-r from-gray-900 via-blue-800 to-emerald-800 dark:from-white dark:via-blue-300 dark:to-emerald-300 bg-clip-text text-transparent tracking-tight">
-                                Dashboard
-                            </h1>
-                            <p className="text-gray-600 dark:text-gray-300 font-sans font-medium tracking-wide">Welcome back, {userProfile?.name || 'Owner'}! ✨</p>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 max-w-7xl mx-auto">
+                        <div className="space-y-1">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 rounded-2xl bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 shadow-lg shadow-blue-500/30">
+                                    <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                                    </svg>
+                                </div>
+                                <h1 className="text-3xl md:text-4xl font-display font-black text-gray-900 dark:text-white tracking-tight">
+                                    Dashboard
+                                </h1>
+                            </div>
+                            <p className="text-gray-600 dark:text-gray-400 font-sans font-medium pl-14">Welcome back, <span className="text-blue-600 dark:text-blue-400">{userProfile?.name || 'Owner'}</span>! ✨</p>
                         </div>
-                        <div className="flex items-center gap-3 mt-2 sm:mt-0">
+                        <div className="flex items-center gap-3 w-full sm:w-auto">
                             <RealtimeStatus />
-                            <div className="relative">
-                                <Calendar className="w-4 h-4 text-blue-500 dark:text-blue-400 absolute top-1/2 left-3 -translate-y-1/2" />
-                                <input 
-                                    type="month" 
-                                    value={currentMonth} 
-                                    onChange={(e) => setCurrentMonth(e.target.value)} 
-                                    className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-xl p-3 pl-10 text-sm font-medium shadow-lg focus:ring-2 focus:ring-blue-500/20 transition-all duration-200" 
+                            <div className="relative flex-1 sm:flex-none">
+                                <button 
+                                    type="button"
+                                    onClick={() => {
+                                        const input = document.getElementById('month-picker') as HTMLInputElement;
+                                        if (input) {
+                                            input.showPicker?.();
+                                            input.focus();
+                                        }
+                                    }}
+                                    className="absolute top-1/2 left-3.5 -translate-y-1/2 z-10 cursor-pointer hover:scale-110 transition-transform"
+                                >
+                                    <Calendar className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+                                </button>
+                                <input
+                                    id="month-picker"
+                                    type="month"
+                                    value={currentMonth}
+                                    onChange={(e) => setCurrentMonth(e.target.value)}
+                                    className="w-full sm:w-auto bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border border-gray-200/60 dark:border-gray-700/60 rounded-xl py-2.5 px-4 pl-10 text-sm font-medium shadow-lg shadow-gray-500/5 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all duration-200 cursor-pointer"
                                 />
                             </div>
-                            <Button 
-                                onClick={resetLayout} 
-                                variant="outline" 
+                            <Button
+                                onClick={resetLayout}
+                                variant="outline"
                                 size="sm"
-                                className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl border-white/20 dark:border-white/10 hover:bg-white/90 dark:hover:bg-gray-900/90 shadow-lg transition-all duration-200"
+                                className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-gray-200/60 dark:border-gray-700/60 hover:bg-white dark:hover:bg-gray-900 shadow-lg shadow-gray-500/5 transition-all duration-200 whitespace-nowrap"
                             >
                                 <RefreshCw className="w-4 h-4 mr-2" /> Reset
                             </Button>
                         </div>
+                    </div>
+                    {/* Add Order Modal */}
+                    <Modal isOpen={isOrderModalOpen} onClose={() => setIsOrderModalOpen(false)} title="Add New Order" size="2xl">
+                        <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
+                            <OrderForm onSuccess={() => { setIsOrderModalOpen(false); refreshDashboard(); }} />
+                        </Suspense>
+                    </Modal>
+                    {/* Add Customer Modal */}
+                    <Modal isOpen={isCustomerModalOpen} onClose={() => setIsCustomerModalOpen(false)} title="Add New Customer" size="lg">
+                        <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
+                            <CustomerForm
+                                selectedCustomer={null}
+                                onSave={() => { setIsCustomerModalOpen(false); refreshDashboard(); }}
+                                onCancel={() => setIsCustomerModalOpen(false)}
+                            />
+                        </Suspense>
+                    </Modal>
+                    {/* Add Payment Modal */}
+                    <Modal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} title="Add Payment" size="lg">
+                        <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
+                            <PaymentForm onSuccess={() => { setIsPaymentModalOpen(false); refreshDashboard(); }} />
+                        </Suspense>
+                    </Modal>
+                    {/* Add Product Modal */}
+                    <Modal isOpen={isProductModalOpen} onClose={() => setIsProductModalOpen(false)} title="Add Product" size="lg">
+                        <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
+                            <ProductForm
+                                editingProduct={null}
+                                isLoading={loading}
+                                onSave={handleProductSave}
+                                onCancel={() => setIsProductModalOpen(false)}
+                            />
+                        </Suspense>
+                    </Modal>
+
+                    <DragDropContext onDragEnd={onDragEnd}>
+                        <Droppable droppableId="dashboard">
+                            {(provided) => (
+                                <div {...provided.droppableProps} ref={provided.innerRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 lg:gap-8 max-w-7xl mx-auto">
+                                    {componentOrder.map((id, index) => {
+                                        const componentInfo = componentList.find(c => c.id === id);
+                                        if (!componentInfo) return null;
+                                        return (
+                                            <Draggable key={id} draggableId={id} index={index}>
+                                                {(provided, snapshot) => (
+                                                    <div className={`${componentInfo.gridClass}`}>
+                                                        <motion.div
+                                                            initial={{ opacity: 0, y: 40, scale: 0.95 }}
+                                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                            transition={{
+                                                                duration: 0.5,
+                                                                delay: index * 0.08,
+                                                                type: "spring",
+                                                                stiffness: 120,
+                                                                damping: 20
+                                                            }}
+                                                        >
+                                                            <DraggableDashboardCard title={componentInfo.title} provided={provided} isDragging={snapshot.isDragging}>
+                                                                {renderComponent(id)}
+                                                            </DraggableDashboardCard>
+                                                        </motion.div>
+                                                    </div>
+                                                )}
+                                            </Draggable>
+                                        );
+                                    })}
+                                    {provided.placeholder}
+                                </div>
+                            )}
+                        </Droppable>
+                    </DragDropContext>
                 </div>
-                {/* Add Order Modal */}
-                <Modal isOpen={isOrderModalOpen} onClose={() => setIsOrderModalOpen(false)} title="Add New Order" size="2xl">
-                    <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
-                        <OrderForm onSuccess={() => { setIsOrderModalOpen(false); fetchDashboardData(currentMonth); }} />
-                    </Suspense>
-                </Modal>
-                {/* Add Customer Modal */}
-                <Modal isOpen={isCustomerModalOpen} onClose={() => setIsCustomerModalOpen(false)} title="Add New Customer" size="lg">
-                    <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
-                        <CustomerForm />
-                    </Suspense>
-                </Modal>
-                {/* Add Payment Modal */}
-                <Modal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} title="Add Payment" size="lg">
-                    <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
-                        <PaymentForm onSuccess={() => { setIsPaymentModalOpen(false); fetchDashboardData(currentMonth); }} />
-                    </Suspense>
-                </Modal>
-                {/* Add Product Modal */}
-                <Modal isOpen={isProductModalOpen} onClose={() => setIsProductModalOpen(false)} title="Add Product" size="lg">
-                    <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
-                        <ProductForm />
-                    </Suspense>
-                </Modal>
-                
-                <DragDropContext onDragEnd={onDragEnd}>
-                    <Droppable droppableId="dashboard">
-                        {(provided) => (
-                            <div {...provided.droppableProps} ref={provided.innerRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8 max-w-7xl mx-auto">
-                                {componentOrder.map((id, index) => {
-                                    const componentInfo = componentList.find(c => c.id === id);
-                                    if (!componentInfo) return null;
-                                    return (
-                                        <Draggable key={id} draggableId={id} index={index}>
-                                            {(provided, snapshot) => (
-                                                <div className={`${componentInfo.gridClass}`}>
-                                                    <motion.div 
-                                                        initial={{ opacity: 0, y: 30, scale: 0.95 }} 
-                                                        animate={{ opacity: 1, y: 0, scale: 1 }} 
-                                                        transition={{ 
-                                                            duration: 0.6, 
-                                                            delay: index * 0.1,
-                                                            type: "spring",
-                                                            stiffness: 100
-                                                        }}
-                                                    >
-                                                        <DraggableDashboardCard title={componentInfo.title} provided={provided} isDragging={snapshot.isDragging}>
-                                                            {renderComponent(id)}
-                                                        </DraggableDashboardCard>
-                                                    </motion.div>
-                                                </div>
-                                            )}
-                                        </Draggable>
-                                    );
-                                })}
-                                {provided.placeholder}
-                            </div>
-                        )}
-                    </Droppable>
-                </DragDropContext>
-                </div>
-                
+
                 {/* Floating Action Button for Quick Actions */}
                 <FloatingActionButton
                     actions={[

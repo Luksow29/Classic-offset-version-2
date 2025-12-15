@@ -8,10 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { 
-  User, 
-  Mail, 
-  Phone, 
+import {
+  User,
+  Mail,
+  Phone,
   MapPin,
   Save,
   Loader2,
@@ -87,7 +87,7 @@ export default function CustomerProfile({ customer, onUpdate }: CustomerProfileP
         .select('*')
         .eq('user_id', customer.user_id)
         .single();
-      
+
       if (data) {
         setSettings(data);
         // Apply initial settings
@@ -100,18 +100,18 @@ export default function CustomerProfile({ customer, onUpdate }: CustomerProfileP
   }, [customer.user_id]);
 
   const applySettings = (newSettings: Partial<UserSettings>) => {
-      const root = document.documentElement;
-      // High Contrast
-      if (newSettings.high_contrast) {
-        root.classList.add('high-contrast');
-      } else {
-        root.classList.remove('high-contrast');
-      }
-      // Font Size
-      root.classList.remove('text-sm', 'text-base', 'text-lg');
-      if (newSettings.font_size) {
-        root.classList.add(`text-${newSettings.font_size}`);
-      }
+    const root = document.documentElement;
+    // High Contrast
+    if (newSettings.high_contrast) {
+      root.classList.add('high-contrast');
+    } else {
+      root.classList.remove('high-contrast');
+    }
+    // Font Size
+    root.classList.remove('text-sm', 'text-base', 'text-lg');
+    if (newSettings.font_size) {
+      root.classList.add(`text-${newSettings.font_size}`);
+    }
   };
 
   const handleSettingsChange = async (key: keyof UserSettings, value: any) => {
@@ -127,7 +127,7 @@ export default function CustomerProfile({ customer, onUpdate }: CustomerProfileP
     if (error) {
       toast({ title: "Error", description: "Could not save settings.", variant: "destructive" });
     } else {
-       toast({ title: "Settings Saved", description: `${key.replace('_', ' ')} updated.` });
+      toast({ title: "Settings Saved", description: `${key.replace('_', ' ')} updated.` });
     }
   };
 
@@ -158,7 +158,7 @@ export default function CustomerProfile({ customer, onUpdate }: CustomerProfileP
       setIsEditing(false);
     }
   };
-  
+
   const ProfileItem = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: string | null | undefined }) => (
     <div className="flex items-start gap-4">
       <div className="text-muted-foreground mt-1">{icon}</div>
@@ -224,11 +224,57 @@ export default function CustomerProfile({ customer, onUpdate }: CustomerProfileP
           )}
         </CardContent>
       </Card>
-      
+
+      {/* Loyalty Membership Card */}
+      <Card className="border-purple-100 dark:border-purple-900 overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-bl-full -mr-8 -mt-8 pointer-events-none" />
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
+            <Palette className="h-5 w-5" />
+            {t('profile.loyalty_title', 'Loyalty Membership')}
+          </CardTitle>
+          <CardDescription>
+            {t('profile.loyalty_desc', 'Your rewards status and referral details.')}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-purple-600 dark:text-purple-400 font-medium mb-1">Current Balance</p>
+                <p className="text-3xl font-bold text-purple-900 dark:text-purple-100">{customer.loyalty_points || 0}</p>
+                <p className="text-xs text-purple-500 mt-1">Points Available</p>
+              </div>
+              <div className="h-12 w-12 bg-purple-100 dark:bg-purple-800 rounded-full flex items-center justify-center">
+                <Palette className="h-6 w-6 text-purple-600 dark:text-purple-300" />
+              </div>
+            </div>
+
+            <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">Referral Code</p>
+                <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => {
+                  if (customer.referral_code) {
+                    navigator.clipboard.writeText(customer.referral_code);
+                    toast({ title: "Copied!", description: "Referral code copied to clipboard." });
+                  }
+                }}>Copy</Button>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="bg-white dark:bg-gray-900 px-3 py-2 rounded-md border border-dashed border-blue-300 dark:border-blue-700 font-mono text-lg tracking-wider flex-1 text-center">
+                  {customer.referral_code || "NO-CODE"}
+                </div>
+              </div>
+              <p className="text-xs text-blue-500 mt-2">Share this code to earn bonus points!</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Accessibility Settings Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Accessibility/> {t('profile.accessibility')}</CardTitle>
+          <CardTitle className="flex items-center gap-2"><Accessibility /> {t('profile.accessibility')}</CardTitle>
           <CardDescription>{t('profile.accessibility_desc', 'Customize the appearance of the portal to suit your needs.')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">

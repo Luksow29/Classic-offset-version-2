@@ -9,40 +9,47 @@ interface CardProps {
   titleClassName?: string;
   interactive?: boolean;
   onClick?: () => void;
+  variant?: 'default' | 'glass' | 'flat';
 }
 
-const Card = forwardRef<HTMLDivElement, CardProps>(({ 
-  title, 
-  children, 
-  className = '', 
-  titleClassName = '', 
+const Card = forwardRef<HTMLDivElement, CardProps>(({
+  title,
+  children,
+  className = '',
+  titleClassName = '',
   interactive = false,
-  onClick
+  onClick,
+  variant = 'default'
 }, ref) => {
   const cardVariants = interactive ? {
-    initial: { 
-      scale: 1, 
-      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)" 
+    initial: {
+      scale: 1,
+      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)"
     },
-    hover: { 
-      scale: 1.02, 
-      boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+    hover: {
+      scale: 1.01,
+      boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
       transition: { type: "spring", stiffness: 300, damping: 20 }
     },
-    tap: { 
-      scale: 0.98,
+    tap: {
+      scale: 0.99,
       transition: { type: "spring", stiffness: 400, damping: 25 }
     }
   } : {};
 
-  const cardClassName = twMerge(`
-    bg-card text-card-foreground
-    rounded-lg
-    border border-border
-    shadow-sm
-    overflow-hidden
-    transition-colors
-  `, className);
+  const baseStyles = 'rounded-xl overflow-hidden transition-all duration-300';
+
+  const variantStyles = {
+    default: 'bg-card text-card-foreground border border-border shadow-sm hover:shadow-md',
+    glass: 'glass-card text-foreground',
+    flat: 'bg-secondary/30 border-none'
+  };
+
+  const cardClassName = twMerge(
+    baseStyles,
+    variantStyles[variant],
+    className
+  );
 
   const cardContent = (
     <>
@@ -76,7 +83,7 @@ const Card = forwardRef<HTMLDivElement, CardProps>(({
   }
 
   return (
-    <div 
+    <div
       ref={ref}
       onClick={onClick}
       className={cardClassName}

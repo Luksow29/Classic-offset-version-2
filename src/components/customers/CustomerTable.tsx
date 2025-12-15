@@ -34,7 +34,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({ onAddNew, onEdit, onDataC
 
   const [searchQuery, setSearchQuery] = useState('');
   const [tagFilter, setTagFilter] = useState('');
-  
+
   const [sortField, setSortField] = useState<SortField>('joined_date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
@@ -73,9 +73,9 @@ const CustomerTable: React.FC<CustomerTableProps> = ({ onAddNew, onEdit, onDataC
       const { data, error: fetchError, count } = await query;
 
       if (fetchError) {
-        const handledError = handleSupabaseError(fetchError, { 
-          operation: 'select_customers', 
-          table: 'customer_summary' 
+        const handledError = handleSupabaseError(fetchError, {
+          operation: 'select_customers',
+          table: 'customer_summary'
         });
         if (handledError) throw handledError;
       }
@@ -122,7 +122,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({ onAddNew, onEdit, onDataC
       setLoading(false);
     }
   };
-  
+
   const SortButton: React.FC<{ field: SortField; children: React.ReactNode }> = ({ field, children }) => (
     <button
       onClick={() => {
@@ -153,10 +153,10 @@ const CustomerTable: React.FC<CustomerTableProps> = ({ onAddNew, onEdit, onDataC
             <Input id="search-customers" placeholder="Search by name, phone, or email..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
           </div>
           <div className="flex items-center gap-2">
-        <ImportExportCustomers />
-        <Button onClick={onAddNew} size="sm" className="w-full sm:w-auto">
-          <Plus className="w-4 h-4 mr-2" /> Add New Customer
-        </Button>
+            <ImportExportCustomers />
+            <Button onClick={onAddNew} size="sm" className="w-full sm:w-auto">
+              <Plus className="w-4 h-4 mr-2" /> Add New Customer
+            </Button>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -191,8 +191,11 @@ const CustomerTable: React.FC<CustomerTableProps> = ({ onAddNew, onEdit, onDataC
               {customers.map((customer) => (
                 <tr key={customer.id}>
                   <td className="px-4 py-3 font-medium text-foreground flex items-center gap-2">
-                    {(customer.total_spent || 0) > 10000 && <Star size={14} className="text-yellow-500 fill-current" title="Premium Customer"/>}
-                    {customer.name}
+                    {(customer.total_spent || 0) > 10000 && <Star size={14} className="text-yellow-500 fill-current" title="Premium Customer" />}
+                    <div>
+                      <div className="font-semibold">{customer.name}</div>
+                      {customer.customer_code && <div className="text-xs text-muted-foreground font-mono">{customer.customer_code}</div>}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground"><div>{customer.phone}</div><div className="text-xs">{customer.email}</div></td>
                   <td className="px-4 py-3">
@@ -224,7 +227,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({ onAddNew, onEdit, onDataC
 
       {totalPages > 0 && (
         <div className="flex justify-between items-center p-4 border-t">
-           <span className="text-sm text-muted-foreground">Page {currentPage} of {totalPages} ({totalCustomers} total)</span>
+          <span className="text-sm text-muted-foreground">Page {currentPage} of {totalPages} ({totalCustomers} total)</span>
           <div className="flex items-center gap-2">
             <Button onClick={() => setCurrentPage(p => p - 1)} disabled={currentPage === 1} variant="outline" size="sm"><ChevronLeft size={16} /> Prev</Button>
             <Button onClick={() => setCurrentPage(p => p + 1)} disabled={currentPage >= totalPages} variant="outline" size="sm">Next <ChevronRight size={16} /></Button>

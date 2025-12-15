@@ -42,18 +42,23 @@ class LocalAgentService {
     this.environmentService = EnvironmentService.getInstance();
     
     // Environment-based configuration for different deployment environments
-    const defaultBaseUrl = import.meta.env.VITE_LM_STUDIO_BASE_URL || 'http://192.168.3.25:1234';
-    const defaultModel = import.meta.env.VITE_LM_STUDIO_MODEL || 'qwen/qwen3-vl-4b';
+    const defaultBaseUrl = import.meta.env.VITE_LM_STUDIO_BASE_URL || 'http://localhost:1234';
+    const defaultModel = import.meta.env.VITE_LM_STUDIO_MODEL || 'openai/gpt-oss-20b';
     const proxyUrl = import.meta.env.VITE_LM_STUDIO_PROXY_URL || '';
+    const storedBaseUrl =
+      typeof window !== 'undefined' ? window.localStorage.getItem('lmStudio.baseUrl') : null;
+    const storedModel =
+      typeof window !== 'undefined' ? window.localStorage.getItem('lmStudio.currentModel') : null;
     
     this.config = {
-      baseUrl: defaultBaseUrl,
+      baseUrl: storedBaseUrl || defaultBaseUrl,
       timeout: 30000,
-      model: defaultModel,
+      model: storedModel || defaultModel,
       ...config,
     };
 
     this.proxyUrl = proxyUrl ? proxyUrl : null;
+    this.environmentService.setBaseUrl(this.config.baseUrl);
   }
 
   /**
@@ -69,7 +74,7 @@ class LocalAgentService {
     } = {}
   ): Promise<LocalAgentResponse> {
     const {
-      model = 'qwen/qwen3-vl-4b',
+      model = this.config.model,
       temperature = 0.7,
       maxTokens = -1,
       stream = false,
@@ -127,7 +132,7 @@ class LocalAgentService {
     } = {}
   ): AsyncGenerator<string, void, unknown> {
     const {
-      model = 'qwen/qwen3-vl-4b',
+      model = this.config.model,
       temperature = 0.7,
       maxTokens = -1,
     } = options;
@@ -208,7 +213,7 @@ class LocalAgentService {
       return data.data?.map((model: { id: string }) => model.id) || [];
     } catch (error) {
       console.warn('Could not fetch models from LM Studio:', error);
-      return ['qwen/qwen3-vl-4b']; // Default fallback
+      return this.config.model ? [this.config.model] : [];
     }
   }
 
@@ -217,6 +222,9 @@ class LocalAgentService {
    */
   setModel(model: string): void {
     this.config.model = model;
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('lmStudio.currentModel', model);
+    }
   }
 
   /**
@@ -245,6 +253,10 @@ class LocalAgentService {
    */
   updateBaseUrl(baseUrl: string): void {
     this.config.baseUrl = baseUrl;
+    this.environmentService.setBaseUrl(baseUrl);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('lmStudio.baseUrl', baseUrl);
+    }
   }
 
   /**

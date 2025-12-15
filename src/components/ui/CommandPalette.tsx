@@ -25,6 +25,7 @@ import {
   FileSpreadsheet,
   X
 } from 'lucide-react';
+import { useTheme } from '@/lib/ThemeProvider';
 
 interface Command {
   id: string;
@@ -45,6 +46,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const navigate = useNavigate();
+  const { toggleTheme } = useTheme();
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -101,7 +103,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose }) => {
       title: 'Loyalty Program',
       subtitle: 'Manage customer loyalty',
       icon: <Gift className="w-5 h-5" />,
-      action: () => navigate('/loyalty'),
+      action: () => navigate('/loyalty-program'),
       category: 'Navigation',
       keywords: ['loyalty', 'rewards', 'points', 'program']
     },
@@ -119,7 +121,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose }) => {
       title: 'Weekly Progress',
       subtitle: 'Track weekly performance',
       icon: <Clock className="w-5 h-5" />,
-      action: () => navigate('/weekly-progress'),
+      action: () => navigate('/enhancements'),
       category: 'Navigation',
       keywords: ['weekly', 'progress', 'performance', 'tracking']
     },
@@ -189,7 +191,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose }) => {
       title: 'AI Assistant',
       subtitle: 'Open AI business assistant',
       icon: <Sparkles className="w-5 h-5" />,
-      action: () => navigate('/ai-agent'),
+      action: () => navigate('/classic-assistant'),
       category: 'Actions',
       keywords: ['ai', 'assistant', 'help', 'artificial intelligence']
     },
@@ -201,13 +203,12 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose }) => {
       subtitle: 'Switch between light and dark mode',
       icon: <Settings className="w-5 h-5" />,
       action: () => {
-        // Toggle theme functionality
-        document.documentElement.classList.toggle('dark');
+        toggleTheme();
       },
       category: 'Settings',
       keywords: ['theme', 'dark', 'light', 'mode', 'appearance']
     }
-  ], [navigate]);
+  ], [navigate, toggleTheme]);
 
   // Filter commands based on search query
   const filteredCommands = useMemo(() => {

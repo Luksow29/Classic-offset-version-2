@@ -33,8 +33,8 @@ class EnvironmentService {
                      window.location.hostname.includes('.app') ||
                      import.meta.env.VITE_DEPLOY_ENV === 'netlify';
     
-    // Get LM Studio URL from environment
-    const lmStudioUrl = import.meta.env.VITE_LM_STUDIO_BASE_URL || 'http://192.168.3.25:1234';
+    // Get LM Studio URL from environment (default to local dev)
+    const lmStudioUrl = import.meta.env.VITE_LM_STUDIO_BASE_URL || 'http://localhost:1234';
     const proxyUrl = import.meta.env.VITE_LM_STUDIO_PROXY_URL || '';
     
     return {
@@ -49,6 +49,10 @@ class EnvironmentService {
 
   getConfig(): EnvironmentConfig {
     return { ...this.config };
+  }
+
+  setBaseUrl(baseUrl: string): void {
+    this.config.baseUrl = baseUrl;
   }
 
   async checkLMStudioAvailability(): Promise<boolean> {
@@ -152,7 +156,7 @@ Cannot connect to LM Studio. Please:
         steps: [
           "Download and install LM Studio",
           "Start LM Studio application",
-          "Load a model (recommended: qwen/qwen3-vl-4b)",
+          "Load a model (example: openai/gpt-oss-20b)",
           "Go to Settings → Network → Enable CORS",
           "Start the local server on port 1234"
         ],

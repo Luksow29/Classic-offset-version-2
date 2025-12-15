@@ -318,6 +318,7 @@ export default function CustomerInvoices({ customerId }: CustomerInvoicesProps) 
                   <div className="text-sm">{customerDetails?.address}</div>
                   <div className="text-sm">{customerDetails?.phone}</div>
                   <div className="text-sm">{customerDetails?.email}</div>
+                  {customerDetails?.customer_code && <div className="text-sm font-semibold mt-1">ID: {customerDetails.customer_code}</div>}
                 </div>
                 <div>
                   <div className="font-semibold mb-1">{t('invoices.summary')}</div>

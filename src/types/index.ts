@@ -33,6 +33,7 @@ export interface Customer {
   total_points_earned: number | null;
   total_points_spent: number | null;
   tier_upgraded_at: string | null; // timestamptz
+  customer_code?: string | null; // text
 }
 
 export interface OrdersTableOrder {
@@ -161,6 +162,7 @@ export interface CustomerSummary {
   total_paid: number | null;
   balance_due: number | null;
   last_order_date: string | null;
+  customer_code?: string | null;
 }
 
 export interface AllOrderSummary {

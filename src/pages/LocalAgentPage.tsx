@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
-import { LocalAgent } from '../components/ai/LocalAgent';
-import { LocalAgentRAG } from '../components/ai/LocalAgentRAG';
+import { LocalChatContainer } from '../components/chat/modern/LocalChatContainer';
 import { LocalAgentSettings } from '../components/ai/LocalAgentSettings';
-import { defaultQuickActions } from '../components/ai/BusinessContext';
-import { Bot, Sparkles, Zap, Info, MessageSquare, SlidersHorizontal, Database } from 'lucide-react';
+import { Bot, Sparkles, Zap, Info, MessageSquare, SlidersHorizontal } from 'lucide-react';
 import Card from '../components/ui/Card';
 
 const LocalAgentPage: React.FC = () => {
@@ -15,15 +13,6 @@ const LocalAgentPage: React.FC = () => {
   ];
   const [activeTab, setActiveTab] = useState<'information' | 'chat' | 'control'>('information');
 
-  // Business-specific quick actions for the main page
-  const businessQuickActions = defaultQuickActions.map(action => ({
-    label: action.label,
-    prompt: action.prompt(),
-    icon: typeof action.icon === 'string' 
-      ? <span className="text-base">{action.icon}</span> 
-      : <Bot className="w-4 h-4" />
-  }));
-
   const handleConfigChange = (baseUrl: string, isHealthy: boolean) => {
     setConnectionStatus({ url: baseUrl, isHealthy });
   };
@@ -33,15 +22,15 @@ const LocalAgentPage: React.FC = () => {
       case 'chat':
         return (
           <div className="space-y-6">
-            <LocalAgentRAG 
-              showModelSelector={true}
-            />
+            <div className="h-[650px] bg-white/50 dark:bg-gray-800/50 backdrop-blur-xl rounded-3xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden shadow-2xl">
+              <LocalChatContainer />
+            </div>
           </div>
         );
       case 'control':
         return (
           <div className="space-y-6">
-            <LocalAgentSettings 
+            <LocalAgentSettings
               onConfigChange={handleConfigChange}
             />
             <Card className="p-6">
@@ -50,7 +39,7 @@ const LocalAgentPage: React.FC = () => {
                 Connection Overview
               </h3>
               <div className="space-y-3 text-sm">
-                <p><span className="font-medium">Server URL:</span> {connectionStatus.url || 'http://192.168.3.25:1234'}</p>
+                <p><span className="font-medium">Server URL:</span> {connectionStatus.url || 'http://localhost:1234'}</p>
                 <p className="flex items-center gap-2">
                   <span className={`inline-flex h-2 w-2 rounded-full ${connectionStatus.isHealthy ? 'bg-green-500' : 'bg-red-500'}`} />
                   {connectionStatus.isHealthy ? 'Connection looks good' : 'Connection not established yet'}
@@ -129,7 +118,7 @@ const LocalAgentPage: React.FC = () => {
                 {[
                   { title: 'Download and Install LM Studio', description: 'Get LM Studio from lmstudio.ai and install it on your machine.' },
                   { title: 'Load a Model', description: 'Download and load a model like Qwen, Llama, or Mistral in LM Studio.' },
-                  { title: 'Start Local Server', description: 'Click "Start Server" in LM Studio - it should run on your network IP (like 192.168.3.25:1234).' },
+                  { title: 'Start Local Server', description: 'Click "Start Server" in LM Studio - it usually runs on localhost:1234 (or your network IP).' },
                   { title: 'Configure Connection', description: 'Use the Control tab to test and configure your LM Studio server connection.' },
                   { title: 'Start Chatting!', description: 'Once connected, the Local Agent will be ready to help with your printing business.' },
                 ].map((item, index) => (
@@ -145,7 +134,7 @@ const LocalAgentPage: React.FC = () => {
             </Card>
 
             <Card className="p-6 text-center text-sm text-muted-foreground space-y-2">
-              <p>Local Agent connects to your LM Studio server at {connectionStatus.url || '192.168.3.25:1234'}</p>
+              <p>Local Agent connects to your LM Studio server at {connectionStatus.url || 'localhost:1234'}</p>
               <p>All conversations are private and stay on your machine</p>
               {connectionStatus.isHealthy && (
                 <p className="text-green-600 dark:text-green-400 font-medium">✓ Connected and ready to chat!</p>
@@ -172,11 +161,10 @@ const LocalAgentPage: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
-              className={`flex items-center gap-2 px-5 py-2 rounded-full border transition ${
-                activeTab === tab.id
-                  ? 'bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/30'
-                  : 'bg-background text-muted-foreground border-border hover:text-foreground hover:border-foreground/40'
-              }`}
+              className={`flex items-center gap-2 px-5 py-2 rounded-full border transition ${activeTab === tab.id
+                ? 'bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/30'
+                : 'bg-background text-muted-foreground border-border hover:text-foreground hover:border-foreground/40'
+                }`}
             >
               <tab.icon className="w-4 h-4" />
               {tab.label}

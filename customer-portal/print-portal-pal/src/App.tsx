@@ -20,6 +20,7 @@ const CustomerInvoices = lazy(() => import("./pages/CustomerInvoicesPage"));
 const CustomerSupport = lazy(() => import("./pages/CustomerSupportPage"));
 const CustomerProfile = lazy(() => import("./pages/CustomerProfilePage"));
 const CustomerContact = lazy(() => import("./pages/CustomerContactPage"));
+const ProductLibraryPage = lazy(() => import("./pages/ProductLibraryPage"));
 
 const NotificationTestPage = lazy(() => import("./pages/NotificationTest"));
 const NotificationPreferencesPage = lazy(() => import("./pages/NotificationPreferences"));
@@ -52,8 +53,9 @@ const router = createBrowserRouter(
         <Route path="/customer-portal/support" element={Suspended(CustomerSupport)} />
         <Route path="/customer-portal/profile" element={Suspended(CustomerProfile)} />
         <Route path="/customer-portal/contact" element={Suspended(CustomerContact)} />
-  <Route path="/customer-portal/notifications" element={Suspended(NotificationTestPage)} />
-  <Route path="/customer-portal/notification-preferences" element={Suspended(NotificationPreferencesPage)} />
+        <Route path="/customer-portal/showcase" element={Suspended(ProductLibraryPage)} />
+        <Route path="/customer-portal/notifications" element={Suspended(NotificationTestPage)} />
+        <Route path="/customer-portal/notification-preferences" element={Suspended(NotificationPreferencesPage)} />
       </Route>
 
       {/* Catch-all route */}

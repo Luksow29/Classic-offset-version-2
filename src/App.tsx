@@ -40,6 +40,9 @@ const StockPage = lazy(() => import('./components/stock/StockPage'));
 const ShowcasePage = lazy(() => import('./components/showcase/ShowcasePage'));
 const WhatsAppDashboard = lazy(() => import('./components/WhatsAppDashboard'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const HelpPage = lazy(() => import('./pages/HelpPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const SettingsPage = lazy(() => import('./components/settings/SettingsPage'));
 const TeamChatPage = lazy(() => import('./pages/TeamChatPage'));
 const AdminContentManagement = lazy(() => import('@/pages/AdminContentManagement'));
@@ -54,6 +57,7 @@ const AdvancedCRM = lazy(() => import('./components/crm/AdvancedCRM'));
 const LoyaltyProgram = lazy(() => import('./components/loyalty/LoyaltyProgram'));
 const CustomerSupportPage = lazy(() => import('./components/admin/CustomerSupportPage'));
 const OrderChatAdminPage = lazy(() => import('./components/admin/OrderChatAdminPage'));
+const JobCreationWizard = lazy(() => import('./components/jobs/JobCreationWizard'));
 
 // Helper function to wrap routes with Suspense and ErrorBoundary
 const Suspended = (element: React.ReactNode) => (
@@ -67,6 +71,8 @@ const router = createBrowserRouter(
     <>
       {/* Public routes */}
       <Route path="/login" element={<Login />} />
+      <Route path="/forgot-password" element={Suspended(<ForgotPasswordPage />)} />
+      <Route path="/reset-password" element={Suspended(<ResetPasswordPage />)} />
 
       {/* Protected routes with layout */}
       <Route element={<ProtectedLayout />}>
@@ -87,6 +93,7 @@ const router = createBrowserRouter(
         <Route path="/showcase" element={Suspended(<ShowcasePage />)} />
         <Route path="/whatsapp" element={Suspended(<WhatsAppDashboard />)} />
         <Route path="/settings" element={Suspended(<SettingsPage />)} />
+        <Route path="/help" element={Suspended(<HelpPage />)} />
         <Route path="/team-chat" element={Suspended(<TeamChatPage />)} />
         <Route path="/classic-assistant" element={Suspended(<AIAgentPage />)} />
         <Route path="/local-agent" element={Suspended(<LocalAgentPage />)} />
@@ -100,6 +107,8 @@ const router = createBrowserRouter(
         <Route path="/loyalty-program" element={Suspended(<LoyaltyProgram />)} />
         <Route path="/customer-support" element={Suspended(<CustomerSupportPage />)} />
         <Route path="/order-chat-admin" element={Suspended(<OrderChatAdminPage />)} />
+        {/* Job Creation Wizard */}
+        <Route path="/jobs/new" element={Suspended(<JobCreationWizard />)} />
       </Route>
 
       {/* 404 page */}
@@ -116,7 +125,7 @@ function App() {
           <Toaster
             position="top-right"
             toastOptions={{
-              success: { 
+              success: {
                 duration: 3000,
                 style: {
                   background: 'hsl(var(--success))',
@@ -127,7 +136,7 @@ function App() {
                   secondary: 'hsl(var(--success))',
                 }
               },
-              error: { 
+              error: {
                 duration: 5000,
                 style: {
                   background: 'hsl(var(--destructive))',

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Bot, User, RefreshCw, AlertCircle, CheckCircle, Settings, ChevronDown } from 'lucide-react';
+import { Send, Bot, User, RefreshCw, AlertCircle, Settings, ChevronDown } from 'lucide-react';
 import { useLocalAgent } from '../../hooks/useLocalAgent';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
@@ -20,10 +20,12 @@ export const LocalAgent: React.FC<LocalAgentProps> = ({
   className = '',
   showModelSelector = true,
   quickActions = [
-    { label: 'Analyze Current Order', prompt: 'Help me analyze the current order for potential optimizations and cost savings.', icon: <Bot className="w-4 h-4" /> },
-    { label: 'Draft Customer Email', prompt: 'Help me draft a professional email for a customer about their printing order.', icon: <Send className="w-4 h-4" /> },
-    { label: 'Calculate Print Costs', prompt: 'Help me calculate and estimate printing costs for a new order.', icon: <Settings className="w-4 h-4" /> },
-    { label: 'Quality Guidelines', prompt: 'Provide quality control guidelines for offset printing.', icon: <CheckCircle className="w-4 h-4" /> },
+    { label: 'Recent Orders', prompt: 'recent-orders', icon: <Bot className="w-4 h-4" /> },
+    { label: 'Due Payments', prompt: 'due-payments', icon: <AlertCircle className="w-4 h-4" /> },
+    { label: 'Daily Briefing', prompt: 'daily-briefing', icon: <RefreshCw className="w-4 h-4" /> },
+    { label: 'Top Customers', prompt: 'top-customers', icon: <User className="w-4 h-4" /> },
+    { label: 'Low Stock Alert', prompt: 'low-stock', icon: <Settings className="w-4 h-4" /> },
+    { label: 'All Customers', prompt: 'all-customers', icon: <User className="w-4 h-4" /> },
   ],
 }) => {
   const {
@@ -36,6 +38,7 @@ export const LocalAgent: React.FC<LocalAgentProps> = ({
     currentModel,
     sendMessage,
     streamMessage,
+    sendBusinessQuery,
     clearMessages,
     setModel,
     checkHealth,
@@ -51,10 +54,10 @@ export const LocalAgent: React.FC<LocalAgentProps> = ({
   const lastMessageLengthRef = useRef(latestMessageContent.length);
 
   const scrollMessagesToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
-    const container = messagesContainerRef.current;
-    if (!container) return;
-    container.scrollTo({
-      top: container.scrollHeight,
+    const messagesContainer = messagesContainerRef.current;
+    if (!messagesContainer) return;
+    messagesContainer.scrollTo({
+      top: messagesContainer.scrollHeight,
       behavior,
     });
   }, []);
@@ -101,10 +104,19 @@ export const LocalAgent: React.FC<LocalAgentProps> = ({
     if (isLoading || isStreaming) return;
     setIsNearBottom(true);
 
-    if (useStreaming) {
-      await streamMessage(prompt);
+    // Check if this is a business query type
+    const businessQueryTypes = ['recent-orders', 'due-payments', 'daily-briefing', 'top-customers', 'low-stock', 'all-customers', 'all-products'];
+    
+    if (businessQueryTypes.includes(prompt)) {
+      // Use business query for data-driven actions
+      await sendBusinessQuery(prompt);
     } else {
-      await sendMessage(prompt);
+      // Use regular message for general prompts
+      if (useStreaming) {
+        await streamMessage(prompt);
+      } else {
+        await sendMessage(prompt);
+      }
     }
   };
 

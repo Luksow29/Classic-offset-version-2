@@ -155,23 +155,17 @@ input:focus, select:focus, textarea:focus, .form-input:focus, .form-select:focus
     }
   }
   
-  :root {
-    --background: 210 20% 98%; /* Subtle off-white for main bg */
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%; /* Card: pure white for contrast */
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-/* Card shadow for modern light mode look (moved out of :root) */
-.card, .Card, .dashboard-card, .dashboard__card, .dashboard-card-container {
-  box-shadow: 0 4px 24px 0 rgba(0,0,0,0.10), 0 2px 8px 0 rgba(0,0,0,0.06);
-  border-radius: 0.75rem;
-  background: hsl(var(--card));
-}
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+	  :root {
+	    --background: 210 20% 98%; /* Subtle off-white for main bg */
+	    --foreground: 222.2 84% 4.9%;
+	    --card: 0 0% 100%; /* Card: pure white for contrast */
+	    --card-foreground: 222.2 84% 4.9%;
+	    --popover: 0 0% 100%;
+	    --popover-foreground: 222.2 84% 4.9%;
+	    --primary: 221.2 83.2% 53.3%;
+	    --primary-foreground: 210 40% 98%;
+	    --secondary: 210 40% 96.1%;
+	    --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
     --accent: 210 40% 96.1%;
@@ -187,13 +181,20 @@ input:focus, select:focus, textarea:focus, .form-input:focus, .form-select:focus
     --success-foreground: 355.7 100% 97.3%;
     --warning: 38 92% 50%;
     --warning-foreground: 48 96% 89%;
-    --info: 221.2 83.2% 53.3%;
-    --info-foreground: 210 40% 98%;
-  }
+	    --info: 221.2 83.2% 53.3%;
+	    --info-foreground: 210 40% 98%;
+	  }
+	
+	  /* Card shadow for modern light mode look */
+	  .card, .Card, .dashboard-card, .dashboard__card, .dashboard-card-container {
+	    box-shadow: 0 4px 24px 0 rgba(0,0,0,0.10), 0 2px 8px 0 rgba(0,0,0,0.06);
+	    border-radius: 0.75rem;
+	    background: hsl(var(--card));
+	  }
 
-  /* Color Schemes */
-  [data-color-scheme="blue"] {
-    --primary: 221.2 83.2% 53.3%;
+	  /* Color Schemes */
+	  [data-color-scheme="blue"] {
+	    --primary: 221.2 83.2% 53.3%;
     --primary-foreground: 210 40% 98%;
     --accent: var(--primary);
     --accent-foreground: var(--primary-foreground);
@@ -438,11 +439,19 @@ input:focus, select:focus, textarea:focus, .form-input:focus, .form-select:focus
 /* Animation utilities */
 @layer utilities {
   .animate-slide-up {
-    animation: slide-up 0.3s ease-out forwards;
+    animation: slide-up 0.4s ease-out forwards;
+  }
+  
+  .animate-slide-down {
+    animation: slide-down 0.4s ease-out forwards;
   }
   
   .animate-fade-in {
-    animation: fade-in 0.3s ease-out forwards;
+    animation: fade-in 0.4s ease-out forwards;
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.5s ease-out forwards;
   }
   
   .animate-shimmer {
@@ -474,128 +483,179 @@ input:focus, select:focus, textarea:focus, .form-input:focus, .form-select:focus
     transform: scale(1.02);
   }
   
+  /* Glassmorphism Utilities */
+  .glass-panel {
+    @apply bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-xl;
+  }
+
+  .glass-card {
+    @apply bg-white/60 dark:bg-gray-800/60 backdrop-blur-lg border border-white/30 dark:border-white/10 shadow-lg hover:shadow-xl transition-all duration-300;
+  }
+
+  .glass-button {
+    @apply bg-white/20 hover:bg-white/30 dark:bg-white/10 dark:hover:bg-white/20 backdrop-blur-md border border-white/20 transition-all duration-200;
+  }
+  
   .glass-effect {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    background: rgba(255, 255, 255, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.3);
   }
   
   .dark .glass-effect {
-    background: rgba(17, 24, 39, 0.8);
-    border: 1px solid rgba(75, 85, 99, 0.2);
+    background: rgba(17, 24, 39, 0.7);
+    border: 1px solid rgba(75, 85, 99, 0.3);
   }
-  
-  @keyframes slide-up {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+
+  .text-glow {
+    text-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
   }
-  
-  @keyframes fade-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
+}
+
+/* Animation keyframes (kept outside @layer for better CSS minifier compatibility) */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
   }
-  
-  @keyframes shimmer {
-    to {
-      background-position-x: -200%;
-    }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
-  
-  @keyframes float {
-    0%, 100% {
-      transform: translateY(0px);
-    }
-    50% {
-      transform: translateY(-10px);
-    }
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
   }
-  
-  @keyframes glow {
-    from {
-      box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
-    }
-    to {
-      box-shadow: 0 0 30px rgba(59, 130, 246, 0.8);
-    }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  to {
+    background-position-x: -200%;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes glow {
+  from {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+  }
+  to {
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.8);
   }
 }
 
 /* Typography styles for markdown content */
 .prose {
   @apply text-foreground;
-  
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-bold text-foreground mt-6 mb-4;
-  }
-  
-  h1 {
-    @apply text-3xl;
-  }
-  
-  h2 {
-    @apply text-2xl;
-  }
-  
-  h3 {
-    @apply text-xl;
-  }
-  
-  p {
-    @apply my-4;
-  }
-  
-  a {
-    @apply text-primary hover:underline;
-  }
-  
-  ul, ol {
-    @apply my-4 pl-6;
-  }
-  
-  ul {
-    @apply list-disc;
-  }
-  
-  ol {
-    @apply list-decimal;
-  }
-  
-  blockquote {
-    @apply border-l-4 border-muted pl-4 italic my-4;
-  }
-  
-  code {
-    @apply bg-muted px-1 py-0.5 rounded text-sm;
-  }
-  
-  pre {
-    @apply bg-muted p-4 rounded-lg overflow-x-auto my-4;
-  }
-  
-  pre code {
-    @apply bg-transparent p-0;
-  }
-  
-  table {
-    @apply w-full border-collapse my-4;
-  }
-  
-  th, td {
-    @apply border border-border p-2;
-  }
-  
-  th {
-    @apply bg-muted;
-  }
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
+  @apply font-display font-bold text-foreground mt-8 mb-4 tracking-tight;
+}
+
+.prose h1 {
+  @apply text-4xl bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300;
+}
+
+.prose h2 {
+  @apply text-3xl;
+}
+
+.prose h3 {
+  @apply text-2xl;
+}
+
+.prose p {
+  @apply my-4 leading-relaxed;
+}
+
+.prose a {
+  @apply text-primary hover:text-primary/80 hover:underline transition-colors;
+}
+
+.prose ul,
+.prose ol {
+  @apply my-4 pl-6;
+}
+
+.prose ul {
+  @apply list-disc;
+}
+
+.prose ol {
+  @apply list-decimal;
+}
+
+.prose blockquote {
+  @apply border-l-4 border-primary/50 pl-6 italic my-6 text-lg text-muted-foreground bg-muted/20 py-2 rounded-r-lg;
+}
+
+.prose code {
+  @apply bg-muted/50 px-1.5 py-0.5 rounded text-sm font-mono text-primary font-medium border border-border/50;
+}
+
+.prose pre {
+  @apply bg-gray-900 text-gray-50 p-6 rounded-xl overflow-x-auto my-6 shadow-lg border border-gray-800;
+}
+
+.prose pre code {
+  @apply bg-transparent p-0 text-inherit border-none;
+}
+
+.prose table {
+  @apply w-full border-collapse my-6 rounded-lg overflow-hidden shadow-sm border border-border;
+}
+
+.prose th,
+.prose td {
+  @apply p-4 border-b border-border;
+}
+
+.prose th {
+  @apply bg-muted/50 font-semibold text-left;
+}
+
+.prose tr:last-child td {
+  @apply border-b-0;
 }

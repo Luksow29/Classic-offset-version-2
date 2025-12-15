@@ -1,59 +1,87 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import Card from '../ui/Card';
-import StaffPerformanceDashboard from './StaffPerformanceDashboard';
-import StaffMembersTable from './StaffMembersTable';
-import { Loader2, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { Plus, ClipboardList } from 'lucide-react';
+import Button from '../ui/Button';
+import StaffPerformanceDashboard from './StaffPerformanceDashboard';
+import StaffLogsTable from './StaffLogsTable';
+import EmployeeFormModal from './EmployeeFormModal';
 
-export interface Employee {
-  id: string;
-  name: string;
-  job_role: string;
-  is_active: boolean;
-  email?: string;
-  phone?: string;
-  created_at: string;
-}
-
+// Interfaces needed for sub-components
 export interface StaffLog {
-    id: number;
+    id: string;
+    created_at?: string;
     date: string;
+    employee_id?: string;
     role: string;
     time_in: string;
     time_out: string;
     work_done: string;
     notes?: string;
-    employees: {
+    employees?: {
         name: string;
-        users: { name: string; } | null;
-    } | null;
+        users?: {
+            name: string;
+        };
+    };
 }
 
-const StaffPage: React.FC = () => {
+export interface Employee {
+    id: string;
+    name: string;
+    role: string;
+    email?: string;
+    phone?: string;
+    status: 'Active' | 'On Leave' | 'Terminated';
+    is_active?: boolean; // For dashboard compatibility
+}
+
+const Staff: React.FC = () => {
+    const [logs, setLogs] = useState<StaffLog[]>([]);
     const [employees, setEmployees] = useState<Employee[]>([]);
-    const [staffLogs, setStaffLogs] = useState<StaffLog[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [showEmployeeModal, setShowEmployeeModal] = useState(false);
+    const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
-        setError(null);
         try {
-            const [employeesRes, logsRes] = await Promise.all([
-                supabase.from('employees').select('*').order('name'),
-                supabase.from('staff_logs').select(`*, employees ( name, users ( name ) )`).order('date', { ascending: false }).limit(100)
-            ]);
+            // Fetch Logs
+            const { data: logsData, error: logsError } = await supabase
+                .from('staff_logs')
+                .select(`
+          *,
+          employees (
+            name
+          )
+        `)
+                .order('date', { ascending: false });
 
-            if (employeesRes.error) throw employeesRes.error;
-            if (logsRes.error) throw logsRes.error;
-            
-            setEmployees(employeesRes.data || []);
-            setStaffLogs(logsRes.data as StaffLog[] || []);
+            if (logsError) {
+                // Only log error if it's not a missing table error, to be less noisy
+                if (logsError.code !== '42P01') {
+                    console.error('Error fetching logs:', logsError);
+                }
+            }
 
-        } catch (err: any) {
-            setError('Failed to load staff data: ' + err.message);
-            toast.error('Failed to load staff data.');
+            // Fetch Employees
+            const { data: empData, error: empError } = await supabase
+                .from('employees')
+                .select('*')
+                .order('name');
+
+            if (empError) {
+                if (empError.code !== '42P01') {
+                    console.error('Error fetching employees:', empError);
+                }
+            }
+
+            setLogs(logsData as unknown as StaffLog[] || []);
+            setEmployees(empData as unknown as Employee[] || []);
+
+        } catch (error) {
+            console.error('Unexpected error fetching staff data:', error);
+            toast.error('Failed to load staff data');
         } finally {
             setLoading(false);
         }
@@ -63,31 +91,64 @@ const StaffPage: React.FC = () => {
         fetchData();
     }, [fetchData]);
 
-    if (loading) {
-        return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin" /></div>;
-    }
+    const handleCreateEmployee = () => {
+        setEditingEmployee(null);
+        setShowEmployeeModal(true);
+    };
 
-    if (error) {
-        return <div className="p-6 bg-red-50 text-red-700 text-center"><AlertTriangle className="mx-auto" /> {error}</div>;
-    }
+    const handleSaveEmployee = () => {
+        fetchData();
+        setShowEmployeeModal(false);
+    };
+
+    // Map employees for dashboard (it expects is_active boolean)
+    const dashboardEmployees = employees.map(e => ({
+        ...e,
+        is_active: e.status === 'Active'
+    }));
 
     return (
         <div className="p-4 sm:p-6 space-y-6">
-            <h1 className="text-2xl font-semibold">Staff Overview</h1>
-            
-            <StaffPerformanceDashboard employees={employees} logs={staffLogs} />
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Staff Management</h1>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">Monitor employee performance and daily logs</p>
+                </div>
+                <div className="flex gap-2">
+                    <Button onClick={handleCreateEmployee}>
+                        <Plus className="w-4 h-4 mr-2" /> Add Employee
+                    </Button>
+                    <Button variant="outline" onClick={() => toast('Feature coming soon!')}>
+                        <ClipboardList className="w-4 h-4 mr-2" /> Add Log
+                    </Button>
+                </div>
+            </div>
 
-            <Card>
-                <div className="p-4 border-b">
-                    <h2 className="text-lg font-semibold">Staff Members</h2>
+            <StaffPerformanceDashboard
+                employees={dashboardEmployees}
+                logs={logs.map(l => ({ work_done: l.work_done }))}
+            />
+
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                    <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Recent Work Logs</h2>
                 </div>
-                
-                <div className="p-2">
-                    <StaffMembersTable employees={employees} />
-                </div>
-            </Card>
+
+                {loading ? (
+                    <div className="p-8 text-center text-gray-500">Loading staff data...</div>
+                ) : (
+                    <StaffLogsTable logs={logs} />
+                )}
+            </div>
+
+            <EmployeeFormModal
+                isOpen={showEmployeeModal}
+                onClose={() => setShowEmployeeModal(false)}
+                onSave={handleSaveEmployee}
+                employee={editingEmployee}
+            />
         </div>
     );
 };
 
-export default StaffPage;
+export default Staff;

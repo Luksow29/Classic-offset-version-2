@@ -24,8 +24,45 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
   }
 });
 
+async function resolveCustomerId(params: { customer_id?: number; customer_name?: string }): Promise<number | null> {
+  if (params.customer_id) return params.customer_id;
+  if (!params.customer_name) return null;
+
+  const { data, error } = await supabaseAdmin
+    .from('customers')
+    .select('id')
+    .ilike('name', `%${params.customer_name}%`)
+    .limit(1);
+
+  if (error) throw error;
+  return data && data.length > 0 ? data[0].id : null;
+}
+
 // --- PURE DATA OPERATIONS ---
-async function handleDataOperation(operation: string, params: any = {}) {
+type OperationParams = Record<string, unknown> & {
+  customer_id?: number;
+  customer_name?: string;
+  name?: string;
+  phone?: string;
+  address?: string;
+  email?: string;
+  month?: string | number;
+  limit?: number;
+  product_name?: string;
+  unit_price?: number;
+  category?: string;
+  product_id?: number;
+  quantity?: number;
+  total_amount?: number;
+  design_needed?: boolean;
+  notes?: string;
+  expense_type?: string;
+  amount?: number;
+  paid_to?: string;
+  description?: string;
+};
+
+async function handleDataOperation(operation: string, params: OperationParams = {}) {
   console.log(`[DATA SERVICE] Operation: ${operation}`, params);
   
   try {
@@ -60,14 +97,28 @@ async function handleDataOperation(operation: string, params: any = {}) {
       
       case "getCustomerOrders":
         {
-          const { data, error } = await supabaseAdmin.from("orders").select("id, date, order_type, total_amount, balance_amount, status").eq("customer_id", params.customer_id);
+          const customerId = await resolveCustomerId(params);
+          if (!customerId) {
+            return { success: false, message: "Customer not found" };
+          }
+          const { data, error } = await supabaseAdmin
+            .from("orders")
+            .select("id, date, order_type, total_amount, balance_amount, status")
+            .eq("customer_id", customerId);
           if (error) throw error;
           return { success: true, data, count: data?.length || 0 };
         }
       
       case "getCustomerPayments":
         {
-          const { data, error } = await supabaseAdmin.from("payments").select("*").eq("customer_id", params.customer_id);
+          const customerId = await resolveCustomerId(params);
+          if (!customerId) {
+            return { success: false, message: "Customer not found" };
+          }
+          const { data, error } = await supabaseAdmin
+            .from("payments")
+            .select("*")
+            .eq("customer_id", customerId);
           if (error) throw error;
           return { success: true, data, count: data?.length || 0 };
         }

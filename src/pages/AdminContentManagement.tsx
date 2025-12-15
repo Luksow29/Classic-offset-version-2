@@ -20,26 +20,26 @@ import TrendingDown from 'lucide-react/dist/esm/icons/trending-down';
 import Receipt from 'lucide-react/dist/esm/icons/receipt';
 import Wrench from 'lucide-react/dist/esm/icons/wrench';
 import Layers from 'lucide-react/dist/esm/icons/layers';
-import {ClipboardList} from 'lucide-react';
+import { ClipboardList } from 'lucide-react';
 
 
 import FeatureFormModal from '../components/admin/FeatureFormModal';
 import FeaturesTable from '../components/admin/FeaturesTable';
-import BrandingContentForm from '../components/admin/BrandingContentForm'; 
+import BrandingContentForm from '../components/admin/BrandingContentForm';
 import TestimonialFormModal from '../components/admin/TestimonialFormModal';
 import TestimonialsTable from '../components/admin/TestimonialsTable';
 import { Link } from 'react-router-dom';
-import GalleryUploader from '../components/showcase/GalleryUploader'; 
-import GalleryItemsTable from '../components/admin/GalleryItemsTable'; 
-import GalleryItemFormModal from '../components/admin/GalleryItemFormModal'; 
+import GalleryUploader from '../components/showcase/GalleryUploader';
+import GalleryItemsTable from '../components/admin/GalleryItemsTable';
+import GalleryItemFormModal from '../components/admin/GalleryItemFormModal';
 
-import { AnimatePresence, motion } from 'framer-motion'; 
+import { AnimatePresence, motion } from 'framer-motion';
 
 // import TemplateManager from '../components/whatsapp/TemplateManager';
 import { supabase } from '@/lib/supabaseClient';
 
 // Staff Management Components
-import StaffLogFormModal from '../components/admin/StaffLogFormModal';
+import StaffLogFormModal from '../components/staff/StaffLogFormModal';
 import StaffLogsTable from '../components/admin/StaffLogsTable';
 import StaffMembersTable from '../components/admin/StaffMembersTable';
 import EmployeeFormModal from '../components/admin/EmployeeFormModal'; // NEW: EmployeeFormModal ஐ இறக்குமதி செய்யவும்
@@ -49,9 +49,9 @@ import OrderRequestsTable from '../components/admin/OrderRequestsTable';
 interface Template { id: string; name: string; category: string; body: string; }
 
 const AdminContentManagement: React.FC = () => {
-  const [refreshKey, setRefreshKey] = useState(0); 
+  const [refreshKey, setRefreshKey] = useState(0);
   const [activeTab, setActiveTab] = useState<'showcase' | 'templates' | 'staff_management' | 'order_requests' | 'others'>('showcase');
-  
+
   // Feature Modals
   const [showFeatureModal, setShowFeatureModal] = useState(false);
   const [editingFeature, setEditingFeature] = useState<any | null>(null);
@@ -61,12 +61,12 @@ const AdminContentManagement: React.FC = () => {
   const [editingTestimonial, setEditingTestimonial] = useState<any | null>(null);
 
   // Gallery Item Modals
-  const [showGalleryItemModal, setShowGalleryItemModal] = useState(false); 
-  const [editingGalleryItem, setEditingGalleryItem] = useState<any | null>(null); 
+  const [showGalleryItemModal, setShowGalleryItemModal] = useState(false);
+  const [editingGalleryItem, setEditingGalleryItem] = useState<any | null>(null);
 
   // Staff Log Modals
-  const [showStaffLogModal, setShowStaffLogModal] = useState(false); 
-  const [editingStaffLog, setEditingStaffLog] = useState<any | null>(null); 
+  const [showStaffLogModal, setShowStaffLogModal] = useState(false);
+  const [editingStaffLog, setEditingStaffLog] = useState<any | null>(null);
 
   // Employee Management Modals
   const [showEmployeeModal, setShowEmployeeModal] = useState(false); // NEW
@@ -78,7 +78,7 @@ const AdminContentManagement: React.FC = () => {
   const [templateError, setTemplateError] = useState<string | null>(null);
 
   const handleDataChange = () => {
-    setRefreshKey(prev => prev + 1); 
+    setRefreshKey(prev => prev + 1);
   };
 
   // Templates ஐப் பெறுவதற்கான ஃபங்ஷன்
@@ -124,18 +124,18 @@ const AdminContentManagement: React.FC = () => {
   };
 
   // Gallery Item Handlers
-  const handleEditGalleryItem = (item: any) => { 
+  const handleEditGalleryItem = (item: any) => {
     setEditingGalleryItem(item);
     setShowGalleryItemModal(true);
   };
 
-  const handleUploadSuccess = () => { 
-    handleDataChange(); 
+  const handleUploadSuccess = () => {
+    handleDataChange();
   };
 
   // TemplateManager க்கான onDataChange Handler
   const handleTemplateDataChange = () => {
-    handleDataChange(); 
+    handleDataChange();
   };
 
   // Staff Log Handlers
@@ -144,7 +144,7 @@ const AdminContentManagement: React.FC = () => {
     setShowStaffLogModal(true);
   };
 
-  const handleEditStaffLog = (log: any) => { 
+  const handleEditStaffLog = (log: any) => {
     setEditingStaffLog(log);
     setShowStaffLogModal(true);
   };
@@ -165,7 +165,7 @@ const AdminContentManagement: React.FC = () => {
   const tabs = [
     { id: 'showcase', label: 'Showcase Content', icon: Image },
     { id: 'templates', label: 'Template Management', icon: FileText },
-    { id: 'staff_management', label: 'Staff Management', icon: Users }, 
+    { id: 'staff_management', label: 'Staff Management', icon: Users },
     { id: 'order_requests', label: 'Order Requests', icon: ClipboardList },
     { id: 'others', label: 'Other Admin Links', icon: Settings },
   ];
@@ -203,7 +203,7 @@ const AdminContentManagement: React.FC = () => {
             {/* Branding Copy Management Section */}
             <section className="space-y-4">
               <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Branding Copy</h2>
-              <BrandingContentForm sectionName="BrandingCopyMain" /> 
+              <BrandingContentForm sectionName="BrandingCopyMain" />
             </section>
 
             {/* Testimonials Management Section */}
@@ -221,7 +221,7 @@ const AdminContentManagement: React.FC = () => {
 
       case 'templates':
         return (
-          <motion.div 
+          <motion.div
             key="templates-content"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -236,7 +236,7 @@ const AdminContentManagement: React.FC = () => {
           </motion.div>
         );
 
-      case 'staff_management': 
+      case 'staff_management':
         return (
           <motion.div
             key="staff-management-content"
@@ -266,7 +266,7 @@ const AdminContentManagement: React.FC = () => {
             </section>
           </motion.div>
         );
-      
+
       case 'order_requests':
         return (
           <motion.div
@@ -285,7 +285,7 @@ const AdminContentManagement: React.FC = () => {
 
       case 'others':
         return (
-          <motion.div 
+          <motion.div
             key="other-links-content"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -300,13 +300,13 @@ const AdminContentManagement: React.FC = () => {
                 <Link to="/users" className="block">
                   <Card className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                     <div className="flex items-center gap-3">
-                      <Users className="w-6 h-6 text-blue-600" /> 
+                      <Users className="w-6 h-6 text-blue-600" />
                       <div>
                         <h3 className="font-semibold text-gray-800 dark:text-white">User Management</h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Manage user accounts & roles.</p>
                       </div>
                     </div>
-                    <UserCog className="w-5 h-5 text-gray-400" /> 
+                    <UserCog className="w-5 h-5 text-gray-400" />
                   </Card>
                 </Link>
 
@@ -314,13 +314,13 @@ const AdminContentManagement: React.FC = () => {
                 <Link to="/products" className="block">
                   <Card className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                     <div className="flex items-center gap-3">
-                      <Package className="w-6 h-6 text-purple-600" /> 
+                      <Package className="w-6 h-6 text-purple-600" />
                       <div>
                         <h3 className="font-semibold text-gray-800 dark:text-white">Product Master</h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Manage products/services.</p>
                       </div>
                     </div>
-                    <ShoppingCart className="w-5 h-5 text-gray-400" /> 
+                    <ShoppingCart className="w-5 h-5 text-gray-400" />
                   </Card>
                 </Link>
 
@@ -328,13 +328,13 @@ const AdminContentManagement: React.FC = () => {
                 <Link to="/stock" className="block">
                   <Card className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                     <div className="flex items-center gap-3">
-                      <Warehouse className="w-6 h-6 text-orange-600" /> 
+                      <Warehouse className="w-6 h-6 text-orange-600" />
                       <div>
                         <h3 className="font-semibold text-gray-800 dark:text-white">Stock Management</h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Track inventory levels.</p>
                       </div>
                     </div>
-                    <Boxes className="w-5 h-5 text-gray-400" /> 
+                    <Boxes className="w-5 h-5 text-gray-400" />
                   </Card>
                 </Link>
 
@@ -342,13 +342,13 @@ const AdminContentManagement: React.FC = () => {
                 <Link to="/due-summary" className="block">
                   <Card className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                     <div className="flex items-center gap-3">
-                      <Banknote className="w-6 h-6 text-red-600" /> 
+                      <Banknote className="w-6 h-6 text-red-600" />
                       <div>
                         <h3 className="font-semibold text-gray-800 dark:text-white">Due Summary</h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400">View pending payments.</p>
                       </div>
                     </div>
-                    <CreditCard className="w-5 h-5 text-gray-400" /> 
+                    <CreditCard className="w-5 h-5 text-gray-400" />
                   </Card>
                 </Link>
 
@@ -356,13 +356,13 @@ const AdminContentManagement: React.FC = () => {
                 <Link to="/expenses" className="block">
                   <Card className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                     <div className="flex items-center gap-3">
-                      <TrendingDown className="w-6 h-6 text-purple-600" /> 
+                      <TrendingDown className="w-6 h-6 text-purple-600" />
                       <div>
                         <h3 className="font-semibold text-gray-800 dark:text-white">Expenses</h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Manage business expenditures.</p>
                       </div>
                     </div>
-                    <Receipt className="w-5 h-5 text-gray-400" /> 
+                    <Receipt className="w-5 h-5 text-gray-400" />
                   </Card>
                 </Link>
 
@@ -370,20 +370,20 @@ const AdminContentManagement: React.FC = () => {
                 <Link to="/materials" className="block">
                   <Card className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                     <div className="flex items-center gap-3">
-                      <Wrench className="w-6 h-6 text-cyan-600" /> 
+                      <Wrench className="w-6 h-6 text-cyan-600" />
                       <div>
                         <h3 className="font-semibold text-gray-800 dark:text-white">Materials</h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Manage raw materials.</p>
                       </div>
                     </div>
-                    <Layers className="w-5 h-5 text-gray-400" /> 
+                    <Layers className="w-5 h-5 text-gray-400" />
                   </Card>
                 </Link>
               </div>
             </section>
           </motion.div>
         );
-      
+
       default:
         return null;
     }
@@ -440,7 +440,7 @@ const AdminContentManagement: React.FC = () => {
           onClose={() => setShowTestimonialModal(false)}
           onSave={handleDataChange}
           editingTestimonial={editingTestimonial}
-        
+
         />
       )}
 
@@ -462,8 +462,8 @@ const AdminContentManagement: React.FC = () => {
           editingLog={editingStaffLog}
         />
       )}
-       {/* NEW: Employee Form Modal */}
-       {showEmployeeModal && (
+      {/* NEW: Employee Form Modal */}
+      {showEmployeeModal && (
         <EmployeeFormModal
           isOpen={showEmployeeModal}
           onClose={() => setShowEmployeeModal(false)}

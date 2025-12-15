@@ -11,6 +11,33 @@ const icons: Record<Status, React.ElementType> = {
     Delivered: Check,
 };
 
+const stepColors: Record<Status, { bg: string; border: string; text: string; activeBg: string }> = {
+    Pending: { 
+      bg: 'bg-yellow-500', 
+      border: 'border-yellow-500', 
+      text: 'text-yellow-600 dark:text-yellow-400',
+      activeBg: 'bg-gradient-to-br from-yellow-400 to-orange-500'
+    },
+    Design: { 
+      bg: 'bg-blue-500', 
+      border: 'border-blue-500', 
+      text: 'text-blue-600 dark:text-blue-400',
+      activeBg: 'bg-gradient-to-br from-blue-400 to-cyan-500'
+    },
+    Printing: { 
+      bg: 'bg-purple-500', 
+      border: 'border-purple-500', 
+      text: 'text-purple-600 dark:text-purple-400',
+      activeBg: 'bg-gradient-to-br from-purple-400 to-pink-500'
+    },
+    Delivered: { 
+      bg: 'bg-green-500', 
+      border: 'border-green-500', 
+      text: 'text-green-600 dark:text-green-400',
+      activeBg: 'bg-gradient-to-br from-green-400 to-emerald-500'
+    },
+};
+
 interface Props {
   currentStatus: Status;
 }
@@ -24,24 +51,42 @@ const OrderStatusStepper: React.FC<Props> = ({ currentStatus }) => {
         const isCompleted = index < currentIndex;
         const isActive = index === currentIndex;
         const Icon = icons[step];
+        const colors = stepColors[step];
 
         return (
           <React.Fragment key={step}>
             <div className="flex flex-col items-center text-center w-1/4">
               <div className={`
-                w-10 h-10 flex items-center justify-center rounded-full border-2 transition-all duration-300 transform
-                ${isCompleted ? 'bg-green-500 border-green-500 text-white' :
-                  isActive ? 'bg-primary border-primary text-primary-foreground scale-110 shadow-lg' :
-                  'bg-gray-100 border-gray-300 text-gray-400 dark:bg-gray-700 dark:border-gray-600'}`
+                w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-500 transform
+                ${isCompleted 
+                  ? 'bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-lg shadow-green-500/30' 
+                  : isActive 
+                    ? `${colors.activeBg} text-white scale-110 shadow-lg shadow-${step.toLowerCase()}-500/30 ring-4 ring-${step.toLowerCase()}-100 dark:ring-${step.toLowerCase()}-900/30` 
+                    : 'bg-gray-100 text-gray-400 dark:bg-gray-700/80 dark:text-gray-500'
+                }`
               }>
-                <Icon size={isCompleted ? 20 : 18} />
+                {isCompleted ? <Check size={20} /> : <Icon size={18} />}
               </div>
-              <p className={`mt-2 text-xs font-medium transition-colors ${isActive ? 'text-primary' : 'text-gray-500 dark:text-gray-400'}`}>
+              <p className={`mt-2 text-xs font-semibold transition-all duration-300 ${
+                isCompleted 
+                  ? 'text-green-600 dark:text-green-400' 
+                  : isActive 
+                    ? colors.text
+                    : 'text-gray-400 dark:text-gray-500'
+              }`}>
                 {step}
               </p>
             </div>
             {index < steps.length - 1 && (
-              <div className={`flex-1 h-1 transition-colors duration-500 mx-1 ${index < currentIndex ? 'bg-green-400' : 'bg-gray-200 dark:bg-gray-600'}`}></div>
+              <div className="flex-1 h-1.5 mx-2 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
+                <div 
+                  className={`h-full rounded-full transition-all duration-700 ease-out ${
+                    index < currentIndex 
+                      ? 'w-full bg-gradient-to-r from-green-400 to-emerald-500' 
+                      : 'w-0'
+                  }`}
+                />
+              </div>
             )}
           </React.Fragment>
         );

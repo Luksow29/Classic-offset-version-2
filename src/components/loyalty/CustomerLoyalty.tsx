@@ -120,7 +120,7 @@ const CustomerLoyalty: React.FC<CustomerLoyaltyProps> = ({ onUpdate }) => {
 
   const handlePointAdjustment = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!selectedCustomer || !adjustmentPoints || !adjustmentReason) {
       toast.error('Please fill in all fields');
       return;
@@ -149,38 +149,33 @@ const CustomerLoyalty: React.FC<CustomerLoyaltyProps> = ({ onUpdate }) => {
 
       if (transactionError) throw transactionError;
 
-      // Update customer points
-      const newPoints = adjustmentType === 'add' 
-        ? selectedCustomer.loyalty_points + pointsValue
-        : Math.max(0, selectedCustomer.loyalty_points - pointsValue);
-
-      const { error: updateError } = await supabase
-        .from('customers')
-        .update({ 
-          loyalty_points: newPoints,
-          total_points_earned: adjustmentType === 'add' 
-            ? selectedCustomer.total_points_earned + pointsValue
-            : selectedCustomer.total_points_earned,
-          total_points_spent: adjustmentType === 'subtract'
-            ? selectedCustomer.total_points_spent + pointsValue
-            : selectedCustomer.total_points_spent
-        })
-        .eq('id', selectedCustomer.id);
-
-      if (updateError) throw updateError;
+      // NOTE: The 'loyalty_points_trigger' database trigger automatically updates 
+      // the customer's loyalty_points, total_points_earned, and total_points_spent
+      // when a new record is inserted into loyalty_points.
+      // We do NOT need to manually update the customers table here.
 
       toast.success(`Points ${adjustmentType === 'add' ? 'added' : 'deducted'} successfully!`);
       setShowAdjustModal(false);
       setAdjustmentPoints('');
       setAdjustmentReason('');
-      
+
       // Refresh data
       await fetchCustomers();
       if (selectedCustomer) {
         await fetchCustomerTransactions(selectedCustomer.id);
-        const updatedCustomer = customers.find(c => c.id === selectedCustomer.id);
+        // We need to find the updated customer from the fresh list we just fetched
+        const updatedCustomer = (await supabase.from('customers').select('*').eq('id', selectedCustomer.id).single()).data;
         if (updatedCustomer) {
-          setSelectedCustomer({ ...updatedCustomer, loyalty_points: newPoints });
+          // We need to merge this with the complex object structure if needed, or just partial update
+          // But since 'customers' state is already refreshed by fetchCustomers(), we can find it there
+          // However, fetchCustomers() is async and updates state.
+          // Let's just re-select it from the database to be sure we have the trigger's result
+          setSelectedCustomer({
+            ...selectedCustomer,
+            loyalty_points: updatedCustomer.loyalty_points,
+            total_points_earned: updatedCustomer.total_points_earned,
+            total_points_spent: updatedCustomer.total_points_spent
+          });
         }
       }
       onUpdate();
@@ -259,14 +254,14 @@ const CustomerLoyalty: React.FC<CustomerLoyaltyProps> = ({ onUpdate }) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
           >
-            <Card 
+            <Card
               className="bg-gray-800 border-gray-700 cursor-pointer hover:bg-gray-750 transition-colors"
               onClick={() => handleCustomerClick(customer)}
             >
               <div className="p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <div 
+                    <div
                       className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm"
                       style={{ backgroundColor: customer.tier_color }}
                     >
@@ -278,9 +273,9 @@ const CustomerLoyalty: React.FC<CustomerLoyaltyProps> = ({ onUpdate }) => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div 
+                    <div
                       className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
-                      style={{ 
+                      style={{
                         backgroundColor: `${customer.tier_color}20`,
                         color: customer.tier_color
                       }}
@@ -296,17 +291,17 @@ const CustomerLoyalty: React.FC<CustomerLoyaltyProps> = ({ onUpdate }) => {
                     <span className="text-gray-400 text-sm">Current Points:</span>
                     <span className="text-pink-400 font-semibold">{customer.loyalty_points.toLocaleString()}</span>
                   </div>
-                  
+
                   <div className="flex justify-between items-center">
                     <span className="text-gray-400 text-sm">Total Earned:</span>
                     <span className="text-green-400 text-sm">{customer.total_points_earned.toLocaleString()}</span>
                   </div>
-                  
+
                   <div className="flex justify-between items-center">
                     <span className="text-gray-400 text-sm">Discount:</span>
                     <span className="text-blue-400 text-sm">{customer.discount_percentage}%</span>
                   </div>
-                  
+
                   <div className="flex justify-between items-center">
                     <span className="text-gray-400 text-sm">Referral Code:</span>
                     <span className="text-yellow-400 text-sm font-mono">{customer.referral_code}</span>
@@ -326,8 +321,8 @@ const CustomerLoyalty: React.FC<CustomerLoyaltyProps> = ({ onUpdate }) => {
       )}
 
       {/* Customer Detail Modal */}
-      <Modal 
-        isOpen={showDetailModal} 
+      <Modal
+        isOpen={showDetailModal}
         onClose={() => setShowDetailModal(false)}
       >
         <div className="bg-gray-800 rounded-lg p-6 w-full max-w-2xl">
@@ -335,7 +330,7 @@ const CustomerLoyalty: React.FC<CustomerLoyaltyProps> = ({ onUpdate }) => {
             <>
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div 
+                  <div
                     className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold"
                     style={{ backgroundColor: selectedCustomer.tier_color }}
                   >
@@ -412,13 +407,13 @@ const CustomerLoyalty: React.FC<CustomerLoyaltyProps> = ({ onUpdate }) => {
       </Modal>
 
       {/* Point Adjustment Modal */}
-      <Modal 
-        isOpen={showAdjustModal} 
+      <Modal
+        isOpen={showAdjustModal}
         onClose={() => setShowAdjustModal(false)}
       >
         <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md">
           <h3 className="text-lg font-semibold text-white mb-4">Adjust Customer Points</h3>
-          
+
           <form onSubmit={handlePointAdjustment} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Adjustment Type</label>
@@ -426,11 +421,10 @@ const CustomerLoyalty: React.FC<CustomerLoyaltyProps> = ({ onUpdate }) => {
                 <button
                   type="button"
                   onClick={() => setAdjustmentType('add')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-medium transition-colors ${
-                    adjustmentType === 'add'
-                      ? 'bg-green-600 text-white'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                  }`}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-medium transition-colors ${adjustmentType === 'add'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
                 >
                   <Plus className="w-4 h-4" />
                   Add Points
@@ -438,11 +432,10 @@ const CustomerLoyalty: React.FC<CustomerLoyaltyProps> = ({ onUpdate }) => {
                 <button
                   type="button"
                   onClick={() => setAdjustmentType('subtract')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-medium transition-colors ${
-                    adjustmentType === 'subtract'
-                      ? 'bg-red-600 text-white'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                  }`}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-medium transition-colors ${adjustmentType === 'subtract'
+                    ? 'bg-red-600 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
                 >
                   <Minus className="w-4 h-4" />
                   Subtract Points
@@ -480,8 +473,8 @@ const CustomerLoyalty: React.FC<CustomerLoyaltyProps> = ({ onUpdate }) => {
               >
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className={adjustmentType === 'add' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
               >
                 {adjustmentType === 'add' ? 'Add' : 'Subtract'} Points

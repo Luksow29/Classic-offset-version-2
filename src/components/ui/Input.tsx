@@ -8,28 +8,34 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement | HTMLSe
   as?: 'input' | 'select';
   children?: React.ReactNode;
   helperText?: string;
+  variant?: 'default' | 'glass';
 }
 
-const Input: React.FC<InputProps> = ({ 
-  label, 
-  id, 
-  icon, 
-  error, 
-  className = '', 
-  as = 'input', 
-  children, 
+const Input: React.FC<InputProps> = ({
+  label,
+  id,
+  icon,
+  error,
+  className = '',
+  as = 'input',
+  children,
   helperText,
-  ...props 
+  variant = 'default',
+  ...props
 }) => {
-  const commonStyles = `
-    flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm 
-    ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium 
-    placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 
-    focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed 
-    disabled:opacity-50 transition-colors
-    ${error ? 'border-destructive focus-visible:ring-destructive' : ''}
-    ${icon ? 'pl-10' : ''}
-  `;
+  const baseStyles = 'flex h-11 w-full rounded-xl px-4 py-3 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200';
+
+  const variantStyles = {
+    default: 'border border-input bg-background/50 focus:bg-background',
+    glass: 'bg-white/10 dark:bg-gray-900/10 backdrop-blur-md border border-white/20 dark:border-white/10 focus:bg-white/20 dark:focus:bg-gray-900/20 shadow-inner'
+  };
+
+  const commonStyles = twMerge(
+    baseStyles,
+    variantStyles[variant],
+    error ? 'border-destructive focus-visible:ring-destructive' : '',
+    icon ? 'pl-11' : ''
+  );
 
   const Component = as === 'select' ? 'select' : 'input';
 

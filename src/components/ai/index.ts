@@ -4,6 +4,13 @@ export { LocalAgentRAG } from './LocalAgentRAG';
 export { LocalAgentWidget } from './LocalAgentWidget';
 export { ModelSelector } from './ModelSelector';
 export { BusinessPromptBuilder, defaultQuickActions } from './BusinessContext';
+export { 
+  BusinessQueryTrigger,
+  RecentOrdersTrigger,
+  DuePaymentsTrigger,
+  DailyBriefingTrigger,
+  TopCustomersTrigger
+} from './BusinessQueryTrigger';
 export type { 
   BusinessContext, 
   QuickAction, 

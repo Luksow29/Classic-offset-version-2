@@ -33,16 +33,16 @@ export function useVirtualScroll<T>({
   
   // Update viewport size on resize
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+    const scrollContainer = containerRef.current;
+    if (!scrollContainer) return;
     
     const resizeObserver = new ResizeObserver(entries => {
       const { height } = entries[0].contentRect;
       setViewportHeight(height);
     });
     
-    resizeObserver.observe(container);
-    setViewportHeight(container.clientHeight);
+    resizeObserver.observe(scrollContainer);
+    setViewportHeight(scrollContainer.clientHeight);
     
     return () => {
       resizeObserver.disconnect();
@@ -51,13 +51,13 @@ export function useVirtualScroll<T>({
   
   // Handle scroll events
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+    const scrollContainer = containerRef.current;
+    if (!scrollContainer) return;
     
     let scrollTimeout: number;
     
     const handleScroll = () => {
-      setScrollTop(container.scrollTop);
+      setScrollTop(scrollContainer.scrollTop);
       setIsScrolling(true);
       
       clearTimeout(scrollTimeout);
@@ -66,10 +66,10 @@ export function useVirtualScroll<T>({
       }, scrollingDelay);
     };
     
-    container.addEventListener('scroll', handleScroll);
+    scrollContainer.addEventListener('scroll', handleScroll);
     
     return () => {
-      container.removeEventListener('scroll', handleScroll);
+      scrollContainer.removeEventListener('scroll', handleScroll);
       clearTimeout(scrollTimeout);
     };
   }, [scrollingDelay]);

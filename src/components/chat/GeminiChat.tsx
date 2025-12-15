@@ -51,7 +51,12 @@ interface DetectedEntity {
   action?: string;
 }
 
-const FUNCTION_URL = "https://ytnsjmbhgwcuwmnflncl.supabase.co/functions/v1/custom-ai-agent";
+const DEFAULT_FUNCTION_URL = "https://ytnsjmbhgwcuwmnflncl.supabase.co/functions/v1/custom-ai-agent";
+const FUNCTION_URL = (() => {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  if (!supabaseUrl) return DEFAULT_FUNCTION_URL;
+  return `${supabaseUrl.replace(/\/$/, '')}/functions/v1/custom-ai-agent`;
+})();
 
 const askClassicAI = async (
   history: ConversationEntry[],
@@ -64,7 +69,7 @@ const askClassicAI = async (
       role: entry.role,
       parts: entry.parts
     }));
-    
+
     const response = await fetch(FUNCTION_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'apikey': anonKey, 'Authorization': `Bearer ${accessToken}` },
@@ -163,16 +168,16 @@ const GeminiChat: React.FC<GeminiChatProps> = ({ starterPrompt = '' }) => {
     if (!currentPrompt.trim() || !session) return;
     setIsLoading(true);
     setError(null);
-    
+
     // Detect if this is a complex query
     const isComplex = isComplexQueryDetection(currentPrompt);
     setIsComplexQuery(isComplex);
-    
+
     if (isComplex) {
       setProcessingStage('Initiating deep analysis...');
       const thinkingStepsArray = generateThinkingSteps(currentPrompt);
       setThinkingSteps([]);
-      
+
       // Gradually reveal thinking steps
       for (let i = 0; i < thinkingStepsArray.length; i++) {
         await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 300));
@@ -182,32 +187,32 @@ const GeminiChat: React.FC<GeminiChatProps> = ({ starterPrompt = '' }) => {
       setProcessingStage('Processing your query...');
       setThinkingSteps([]);
     }
-    
+
     setToolSteps([]);
-    
+
     const updatedHistory: ConversationEntry[] = [...conversationHistory, { role: 'user', parts: [{ text: currentPrompt }] }];
     setConversationHistory(updatedHistory);
     setPrompt('');
-    
+
     try {
       const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       if (!anonKey) throw new Error("VITE_SUPABASE_ANON_KEY is not set.");
-      
+
       setProcessingStage('Connecting to Classic AI...');
       setToolSteps(['🌐 Establishing connection']);
-      
+
       await new Promise(resolve => setTimeout(resolve, 400));
-      
+
       setProcessingStage('AI is thinking...');
       setToolSteps(prev => [...prev, '🧠 Analyzing your question']);
-      
+
       const result = await askClassicAI(updatedHistory, session.access_token, anonKey);
-      
+
       setProcessingStage('Preparing response...');
       setToolSteps(prev => [...prev, '✨ Crafting detailed answer']);
-      
+
       await new Promise(resolve => setTimeout(resolve, 200));
-      
+
       setConversationHistory(prev => [...prev, { role: 'model', parts: [{ text: result }] }]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred.');
@@ -220,17 +225,17 @@ const GeminiChat: React.FC<GeminiChatProps> = ({ starterPrompt = '' }) => {
       setThinkingSteps([]);
     }
   };
-  
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     handleNewPromptWithAttachments(prompt);
   };
-  
+
   const handleVoiceInputToggle = () => {
     if (isListening) recognitionRef.current?.stop();
     else recognitionRef.current?.start();
   };
-  
+
   // Translation state: store translated text for each AI message by index
   const [translated, setTranslated] = useState<{ [index: number]: string }>({});
 
@@ -299,7 +304,7 @@ For full PDF text extraction, we're working on server-side implementation for be
         preview: file.type.startsWith('image/') ? url : undefined,
         extractedText: extractedText || undefined
       };
-      
+
       setAttachments(prev => [...prev, attachment]);
     }
   };
@@ -319,16 +324,16 @@ For full PDF text extraction, we're working on server-side implementation for be
     if (!currentPrompt.trim() || !session) return;
     setIsLoading(true);
     setError(null);
-    
+
     // Detect if this is a complex query
     const isComplex = isComplexQueryDetection(currentPrompt);
     setIsComplexQuery(isComplex);
-    
+
     if (isComplex) {
       setProcessingStage('Initiating deep analysis...');
       const thinkingStepsArray = generateThinkingSteps(currentPrompt);
       setThinkingSteps([]);
-      
+
       // Gradually reveal thinking steps
       for (let i = 0; i < thinkingStepsArray.length; i++) {
         await new Promise(resolve => setTimeout(resolve, 600 + Math.random() * 400));
@@ -338,7 +343,7 @@ For full PDF text extraction, we're working on server-side implementation for be
       setProcessingStage('Analyzing your request...');
       setThinkingSteps([]);
     }
-    
+
     setToolSteps([]);
 
     // Build document context from attachments
@@ -346,10 +351,10 @@ For full PDF text extraction, we're working on server-side implementation for be
     if (attachments.length > 0) {
       setProcessingStage('Processing uploaded documents...');
       setToolSteps(['📄 Extracting text from documents']);
-      
+
       // Add a small delay to show the processing step
       await new Promise(resolve => setTimeout(resolve, 800));
-      
+
       const documentsWithText = attachments.filter(att => att.extractedText);
       console.log('Attachments with text:', documentsWithText.length);
       if (documentsWithText.length > 0) {
@@ -367,59 +372,59 @@ For full PDF text extraction, we're working on server-side implementation for be
     // Enhance the prompt with document context
     setProcessingStage('Preparing enhanced query...');
     setToolSteps(prev => [...prev, '🔧 Building context from conversation history']);
-    
+
     // Add delay to show processing
     await new Promise(resolve => setTimeout(resolve, 600));
-    
-    const enhancedPrompt = documentContext 
+
+    const enhancedPrompt = documentContext
       ? `${currentPrompt}${documentContext}Please answer based on the uploaded documents if relevant.`
       : currentPrompt;
-    
+
     console.log('Enhanced prompt:', enhancedPrompt.substring(0, 300) + '...');
 
     // Create two versions: one for display (with attachments) and one for API (clean)
-    const displayEntry: ConversationEntry = { 
-      role: 'user', 
+    const displayEntry: ConversationEntry = {
+      role: 'user',
       parts: [{ text: currentPrompt }], // Show original prompt to user
       attachments: attachments.length > 0 ? [...attachments] : undefined
     };
-    
-    const apiEntry: ConversationEntry = { 
-      role: 'user', 
+
+    const apiEntry: ConversationEntry = {
+      role: 'user',
       parts: [{ text: enhancedPrompt }] // Send enhanced prompt to API
     };
 
     const updatedHistory: ConversationEntry[] = [...conversationHistory, displayEntry];
-    
+
     setConversationHistory(updatedHistory);
     setPrompt('');
     setAttachments([]); // Clear attachments after sending
-    
+
     setToolSteps(prev => [...prev, '✅ Query prepared successfully']);
-    
+
     try {
       const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       if (!anonKey) throw new Error("VITE_SUPABASE_ANON_KEY is not set.");
-      
+
       setProcessingStage('Connecting to Classic AI...');
       setToolSteps(prev => [...prev, '🌐 Establishing secure connection']);
-      
+
       // Add delay to show connection step
       await new Promise(resolve => setTimeout(resolve, 400));
-      
+
       setProcessingStage('AI is analyzing your request...');
       setToolSteps(prev => [...prev, '🤖 Processing with advanced AI model']);
-      
+
       // Create API history with enhanced prompt but without attachments
       const apiHistory = [...conversationHistory, apiEntry];
       const result = await askClassicAI(apiHistory, session.access_token, anonKey);
-      
+
       setProcessingStage('Finalizing response...');
       setToolSteps(prev => [...prev, '✨ Generating comprehensive answer']);
-      
+
       // Add delay before showing final result
       await new Promise(resolve => setTimeout(resolve, 300));
-      
+
       setConversationHistory(prev => [...prev, { role: 'model', parts: [{ text: result }] }]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred.');
@@ -465,10 +470,10 @@ For full PDF text extraction, we're working on server-side implementation for be
     const totalMessages = conversationHistory.length;
     const userMessages = conversationHistory.filter(entry => entry.role === 'user').length;
     const aiMessages = conversationHistory.filter(entry => entry.role === 'model').length;
-    const documentsUploaded = conversationHistory.reduce((total, entry) => 
+    const documentsUploaded = conversationHistory.reduce((total, entry) =>
       total + (entry.attachments?.length || 0), 0
     );
-    
+
     return {
       totalMessages,
       userMessages,
@@ -481,9 +486,9 @@ For full PDF text extraction, we're working on server-side implementation for be
   // Extract entities from AI response text
   const extractEntities = (text: string): DetectedEntity[] => {
     console.log('🔍 Extracting entities from text:', text.substring(0, 200) + '...');
-    
+
     const entities: DetectedEntity[] = [];
-    
+
     // Customer name patterns - more flexible and comprehensive
     const customerPatterns = [
       // Match "Name: Lukman" or "பெயர்: லுக்மான்"
@@ -497,23 +502,23 @@ For full PDF text extraction, we're working on server-side implementation for be
       // Match quoted names like "Lukman"
       /"([A-Za-z\u0B80-\u0BFF]{2,20})"/gi
     ];
-    
+
     customerPatterns.forEach((pattern, index) => {
       console.log(`🔍 Trying customer pattern ${index + 1}:`, pattern.source);
       const matches = text.matchAll(pattern);
       for (const match of matches) {
         const value = match[1]?.trim();
         console.log(`✅ Found potential customer:`, value);
-        
+
         // Filter out common false positives but be less restrictive
         const excludeWords = ['details', 'customer', 'here', 'are', 'the', 'for', 'about', 'show', 'all', 'and', 'or', 'in', 'on', 'at', 'to', 'from', 'with', 'by'];
-        
-        if (value && 
-            value.length >= 2 && 
-            value.length <= 30 && 
-            !excludeWords.includes(value.toLowerCase()) &&
-            /^[A-Za-z\u0B80-\u0BFF]+$/.test(value)) { // Only letters, no spaces or special chars
-          
+
+        if (value &&
+          value.length >= 2 &&
+          value.length <= 30 &&
+          !excludeWords.includes(value.toLowerCase()) &&
+          /^[A-Za-z\u0B80-\u0BFF]+$/.test(value)) { // Only letters, no spaces or special chars
+
           console.log(`✅ Adding customer entity:`, value);
           entities.push({
             type: 'customer',
@@ -525,12 +530,12 @@ For full PDF text extraction, we're working on server-side implementation for be
         }
       }
     });
-    
+
     // Customer ID patterns - look for IDs in structured format
     const idPatterns = [
       /(?:Customer ID|ID):\s*([A-Za-z0-9\-]{8,})/gi
     ];
-    
+
     idPatterns.forEach(pattern => {
       console.log(`🔍 Trying ID pattern:`, pattern.source);
       const matches = text.matchAll(pattern);
@@ -546,12 +551,12 @@ For full PDF text extraction, we're working on server-side implementation for be
         }
       }
     });
-    
+
     // Phone number patterns
     const phonePatterns = [
       /(?:Phone|Mobile|Contact):\s*(\+\d{10,15})/gi
     ];
-    
+
     phonePatterns.forEach(pattern => {
       const matches = text.matchAll(pattern);
       for (const match of matches) {
@@ -565,12 +570,12 @@ For full PDF text extraction, we're working on server-side implementation for be
         }
       }
     });
-    
+
     // Email patterns
     const emailPatterns = [
       /(?:Email|Mail):\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi
     ];
-    
+
     emailPatterns.forEach(pattern => {
       const matches = text.matchAll(pattern);
       for (const match of matches) {
@@ -584,13 +589,13 @@ For full PDF text extraction, we're working on server-side implementation for be
         }
       }
     });
-    
+
     // Date patterns
     const datePatterns = [
       /(?:Date|Created|Updated|Order Date):\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/gi,
       /(?:Date|Created|Updated|Order Date):\s*(\d{4}-\d{2}-\d{2})/gi
     ];
-    
+
     datePatterns.forEach(pattern => {
       const matches = text.matchAll(pattern);
       for (const match of matches) {
@@ -604,11 +609,11 @@ For full PDF text extraction, we're working on server-side implementation for be
         }
       }
     });
-    
+
     console.log(`🎯 Final entities extracted:`, entities);
-    
+
     // Remove duplicates
-    return entities.filter((entity, index, self) => 
+    return entities.filter((entity, index, self) =>
       index === self.findIndex(e => e.type === entity.type && e.value === entity.value)
     );
   };
@@ -624,60 +629,60 @@ For full PDF text extraction, we're working on server-side implementation for be
   // Detect if a query requires complex multi-step thinking
   const isComplexQueryDetection = (prompt: string): boolean => {
     const complexKeywords = [
-      'analyze', 'compare', 'summarize', 'report', 'calculate', 'trends', 
-      'insights', 'breakdown', 'overview', 'analysis', 'statistics', 
+      'analyze', 'compare', 'summarize', 'report', 'calculate', 'trends',
+      'insights', 'breakdown', 'overview', 'analysis', 'statistics',
       'performance', 'metrics', 'dashboard', 'forecast', 'predict',
       'multiple', 'several', 'various', 'different', 'all', 'everything',
       'top customers', 'best selling', 'monthly report', 'yearly summary',
       'sales analysis', 'customer analysis', 'product analysis'
     ];
-    
-    const hasComplexKeywords = complexKeywords.some(keyword => 
+
+    const hasComplexKeywords = complexKeywords.some(keyword =>
       prompt.toLowerCase().includes(keyword.toLowerCase())
     );
-    
+
     const hasMultipleQuestions = (prompt.match(/\?/g) || []).length > 1;
     const hasAndOr = /\b(and|or|\+|&)\b/i.test(prompt);
     const isLongQuery = prompt.length > 100;
-    
+
     return hasComplexKeywords || hasMultipleQuestions || hasAndOr || isLongQuery;
   };
 
   // Generate thinking steps for complex queries
   const generateThinkingSteps = (prompt: string): string[] => {
     const steps = ['🤔 Understanding your request...'];
-    
+
     if (prompt.toLowerCase().includes('analyze') || prompt.toLowerCase().includes('analysis')) {
       steps.push('📊 Gathering relevant data points...');
       steps.push('🔍 Identifying key patterns and trends...');
       steps.push('📈 Performing statistical analysis...');
     }
-    
+
     if (prompt.toLowerCase().includes('compare') || prompt.toLowerCase().includes('comparison')) {
       steps.push('⚖️ Setting up comparison framework...');
       steps.push('📋 Collecting comparable metrics...');
       steps.push('🔄 Cross-referencing data points...');
     }
-    
+
     if (prompt.toLowerCase().includes('report') || prompt.toLowerCase().includes('summary')) {
       steps.push('📝 Structuring comprehensive report...');
       steps.push('🎯 Highlighting key findings...');
       steps.push('📊 Creating visual representations...');
     }
-    
+
     if (prompt.toLowerCase().includes('customer') || prompt.toLowerCase().includes('customers')) {
       steps.push('👥 Accessing customer database...');
       steps.push('🔍 Filtering customer records...');
     }
-    
+
     if (prompt.toLowerCase().includes('order') || prompt.toLowerCase().includes('sales')) {
       steps.push('🛒 Retrieving order history...');
       steps.push('💰 Calculating sales metrics...');
     }
-    
+
     steps.push('✨ Synthesizing insights...');
     steps.push('📋 Preparing detailed response...');
-    
+
     return steps;
   };
 
@@ -710,21 +715,21 @@ For full PDF text extraction, we're working on server-side implementation for be
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           components={{
-            table: ({node, ...props}) => (
+            table: ({ node, ...props }) => (
               <div className="overflow-x-auto my-2">
                 <table className="min-w-full border border-gray-300 dark:border-gray-700 text-sm" {...props} />
               </div>
             ),
-            th: ({node, ...props}) => (
+            th: ({ node, ...props }) => (
               <th className="bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 px-2 py-1 font-semibold" {...props} />
             ),
-            td: ({node, ...props}) => (
+            td: ({ node, ...props }) => (
               <td className="border border-gray-300 dark:border-gray-700 px-2 py-1" {...props} />
             ),
-            ul: ({node, ...props}) => (
+            ul: ({ node, ...props }) => (
               <ul className="list-disc ml-6 my-2" {...props} />
             ),
-            ol: ({node, ...props}) => (
+            ol: ({ node, ...props }) => (
               <ol className="list-decimal ml-6 my-2" {...props} />
             ),
           }}
@@ -801,29 +806,27 @@ For full PDF text extraction, we're working on server-side implementation for be
             </div>
           </div>
         )}
-        
+
         {conversationHistory.map((entry, index) => (
           <div key={index} className={`flex ${entry.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${
-              entry.role === 'user' 
-                ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white ml-12' 
+            <div className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${entry.role === 'user'
+                ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white ml-12'
                 : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 mr-12'
-            }`}>
+              }`}>
               <div className="flex items-center gap-2 mb-2">
                 {entry.role === 'model' && (
                   <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
                     <Bot className="w-3 h-3 text-white" />
                   </div>
                 )}
-                <p className={`font-semibold text-sm ${
-                  entry.role === 'user' ? 'text-blue-100' : 'text-gray-900 dark:text-white'
-                }`}>
+                <p className={`font-semibold text-sm ${entry.role === 'user' ? 'text-blue-100' : 'text-gray-900 dark:text-white'
+                  }`}>
                   {entry.role === 'model' ? 'Classic AI' : 'நீங்கள்'}
                 </p>
               </div>
               <div className={`${entry.role === 'user' ? 'text-white' : ''}`}>
                 {renderContent(entry.parts[0].text)}
-                
+
                 {/* Show detected entities as chips for AI responses */}
                 {entry.role === 'model' && (
                   (() => {
@@ -849,7 +852,7 @@ For full PDF text extraction, we're working on server-side implementation for be
                     ) : null;
                   })()
                 )}
-                
+
                 {/* Show attachments for user messages */}
                 {entry.role === 'user' && entry.attachments && entry.attachments.length > 0 && (
                   <div className="mt-3 space-y-2">
@@ -923,43 +926,38 @@ For full PDF text extraction, we're working on server-side implementation for be
             </div>
           </div>
         ))}
-        
+
         {isLoading && (
           <div className="flex justify-start">
             <div className="max-w-[85%] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 shadow-sm mr-12">
               <div className="flex items-center gap-3 mb-3">
-                <div className={`w-6 h-6 rounded-full bg-gradient-to-br flex items-center justify-center ${
-                  isComplexQuery 
-                    ? 'from-purple-500 to-pink-600 animate-pulse' 
+                <div className={`w-6 h-6 rounded-full bg-gradient-to-br flex items-center justify-center ${isComplexQuery
+                    ? 'from-purple-500 to-pink-600 animate-pulse'
                     : 'from-blue-500 to-indigo-600'
-                }`}>
+                  }`}>
                   <Bot className={`w-3 h-3 text-white ${isComplexQuery ? 'animate-spin' : 'animate-pulse'}`} />
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="flex space-x-1">
-                    <div className={`w-2 h-2 rounded-full animate-bounce [animation-delay:-0.3s] ${
-                      isComplexQuery ? 'bg-purple-500' : 'bg-blue-500'
-                    }`}></div>
-                    <div className={`w-2 h-2 rounded-full animate-bounce [animation-delay:-0.15s] ${
-                      isComplexQuery ? 'bg-purple-500' : 'bg-blue-500'
-                    }`}></div>
-                    <div className={`w-2 h-2 rounded-full animate-bounce ${
-                      isComplexQuery ? 'bg-purple-500' : 'bg-blue-500'
-                    }`}></div>
+                    <div className={`w-2 h-2 rounded-full animate-bounce [animation-delay:-0.3s] ${isComplexQuery ? 'bg-purple-500' : 'bg-blue-500'
+                      }`}></div>
+                    <div className={`w-2 h-2 rounded-full animate-bounce [animation-delay:-0.15s] ${isComplexQuery ? 'bg-purple-500' : 'bg-blue-500'
+                      }`}></div>
+                    <div className={`w-2 h-2 rounded-full animate-bounce ${isComplexQuery ? 'bg-purple-500' : 'bg-blue-500'
+                      }`}></div>
                   </div>
-                  <span className={`text-sm ${
-                    isComplexQuery 
-                      ? 'text-purple-600 dark:text-purple-300 font-medium' 
+                  <span className={`text-sm ${isComplexQuery
+                      ? 'text-purple-600 dark:text-purple-300 font-medium'
                       : 'text-gray-600 dark:text-gray-300'
-                  }`}>
-                    {isComplexQuery && thinkingSteps.length > 0 
-                      ? 'Deep thinking in progress...' 
+                    }`}>
+                    {isComplexQuery && thinkingSteps.length > 0
+                      ? 'Deep thinking in progress...'
                       : (processingStage || 'AI is thinking...')
                     }
                   </span>
                 </div>
               </div>
-              
+
               {/* Complex Query Thinking Steps */}
               {isComplexQuery && thinkingSteps.length > 0 && (
                 <div className="mb-4 p-3 bg-purple-50/50 dark:bg-purple-900/20 rounded-lg border border-purple-200/30 dark:border-purple-800/30">
@@ -983,7 +981,7 @@ For full PDF text extraction, we're working on server-side implementation for be
                   </div>
                 </div>
               )}
-              
+
               {/* Regular Tool Steps Animation */}
               {toolSteps.length > 0 && (
                 <div className="space-y-2">
@@ -997,7 +995,7 @@ For full PDF text extraction, we're working on server-side implementation for be
                       </div>
                     </div>
                   ))}
-                  
+
                   {/* Current processing step indicator */}
                   <div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
                     <div className="flex items-center gap-2">
@@ -1048,17 +1046,17 @@ For full PDF text extraction, we're working on server-side implementation for be
             ))}
           </div>
         )}
-        
+
         <form onSubmit={handleSubmit} className="flex items-end gap-3">
           <div className="flex-grow relative">
-            <Input 
-              type="text" 
-              value={prompt} 
-              onChange={(e) => setPrompt(e.target.value)} 
-              placeholder={isListening ? 'பேசுங்கள்...' : placeholderText} 
-              className="pr-12 py-3 rounded-xl border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400" 
-              disabled={isLoading} 
-              aria-label="Ask the AI agent" 
+            <Input
+              type="text"
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder={isListening ? 'பேசுங்கள்...' : placeholderText}
+              className="pr-12 py-3 rounded-xl border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400"
+              disabled={isLoading}
+              aria-label="Ask the AI agent"
             />
             {prompt.trim() && (
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -1066,7 +1064,7 @@ For full PDF text extraction, we're working on server-side implementation for be
               </div>
             )}
           </div>
-          
+
           <div className="flex gap-2">
             <input
               ref={fileInputRef}
@@ -1076,45 +1074,44 @@ For full PDF text extraction, we're working on server-side implementation for be
               onChange={handleFileUpload}
               className="hidden"
             />
-            
-            <Button 
-              type="button" 
+
+            <Button
+              type="button"
               onClick={() => fileInputRef.current?.click()}
-              disabled={isLoading} 
-              variant="outline" 
+              disabled={isLoading}
+              variant="outline"
               className="px-3 py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
               title="Attach files"
             >
               <Paperclip className="w-5 h-5" />
             </Button>
-            
-            <Button 
-              type="button" 
-              onClick={handleVoiceInputToggle} 
-              disabled={isLoading} 
-              variant="outline" 
-              className={`px-3 py-3 rounded-xl transition-all duration-200 ${
-                isListening 
-                  ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100' 
+
+            <Button
+              type="button"
+              onClick={handleVoiceInputToggle}
+              disabled={isLoading}
+              variant="outline"
+              className={`px-3 py-3 rounded-xl transition-all duration-200 ${isListening
+                  ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
                   : 'hover:bg-gray-50 dark:hover:bg-gray-700'
-              }`}
+                }`}
             >
               {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
             </Button>
-            
-            <Button 
-              type="button" 
-              onClick={handleTranslate} 
-              disabled={isLoading || conversationHistory.filter(e => e.role === 'model').length === 0} 
-              variant="outline" 
+
+            <Button
+              type="button"
+              onClick={handleTranslate}
+              disabled={isLoading || conversationHistory.filter(e => e.role === 'model').length === 0}
+              variant="outline"
               className="px-3 py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
             >
               <Languages className="w-5 h-5" />
             </Button>
-            
-            <Button 
-              type="submit" 
-              disabled={isLoading || !prompt.trim()} 
+
+            <Button
+              type="submit"
+              disabled={isLoading || !prompt.trim()}
               className="px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Send className="w-5 h-5" />

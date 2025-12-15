@@ -36,15 +36,15 @@ interface CustomerOrderRequestProps {
 
 // Enhanced schema with more detailed fields
 const OrderRequestSchema = z.object({
-  orderType: z.string({ required_error: "Please select an order type." }),
-  productId: z.string({ required_error: "Please select a product." }),
-  quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
-  rate: z.coerce.number().optional(),
-  subtotal: z.coerce.number().optional(),
-  totalAmount: z.coerce.number().optional(),
-  deliveryDate: z.date({ required_error: "Delivery date is required." }),
-  designNeeded: z.boolean().default(false),
-  notes: z.string().max(500, "Notes are too long.").optional(),
+    orderType: z.string({ required_error: "Please select an order type." }),
+    productId: z.string({ required_error: "Please select a product." }),
+    quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
+    rate: z.coerce.number().optional(),
+    subtotal: z.coerce.number().optional(),
+    totalAmount: z.coerce.number().optional(),
+    deliveryDate: z.date({ required_error: "Delivery date is required." }),
+    designNeeded: z.boolean().default(false),
+    notes: z.string().max(500, "Notes are too long.").optional(),
 });
 
 type OrderRequestFormValues = z.infer<typeof OrderRequestSchema>;
@@ -136,10 +136,13 @@ const CustomerOrderRequestForm: React.FC<CustomerOrderRequestProps> = ({ custome
             } else if (data) {
                 const productsWithPublicUrls = data.map(product => {
                     if (product.image_url) {
-                        // Defensively reconstruct the public URL to handle inconsistent data
-                        const pathParts = product.image_url.split('/');
-                        const filePath = pathParts[pathParts.length - 1];
-                        const { data: { publicUrl } } = supabase.storage.from('product_images').getPublicUrl(filePath);
+                        // Check if it's already a full URL
+                        if (product.image_url.startsWith('http')) {
+                            return product;
+                        }
+                        // Remove leading slash if present
+                        const cleanPath = product.image_url.startsWith('/') ? product.image_url.slice(1) : product.image_url;
+                        const { data: { publicUrl } } = supabase.storage.from('product_images').getPublicUrl(cleanPath);
                         return { ...product, image_url: publicUrl };
                     }
                     return product;
@@ -264,8 +267,8 @@ const CustomerOrderRequestForm: React.FC<CustomerOrderRequestProps> = ({ custome
                                         </Select>
                                         <FormMessage />
                                     </FormItem>
-                                )}/>
-                                
+                                )} />
+
                                 <FormField control={control} name="productId" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel className="text-base font-medium">Product *</FormLabel>
@@ -291,15 +294,15 @@ const CustomerOrderRequestForm: React.FC<CustomerOrderRequestProps> = ({ custome
                                         </Select>
                                         <FormMessage />
                                     </FormItem>
-                                )}/>
+                                )} />
                             </div>
 
                             {/* Product Showcase */}
                             {selectedOrderType && (
                                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                     {filteredProducts.map(p => (
-                                        <Card 
-                                            key={p.id} 
+                                        <Card
+                                            key={p.id}
                                             className={`cursor-pointer transition-all duration-200 ${selectedProductId === String(p.id) ? 'border-primary ring-2 ring-primary' : 'hover:shadow-md'}`}
                                             onClick={() => {
                                                 setModalProduct(p);
@@ -328,45 +331,45 @@ const CustomerOrderRequestForm: React.FC<CustomerOrderRequestProps> = ({ custome
                                     <FormItem>
                                         <FormLabel className="text-base font-medium">Quantity *</FormLabel>
                                         <FormControl>
-                                            <Input 
-                                                type="number" 
-                                                min="1" 
-                                                className="h-12 text-lg" 
+                                            <Input
+                                                type="number"
+                                                min="1"
+                                                className="h-12 text-lg"
                                                 placeholder="Enter quantity"
-                                                {...field} 
+                                                {...field}
                                             />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
-                                )}/>
-                                
+                                )} />
+
                                 <FormField control={control} name="rate" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel className="text-base font-medium">Rate (₹)</FormLabel>
                                         <FormControl>
-                                            <Input 
-                                                readOnly 
-                                                className="h-12 text-lg bg-muted font-medium" 
+                                            <Input
+                                                readOnly
+                                                className="h-12 text-lg bg-muted font-medium"
                                                 placeholder="Auto-filled"
-                                                value={field.value ? `₹${field.value.toLocaleString('en-IN')}` : ''} 
+                                                value={field.value ? `₹${field.value.toLocaleString('en-IN')}` : ''}
                                             />
                                         </FormControl>
                                     </FormItem>
-                                )}/>
-                                
+                                )} />
+
                                 <FormField control={control} name="subtotal" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel className="text-base font-medium">Subtotal (₹)</FormLabel>
                                         <FormControl>
-                                            <Input 
-                                                readOnly 
-                                                className="h-12 text-lg bg-muted font-bold text-primary" 
+                                            <Input
+                                                readOnly
+                                                className="h-12 text-lg bg-muted font-bold text-primary"
                                                 placeholder="Auto-calculated"
-                                                value={field.value ? `₹${field.value.toLocaleString('en-IN')}` : ''} 
+                                                value={field.value ? `₹${field.value.toLocaleString('en-IN')}` : ''}
                                             />
                                         </FormControl>
                                     </FormItem>
-                                )}/>
+                                )} />
                             </div>
 
                             {/* Price Summary Card */}
@@ -411,8 +414,8 @@ const CustomerOrderRequestForm: React.FC<CustomerOrderRequestProps> = ({ custome
                                         <Popover>
                                             <PopoverTrigger asChild>
                                                 <FormControl>
-                                                    <Button 
-                                                        variant={"outline"} 
+                                                    <Button
+                                                        variant={"outline"}
                                                         className={cn(
                                                             "h-12 justify-start text-left font-normal",
                                                             !field.value && "text-muted-foreground"
@@ -424,26 +427,26 @@ const CustomerOrderRequestForm: React.FC<CustomerOrderRequestProps> = ({ custome
                                                 </FormControl>
                                             </PopoverTrigger>
                                             <PopoverContent className="w-auto p-0">
-                                                <Calendar 
-                                                    mode="single" 
-                                                    selected={field.value} 
-                                                    onSelect={field.onChange} 
+                                                <Calendar
+                                                    mode="single"
+                                                    selected={field.value}
+                                                    onSelect={field.onChange}
                                                     disabled={(date) => date <= new Date()}
-                                                    initialFocus 
+                                                    initialFocus
                                                 />
                                             </PopoverContent>
                                         </Popover>
                                         <FormMessage />
                                     </FormItem>
-                                )}/>
-                                
+                                )} />
+
                                 <FormField control={control} name="designNeeded" render={({ field }) => (
                                     <FormItem className="flex flex-col justify-center">
                                         <div className="flex items-center space-x-3 rounded-md border border-primary/20 p-4 h-12">
                                             <FormControl>
-                                                <Checkbox 
-                                                    checked={field.value} 
-                                                    onCheckedChange={field.onChange} 
+                                                <Checkbox
+                                                    checked={field.value}
+                                                    onCheckedChange={field.onChange}
                                                     className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                                 />
                                             </FormControl>
@@ -454,7 +457,7 @@ const CustomerOrderRequestForm: React.FC<CustomerOrderRequestProps> = ({ custome
                                             </div>
                                         </div>
                                     </FormItem>
-                                )}/>
+                                )} />
                             </div>
                         </CardContent>
                     </Card>
@@ -470,29 +473,29 @@ const CustomerOrderRequestForm: React.FC<CustomerOrderRequestProps> = ({ custome
                                 <FormItem>
                                     <FormLabel className="text-base font-medium">Special Instructions or Notes</FormLabel>
                                     <FormControl>
-                                        <Textarea 
+                                        <Textarea
                                             placeholder="Please provide any special instructions, design preferences, or additional details for your order..."
                                             className="min-h-[120px] resize-none"
-                                            {...field} 
+                                            {...field}
                                         />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
-                            )}/>
+                            )} />
                         </CardContent>
                     </Card>
-                    
+
                     {/* Submit Button */}
                     <div className="pt-6">
-                        <Button 
-                            type="submit" 
-                            size="lg" 
-                            className="w-full h-14 text-lg font-semibold bg-gradient-primary hover:shadow-glow transition-all duration-300" 
+                        <Button
+                            type="submit"
+                            size="lg"
+                            className="w-full h-14 text-lg font-semibold bg-gradient-primary hover:shadow-glow transition-all duration-300"
                             disabled={form.formState.isSubmitting}
                         >
                             {form.formState.isSubmitting ? (
                                 <>
-                                    <Loader2 className="animate-spin mr-2 h-5 w-5" /> 
+                                    <Loader2 className="animate-spin mr-2 h-5 w-5" />
                                     Submitting Request...
                                 </>
                             ) : (

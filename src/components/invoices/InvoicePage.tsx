@@ -3,7 +3,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabaseClient'; 
+import { supabase } from '@/lib/supabaseClient';
 import InvoiceView from './InvoiceView';
 import { useReactToPrint } from 'react-to-print';
 import { Printer, MessageCircle, ArrowLeft, Loader2, AlertTriangle } from 'lucide-react';
@@ -17,11 +17,12 @@ interface OrderDetails {
   total_amount: number;
   paid: number;
   balance: number;
-  customer_id: string; 
+  customer_id: string;
   customer: {
     name: string;
     phone: string;
     address: string | null;
+    code?: string | null;
   } | null;
 }
 
@@ -68,7 +69,7 @@ const InvoicePage: React.FC = () => {
           .from('all_order_summary')
           .select('order_id, order_date, total_amount, amount_paid, balance_due, customer_id, customer_name, customer_phone')
           .eq('order_id', id)
-          .single(); 
+          .single();
 
         if (viewError) throw viewError;
         if (!data) throw new Error(`இன்வாய்ஸ் #${id} கிடைக்கவில்லை.`);
@@ -81,11 +82,26 @@ const InvoicePage: React.FC = () => {
           balance: data.balance_due,
           customer_id: data.customer_id,
           customer: {
-            name: data.customer_name || 'தெரியாத வாடிக்கையாளர்',
             phone: data.customer_phone || '',
-            address: null, // This can be fetched from customers table if needed
+            address: null,
           },
         });
+
+        // Use a second query to get the customer_code from the customers table
+        const { data: customerData } = await supabase
+          .from('customers')
+          .select('customer_code, address')
+          .eq('id', data.customer_id)
+          .single();
+
+        setOrder(prev => prev ? ({
+          ...prev,
+          customer: {
+            ...prev.customer!,
+            address: customerData?.address || null, // Also fetch address if available
+            code: customerData?.customer_code || null,
+          }
+        }) : null);
 
       } catch (err: any) {
         console.error("இன்வாய்ஸ் தரவைப் பெறுவதில் பிழை:", err);
@@ -138,9 +154,9 @@ const InvoicePage: React.FC = () => {
             <Printer className="w-4 h-4 mr-2" />
             அச்சிடு / பதிவிறக்கு
           </Button>
-          <Button 
-            variant="success" 
-            className="w-1/2 sm:w-auto flex-1 sm:flex-none" 
+          <Button
+            variant="success"
+            className="w-1/2 sm:w-auto flex-1 sm:flex-none"
             onClick={handleGoToWhatsAppDashboard}
             disabled={!order.customer?.phone}
           >
@@ -149,7 +165,7 @@ const InvoicePage: React.FC = () => {
           </Button>
         </div>
       </div>
-      
+
       <div ref={printableContentRef} className="bg-white rounded-lg shadow-md p-2 sm:p-4">
         <InvoiceView order={order} />
       </div>

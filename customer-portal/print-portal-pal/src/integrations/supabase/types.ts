@@ -317,6 +317,7 @@ export type Database = {
           communication_preference: string | null
           company_name: string | null
           created_at: string | null
+          customer_code: string | null // Added manually
           customer_since: string | null
           customer_type: string | null
           email: string | null

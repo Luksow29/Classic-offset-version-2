@@ -1,6 +1,6 @@
 // src/pages/AIAgentPage.tsx
 import React, { useState, useEffect } from 'react';
-import GeminiChat from '@/components/chat/GeminiChat';
+import { ChatContainer } from '@/components/chat/modern/ChatContainer';
 import Input from '@/components/ui/Input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 
@@ -115,13 +115,13 @@ const AIAgentPage: React.FC = () => {
   const filteredCategories = abilityCategories.filter(category => {
     if (selectedCategory !== 'all' && category.category !== selectedCategory) return false;
     if (!searchQuery) return true;
-    
+
     const matchesCategory = category.category.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesAbility = category.abilities.some(ability => 
+    const matchesAbility = category.abilities.some(ability =>
       ability.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       ability.description.toLowerCase().includes(searchQuery.toLowerCase())
     );
-    
+
     return matchesCategory || matchesAbility;
   });
 
@@ -145,48 +145,48 @@ const AIAgentPage: React.FC = () => {
   ];
 
   const smartSuggestions = [
-    { 
-      text: "Create customer: Priya, 9876543210, Coimbatore", 
+    {
+      text: "Create customer: Priya, 9876543210, Coimbatore",
       category: "Customer Management",
       description: "Add new customer with details",
       complexity: "Basic"
     },
-    { 
-      text: "Create product: Wedding Card, 25, Premium wedding invitation", 
+    {
+      text: "Create product: Wedding Card, 25, Premium wedding invitation",
       category: "Product Management",
       description: "Add new product with pricing",
       complexity: "Basic"
     },
-    { 
-      text: "Log expense: 1500, Marketing, Facebook Ads", 
+    {
+      text: "Log expense: 1500, Marketing, Facebook Ads",
       category: "Expense Tracking",
       description: "Record business expense",
       complexity: "Basic"
     },
-    { 
-      text: "Show financial summary for 2024-10", 
+    {
+      text: "Show financial summary for 2024-10",
       category: "Financial Reports",
       description: "Monthly financial analysis",
       complexity: "Advanced"
     },
-    { 
-      text: "Show top customers for 2024-10 with limit 10", 
+    {
+      text: "Show top customers for 2024-10 with limit 10",
       category: "Customer Analytics",
       description: "Monthly customer performance",
       complexity: "Advanced"
     },
-    { 
-      text: "Get all due payments summary", 
+    {
+      text: "Get all due payments summary",
       category: "Payment Analytics",
       description: "Outstanding payment overview",
       complexity: "Advanced"
     },
   ];
-  
+
   const handleStarterClick = (prompt: string) => {
     setStarterPrompt(prompt);
   };
-  
+
   const handleResetClick = () => {
     setStarterPrompt('');
     setChatKey(prevKey => prevKey + 1);
@@ -232,9 +232,9 @@ const AIAgentPage: React.FC = () => {
             <TabsContent value="chat">
               {/* Chat Interface */}
               <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
-                <div className="h-[600px]">
-                  <GeminiChat 
-                    key={chatKey} 
+                <div className="h-[650px] flex flex-col">
+                  <ChatContainer
+                    key={chatKey}
                     starterPrompt={starterPrompt}
                   />
                 </div>
@@ -303,7 +303,7 @@ const AIAgentPage: React.FC = () => {
                     </span>
                   </div>
                 </div>
-                
+
                 <div className="space-y-8">
                   {filteredCategories.length === 0 ? (
                     <div className="text-center py-12">
@@ -315,49 +315,49 @@ const AIAgentPage: React.FC = () => {
                     </div>
                   ) : (
                     filteredCategories.map((category, categoryIndex) => (
-                    <div key={categoryIndex} className="group">
-                      {/* Category Header */}
-                      <div className="flex items-center gap-4 mb-6">
-                        <div className={`p-3 rounded-xl bg-gradient-to-r ${category.color} text-white shadow-lg`}>
-                          {category.icon}
+                      <div key={categoryIndex} className="group">
+                        {/* Category Header */}
+                        <div className="flex items-center gap-4 mb-6">
+                          <div className={`p-3 rounded-xl bg-gradient-to-r ${category.color} text-white shadow-lg`}>
+                            {category.icon}
+                          </div>
+                          <div>
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">{category.category}</h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              {category.abilities.length} abilities available
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="text-xl font-bold text-gray-900 dark:text-white">{category.category}</h3>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {category.abilities.length} abilities available
-                          </p>
-                        </div>
-                      </div>
-                      
-                      {/* Abilities Grid */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pl-6">
-                        {category.abilities.map((ability, abilityIndex) => (
-                          <div 
-                            key={abilityIndex}
-                            onClick={() => handleStarterClick(ability.action)}
-                            className={`group/ability relative p-5 rounded-xl border-2 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer ${category.bgColor}`}
-                          >
-                            <div className="flex items-start gap-3">
-                              <div className="flex-shrink-0 w-2 h-2 bg-gradient-to-r from-green-400 to-blue-500 rounded-full mt-2 group-hover/ability:animate-pulse"></div>
-                              <div className="flex-1">
-                                <h4 className="font-semibold text-gray-900 dark:text-white mb-2 group-hover/ability:text-indigo-600 dark:group-hover/ability:text-indigo-400 transition-colors">
-                                  {ability.name}
-                                </h4>
-                                <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
-                                  {ability.description}
-                                </p>
-                                <div className="text-xs px-3 py-1 bg-white/60 dark:bg-gray-800/60 rounded-full text-gray-500 dark:text-gray-400 inline-block">
-                                  Try: "{ability.action}"
+
+                        {/* Abilities Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pl-6">
+                          {category.abilities.map((ability, abilityIndex) => (
+                            <div
+                              key={abilityIndex}
+                              onClick={() => handleStarterClick(ability.action)}
+                              className={`group/ability relative p-5 rounded-xl border-2 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer ${category.bgColor}`}
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className="flex-shrink-0 w-2 h-2 bg-gradient-to-r from-green-400 to-blue-500 rounded-full mt-2 group-hover/ability:animate-pulse"></div>
+                                <div className="flex-1">
+                                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2 group-hover/ability:text-indigo-600 dark:group-hover/ability:text-indigo-400 transition-colors">
+                                    {ability.name}
+                                  </h4>
+                                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
+                                    {ability.description}
+                                  </p>
+                                  <div className="text-xs px-3 py-1 bg-white/60 dark:bg-gray-800/60 rounded-full text-gray-500 dark:text-gray-400 inline-block">
+                                    Try: "{ability.action}"
+                                  </div>
                                 </div>
                               </div>
+
+                              {/* Hover Overlay */}
+                              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-xl opacity-0 group-hover/ability:opacity-100 transition-opacity duration-300"></div>
                             </div>
-                            
-                            {/* Hover Overlay */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-xl opacity-0 group-hover/ability:opacity-100 transition-opacity duration-300"></div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
                     ))
                   )}
                 </div>
@@ -373,8 +373,8 @@ const AIAgentPage: React.FC = () => {
                       Most Popular
                     </span>
                   </div>
-                  <button 
-                    onClick={handleResetClick} 
+                  <button
+                    onClick={handleResetClick}
                     className="flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-sm hover:shadow-md border border-gray-200 dark:border-gray-700 transition-all duration-200 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-gray-800"
                   >
                     <RefreshCw className="w-4 h-4" />
@@ -383,7 +383,7 @@ const AIAgentPage: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {quickActions.map((action, index) => (
-                    <button 
+                    <button
                       key={index}
                       onClick={() => handleStarterClick(action.text)}
                       className="group p-5 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 hover:bg-white dark:hover:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-300 text-left hover:shadow-lg hover:scale-105"
@@ -415,7 +415,7 @@ const AIAgentPage: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {smartSuggestions.map((suggestion, index) => (
-                    <button 
+                    <button
                       key={index}
                       onClick={() => handleStarterClick(suggestion.text)}
                       className="group p-5 bg-gradient-to-br from-white/60 to-gray-50/60 dark:from-gray-800/60 dark:to-gray-900/60 backdrop-blur-sm rounded-xl border border-gray-200/40 dark:border-gray-700/40 hover:from-white hover:to-gray-50 dark:hover:from-gray-800 dark:hover:to-gray-900 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-300 text-left hover:shadow-xl hover:scale-102"
@@ -425,11 +425,10 @@ const AIAgentPage: React.FC = () => {
                           <span className="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300 rounded-full font-medium">
                             {suggestion.category}
                           </span>
-                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${ 
-                            suggestion.complexity === 'Basic' 
-                              ? 'bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300'
-                              : 'bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-300'
-                          }`}>
+                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${suggestion.complexity === 'Basic'
+                            ? 'bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300'
+                            : 'bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-300'
+                            }`}>
                             {suggestion.complexity}
                           </span>
                         </div>

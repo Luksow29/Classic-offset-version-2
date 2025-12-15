@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import OrderForm from './OrderForm';
 import OrdersTable from './OrdersTable';
-import { Plus, List } from 'lucide-react';
+import { Plus, List, Package, TrendingUp, Clock, CheckCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Orders: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'add' | 'manage'>('manage');
@@ -19,49 +20,143 @@ const Orders: React.FC = () => {
   }, [highlightOrderId]);
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Orders Management</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">Create, view, and manage all your customer orders.</p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 dark:from-gray-950 dark:via-blue-950/20 dark:to-indigo-950/30">
+      {/* Decorative Background Elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 -left-40 w-96 h-96 bg-gradient-to-br from-purple-400/15 to-pink-500/15 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-72 h-72 bg-gradient-to-br from-cyan-400/10 to-teal-500/10 rounded-full blur-3xl" />
       </div>
 
-      {/* Modern Tab Navigation */}
-      <div className="flex space-x-2 border-b border-gray-200 dark:border-gray-700">
-        <button
-          onClick={() => setActiveTab('manage')}
-          className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors -mb-px rounded-t-lg ${
-            activeTab === 'manage'
-              ? 'bg-white dark:bg-gray-800 border border-b-0 border-gray-200 dark:border-gray-700 text-primary-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
-          }`}
+      <div className="relative p-4 sm:p-6 lg:p-8 space-y-6">
+        {/* Header Section */}
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4"
         >
-          <List size={16} />
-          Manage Orders
-        </button>
-        <button
-          onClick={() => setActiveTab('add')}
-          className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors -mb-px rounded-t-lg ${
-            activeTab === 'add'
-              ? 'bg-white dark:bg-gray-800 border border-b-0 border-gray-200 dark:border-gray-700 text-primary-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          <Plus size={16} />
-          Add New Order
-        </button>
-      </div>
-
-      {/* Tab Content */}
-      <div className="mt-0"> {/* Margin is handled by the container */}
-        {activeTab === 'manage' ? (
-          <OrdersTable highlightOrderId={highlightOrderId} />
-        ) : (
-          <div className="max-w-3xl mx-auto bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-            <OrderForm onSuccess={() => setActiveTab('manage')} />
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg shadow-blue-500/30">
+              <Package className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-900 dark:from-white dark:via-blue-200 dark:to-indigo-200 bg-clip-text text-transparent">
+                Orders Management
+              </h1>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+                Create, view, and manage all your customer orders efficiently
+              </p>
+            </div>
           </div>
-        )}
+
+          {/* Quick Stats Pills */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <motion.div 
+              whileHover={{ scale: 1.05 }}
+              className="flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-full border border-gray-200/60 dark:border-gray-700/60 shadow-sm"
+            >
+              <TrendingUp className="w-4 h-4 text-green-500" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Orders Today</span>
+            </motion.div>
+            <motion.div 
+              whileHover={{ scale: 1.05 }}
+              className="flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-full border border-gray-200/60 dark:border-gray-700/60 shadow-sm"
+            >
+              <Clock className="w-4 h-4 text-yellow-500" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Pending</span>
+            </motion.div>
+            <motion.div 
+              whileHover={{ scale: 1.05 }}
+              className="flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-full border border-gray-200/60 dark:border-gray-700/60 shadow-sm"
+            >
+              <CheckCircle className="w-4 h-4 text-blue-500" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Completed</span>
+            </motion.div>
+          </div>
+        </motion.div>
+
+        {/* Modern Tab Navigation */}
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="relative"
+        >
+          <div className="flex p-1.5 bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl rounded-2xl border border-gray-200/60 dark:border-gray-700/60 shadow-lg shadow-gray-200/40 dark:shadow-gray-900/40 w-fit">
+            <button
+              onClick={() => setActiveTab('manage')}
+              className={`relative flex items-center gap-2.5 px-6 py-3 text-sm font-semibold transition-all duration-300 rounded-xl ${
+                activeTab === 'manage'
+                  ? 'text-white'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/50 dark:hover:bg-gray-700/50'
+              }`}
+            >
+              {activeTab === 'manage' && (
+                <motion.div
+                  layoutId="activeTab"
+                  className="absolute inset-0 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-lg shadow-blue-500/30"
+                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                />
+              )}
+              <List size={18} className="relative z-10" />
+              <span className="relative z-10">Manage Orders</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('add')}
+              className={`relative flex items-center gap-2.5 px-6 py-3 text-sm font-semibold transition-all duration-300 rounded-xl ${
+                activeTab === 'add'
+                  ? 'text-white'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/50 dark:hover:bg-gray-700/50'
+              }`}
+            >
+              {activeTab === 'add' && (
+                <motion.div
+                  layoutId="activeTab"
+                  className="absolute inset-0 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-lg shadow-blue-500/30"
+                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                />
+              )}
+              <Plus size={18} className="relative z-10" />
+              <span className="relative z-10">Add New Order</span>
+            </button>
+          </div>
+        </motion.div>
+
+        {/* Tab Content with Animation */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            {activeTab === 'manage' ? (
+              <OrdersTable highlightOrderId={highlightOrderId} />
+            ) : (
+              <motion.div 
+                className="max-w-4xl mx-auto"
+                initial={{ scale: 0.95 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-2xl p-8 rounded-3xl shadow-xl shadow-gray-200/40 dark:shadow-gray-900/40 border border-gray-200/60 dark:border-gray-700/60">
+                  <div className="flex items-center gap-3 mb-6 pb-6 border-b border-gray-200/60 dark:border-gray-700/60">
+                    <div className="p-2.5 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl">
+                      <Plus className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-800 dark:text-white">Create New Order</h2>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Fill in the details to create a new order</p>
+                    </div>
+                  </div>
+                  <OrderForm onSuccess={() => setActiveTab('manage')} />
+                </div>
+              </motion.div>
+            )}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   );

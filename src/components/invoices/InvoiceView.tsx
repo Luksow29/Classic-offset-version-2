@@ -9,7 +9,8 @@ interface OrderDetails {
   customer: {
     name: string;
     phone: string;
-    address: string;
+    address: string | null;
+    code?: string | null;
   } | null;
 }
 
@@ -37,7 +38,9 @@ const InvoiceView: React.FC<InvoiceViewProps> = ({ order }) => {
       <div className="grid grid-cols-2 gap-4 mb-8">
         <div>
           <h2 className="text-lg font-semibold text-gray-800">Bill To:</h2>
-          <p className="text-gray-700">{customer?.name}</p>
+          <p className="text-gray-700 font-medium">
+            {customer?.name} {customer?.code && <span className="text-gray-500 font-normal">({customer.code})</span>}
+          </p>
           <p className="text-gray-600">{customer?.address}</p>
           <p className="text-gray-600">Phone: {customer?.phone}</p>
         </div>

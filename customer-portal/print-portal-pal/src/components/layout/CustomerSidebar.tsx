@@ -44,6 +44,7 @@ const CustomerSidebar: React.FC<CustomerSidebarProps> = ({
       icon: <LayoutDashboard size={20} />,
       items: [
         { name: 'Overview', path: '/customer-portal', icon: <Home size={18} /> },
+        { name: 'Design Library', path: '/customer-portal/showcase', icon: <Package size={18} /> },
       ],
     },
     {
@@ -80,7 +81,7 @@ const CustomerSidebar: React.FC<CustomerSidebarProps> = ({
       setExpandedGroups([groupName]);
       return;
     }
-    
+
     setExpandedGroups(prev =>
       prev.includes(groupName)
         ? prev.filter(name => name !== groupName)
@@ -103,11 +104,11 @@ const CustomerSidebar: React.FC<CustomerSidebarProps> = ({
     >
       {/* Header with glassmorphism */}
       <div className="flex items-center justify-between h-16 px-4 border-b border-white/20 dark:border-white/10 flex-shrink-0 bg-gradient-to-r from-blue-50/50 to-emerald-50/50 dark:from-blue-950/50 dark:to-emerald-950/50 backdrop-blur-sm">
-        <motion.h1 
+        <motion.h1
           className={`text-lg font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-emerald-800 dark:from-white dark:via-blue-300 dark:to-emerald-300 bg-clip-text text-transparent tracking-tight transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}
           animate={{ opacity: isCollapsed ? 0 : 1 }}
           transition={{ duration: 0.2 }}
-        > 
+        >
           Print Portal
         </motion.h1>
         <div className="flex items-center gap-2">
@@ -143,8 +144,8 @@ const CustomerSidebar: React.FC<CustomerSidebarProps> = ({
 
       <nav className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
         {navGroups.map((group, groupIndex) => (
-          <motion.div 
-            key={group.name} 
+          <motion.div
+            key={group.name}
             className="space-y-2"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -152,13 +153,12 @@ const CustomerSidebar: React.FC<CustomerSidebarProps> = ({
           >
             <motion.button
               onClick={() => toggleGroup(group.name)}
-              className={`w-full flex items-center px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-xl transition-all duration-200 backdrop-blur-sm group ${
-                expandedGroups.includes(group.name) && !isCollapsed ? 'bg-white/30 dark:bg-gray-800/30 shadow-sm' : ''
-              }`}
+              className={`w-full flex items-center px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-xl transition-all duration-200 backdrop-blur-sm group ${expandedGroups.includes(group.name) && !isCollapsed ? 'bg-white/30 dark:bg-gray-800/30 shadow-sm' : ''
+                }`}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              <motion.span 
+              <motion.span
                 className="flex items-center justify-center p-2 rounded-lg bg-gradient-to-br from-blue-500/10 to-emerald-500/10 group-hover:from-blue-500/20 group-hover:to-emerald-500/20 transition-all duration-200"
                 whileHover={{ rotate: 5 }}
               >
@@ -214,8 +214,8 @@ const CustomerSidebar: React.FC<CustomerSidebarProps> = ({
                           animate={{ scaleY: location.pathname === item.path ? 1 : 0 }}
                           transition={{ duration: 0.2 }}
                         />
-                        
-                        <motion.span 
+
+                        <motion.span
                           className="flex items-center justify-center"
                           whileHover={{ scale: 1.1 }}
                           transition={{ duration: 0.1 }}
@@ -223,7 +223,7 @@ const CustomerSidebar: React.FC<CustomerSidebarProps> = ({
                           {item.icon}
                         </motion.span>
                         {!isCollapsed && (
-                          <motion.span 
+                          <motion.span
                             className="ml-3 tracking-wide"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -241,10 +241,10 @@ const CustomerSidebar: React.FC<CustomerSidebarProps> = ({
           </motion.div>
         ))}
       </nav>
-      
+
       {/* Enhanced footer with glassmorphism */}
       {!isCollapsed && (
-        <motion.div 
+        <motion.div
           className="p-4 text-xs text-gray-500 dark:text-gray-400 border-t border-white/20 dark:border-white/10 bg-gradient-to-r from-blue-50/30 to-emerald-50/30 dark:from-blue-950/30 dark:to-emerald-950/30 backdrop-blur-sm"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}

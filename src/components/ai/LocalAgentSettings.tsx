@@ -14,16 +14,15 @@ export const LocalAgentSettings: React.FC<LocalAgentSettingsProps> = ({
   className = '',
   onConfigChange,
 }) => {
-  const [baseUrl, setBaseUrl] = useState('http://192.168.3.25:1234');
+  const [baseUrl, setBaseUrl] = useState(() => localAgent.getConfig().baseUrl);
   const [isHealthy, setIsHealthy] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [lastCheck, setLastCheck] = useState<Date | null>(null);
 
   const commonUrls = [
     'http://localhost:1234',
-    'http://192.168.3.25:1234',
     'http://127.0.0.1:1234',
-    'http://192.168.1.100:1234',
+    'http://192.168.1.32:1234',
   ];
 
   const checkConnection = useCallback(async (url?: string) => {

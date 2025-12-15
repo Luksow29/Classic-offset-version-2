@@ -3,12 +3,7 @@ import React from 'react';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import { Link } from 'react-router-dom';
-
-// Correctly import individual icons from lucide-react
-import Package from 'lucide-react/dist/esm/icons/package';
-import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
-import CheckCircle from 'lucide-react/dist/esm/icons/check-circle';
-import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
+import { Package, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
 
 
 // Dashboard-லிருந்து வரும் ஆர்டர் தரவின் வகையை வரையறுக்கவும்

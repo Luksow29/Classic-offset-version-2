@@ -1,9 +1,12 @@
 // src/lib/ragServices.ts
 // Client-side RAG Services for Local AI + Supabase Integration
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type DataRecord = Record<string, any>;
+
 interface DataServiceResponse {
   success: boolean;
-  data?: any;
+  data?: DataRecord | DataRecord[];
   error?: string;
   count?: number;
   message?: string;
@@ -11,12 +14,26 @@ interface DataServiceResponse {
 
 interface BusinessContext {
   type: 'customer' | 'financial' | 'product' | 'order' | 'expense' | 'stock' | 'general';
-  data: any;
+  data: DataRecord | DataRecord[];
   summary: string;
 }
 
+interface QueryParams {
+  customer_id?: number;
+  customer_name?: string;
+  product_name?: string;
+  month?: string;
+  limit?: number;
+  [key: string]: string | number | boolean | undefined;
+}
+
 export class LocalRAGService {
-  private dataServiceUrl = 'https://ytnsjmbhgwcuwmnflncl.supabase.co/functions/v1/local-ai-rag';
+  private dataServiceUrl = (() => {
+    const defaultUrl = 'https://ytnsjmbhgwcuwmnflncl.supabase.co/functions/v1/local-ai-rag';
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+    if (!supabaseUrl) return defaultUrl;
+    return `${supabaseUrl.replace(/\/$/, '')}/functions/v1/local-ai-rag`;
+  })();
   private anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
   // --- QUERY CLASSIFICATION ---
@@ -27,7 +44,7 @@ export class LocalRAGService {
       // Order keywords  
       'order', 'orders', 'ஆர்டர்', 'booking', 'bookings',
       // Financial keywords
-      'payment', 'payments', 'due', 'revenue', 'income', 'sales', 'profit', 'பணம்', 'கட்டணம்',
+      'payment', 'payments', 'due', 'outstanding', 'unpaid', 'pending payments', 'revenue', 'income', 'sales', 'profit', 'பணம்', 'கட்டணம்',
       'financial', 'finance', 'money', 'amount', 'balance', 'summary',
       // Product keywords
       'product', 'products', 'item', 'items', 'service', 'services', 'பொருள்',
@@ -52,34 +69,49 @@ export class LocalRAGService {
     const operations: string[] = [];
     const queryLower = query.toLowerCase();
 
+    // Due payments - Check this first as it's most specific
+    if (queryLower.includes('due payments') || 
+        queryLower.includes('outstanding') || 
+        queryLower.includes('unpaid') ||
+        queryLower.includes('pending payments') ||
+        (queryLower.includes('customers') && queryLower.includes('due')) ||
+        (queryLower.includes('customers') && queryLower.includes('outstanding'))) {
+      operations.push('getDuePayments');
+    }
+
     // Customer operations
     if (queryLower.includes('all customers') || queryLower.includes('list customers')) {
       operations.push('getAllCustomers');
-    } else if (queryLower.includes('customer details') || queryLower.includes('find customer')) {
+    }
+    if (queryLower.includes('customer details') || queryLower.includes('find customer')) {
       operations.push('getCustomerDetails');
-    } else if (queryLower.includes('customer orders') || queryLower.includes('orders for customer')) {
+    }
+    if (queryLower.includes('customer orders') || queryLower.includes('orders for customer')) {
       operations.push('getCustomerOrders');
-    } else if (queryLower.includes('customer payments') || queryLower.includes('payments for customer')) {
+    }
+    if (queryLower.includes('customer payments') || queryLower.includes('payments for customer')) {
       operations.push('getCustomerPayments');
     }
 
     // Financial operations
     if (queryLower.includes('financial summary') || queryLower.includes('monthly summary')) {
       operations.push('getFinancialSummary');
-    } else if (queryLower.includes('daily briefing') || queryLower.includes('today summary')) {
+    }
+    if (queryLower.includes('daily briefing') || queryLower.includes('today summary')) {
       operations.push('getDailyBriefing');
-    } else if (queryLower.includes('top customers') && !queryLower.includes('month')) {
+    }
+    if (queryLower.includes('top customers') && !queryLower.includes('month')) {
       operations.push('getTopCustomers');
-    } else if (queryLower.includes('top customers') && queryLower.includes('month')) {
+    }
+    if (queryLower.includes('top customers') && queryLower.includes('month')) {
       operations.push('getTopCustomersByMonth');
-    } else if (queryLower.includes('due payments') || queryLower.includes('outstanding')) {
-      operations.push('getDuePayments');
     }
 
     // Product operations
     if (queryLower.includes('all products') || queryLower.includes('list products')) {
       operations.push('getAllProducts');
-    } else if (queryLower.includes('product details') || queryLower.includes('find product')) {
+    }
+    if (queryLower.includes('product details') || queryLower.includes('find product')) {
       operations.push('getProductDetails');
     }
 
@@ -91,7 +123,8 @@ export class LocalRAGService {
     // Stock operations
     if (queryLower.includes('low stock') || queryLower.includes('stock alert')) {
       operations.push('getLowStockMaterials');
-    } else if (queryLower.includes('all materials') || queryLower.includes('stock list')) {
+    }
+    if (queryLower.includes('all materials') || queryLower.includes('stock list')) {
       operations.push('getAllMaterials');
     }
 
@@ -100,16 +133,17 @@ export class LocalRAGService {
       if (queryLower.includes('customer')) operations.push('getAllCustomers');
       if (queryLower.includes('product')) operations.push('getAllProducts');
       if (queryLower.includes('order')) operations.push('getRecentOrders');
-      if (queryLower.includes('payment')) operations.push('getDuePayments');
-      if (queryLower.includes('business') || queryLower.includes('today')) operations.push('getDailyBriefing');
+      if (queryLower.includes('payment') || queryLower.includes('due')) operations.push('getDuePayments');
+      if (queryLower.includes('business') || queryLower.includes('today') || queryLower.includes('briefing')) operations.push('getDailyBriefing');
+      if (queryLower.includes('stock') || queryLower.includes('inventory')) operations.push('getLowStockMaterials');
     }
 
     return operations;
   }
 
   // --- PARAMETER EXTRACTION ---
-  extractParameters(query: string, operation: string): any {
-    const params: any = {};
+  extractParameters(query: string, operation: string): QueryParams {
+    const params: QueryParams = {};
     const queryLower = query.toLowerCase();
 
     // Extract customer name
@@ -154,7 +188,7 @@ export class LocalRAGService {
   }
 
   // --- DATA SERVICE CALLS ---
-  private async callDataService(operation: string, params: any = {}): Promise<DataServiceResponse> {
+  private async callDataService(operation: string, params: QueryParams = {}): Promise<DataServiceResponse> {
     try {
       const response = await fetch(this.dataServiceUrl, {
         method: 'POST',
@@ -210,26 +244,29 @@ export class LocalRAGService {
   }
 
   // --- DATA SUMMARY GENERATION ---
-  private generateDataSummary(operation: string, data: any, count?: number): string {
+  private generateDataSummary(operation: string, data: DataRecord | DataRecord[], count?: number): string {
+    const dataArray = Array.isArray(data) ? data : [];
+    const dataObject = !Array.isArray(data) ? data : {};
+    
     switch (operation) {
       case 'getAllCustomers':
         return `Found ${count || 0} customers in the database.`;
       case 'getCustomerDetails':
         return `Found ${count || 0} customer(s) matching the search criteria.`;
       case 'getDailyBriefing':
-        return `Today's business summary: ${data.newOrders} new orders, ₹${data.totalRevenue} revenue, ${data.newCustomers} new customers, ${data.lowStockCount} low stock alerts.`;
+        return `Today's business summary: ${dataObject.newOrders || 0} new orders, ₹${dataObject.totalRevenue || 0} revenue, ${dataObject.newCustomers || 0} new customers, ${dataObject.lowStockCount || 0} low stock alerts.`;
       case 'getTopCustomers':
-        return `Top ${data?.length || 0} spending customers of all time.`;
+        return `Top ${dataArray.length || 0} spending customers of all time.`;
       case 'getTopCustomersByMonth':
-        return `Top ${data?.length || 0} spending customers for the specified month.`;
+        return `Top ${dataArray.length || 0} spending customers for the specified month.`;
       case 'getDuePayments':
-        return `Found ${data?.length || 0} customers with outstanding due payments.`;
+        return `Found ${dataArray.length || 0} customers with outstanding due payments.`;
       case 'getAllProducts':
         return `Found ${count || 0} products in the catalog.`;
       case 'getRecentOrders':
         return `Found ${count || 0} recent orders.`;
       case 'getLowStockMaterials':
-        return `Found ${data?.length || 0} materials with low stock levels.`;
+        return `Found ${dataArray.length || 0} materials with low stock levels.`;
       default:
         return `Retrieved ${operation} data successfully.`;
     }
@@ -274,7 +311,7 @@ export class LocalRAGService {
       'low-stock': 'getLowStockMaterials'
     };
 
-    const operation = quickQueries[queryType];
+    const operation = quickQueries[queryType as keyof typeof quickQueries];
     if (!operation) return [];
 
     const result = await this.callDataService(operation);
