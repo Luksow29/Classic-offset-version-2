@@ -10,6 +10,7 @@ import { UserProvider } from './context/UserContext';
 import { RealtimeProvider } from './context/RealtimeContext';
 import { Toaster } from 'react-hot-toast';
 import ErrorBoundary from './components/ui/ErrorBoundary';
+import PWAInstallPrompt from './components/ui/PWAInstallPrompt';
 
 // Layout and Loading components
 import ProtectedLayout from './components/layout/ProtectedLayout';
@@ -156,6 +157,7 @@ function App() {
             }}
           />
           <RouterProvider router={router} />
+          <PWAInstallPrompt />
         </RealtimeProvider>
       </UserProvider>
     </ThemeProvider>

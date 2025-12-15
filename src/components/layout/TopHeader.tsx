@@ -31,7 +31,7 @@ const TopHeader: React.FC<TopHeaderProps> = ({ onMenuClick }) => {
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.3 }}
       >
-        <div className="h-full px-6 flex items-center justify-between bg-gradient-to-r from-blue-50/30 to-emerald-50/30 dark:from-blue-950/30 dark:to-emerald-950/30">
+        <div className="h-full px-3 sm:px-4 md:px-6 flex items-center justify-between bg-gradient-to-r from-blue-50/30 to-emerald-50/30 dark:from-blue-950/30 dark:to-emerald-950/30">
           {/* Left Side - Sidebar toggle for mobile + Brand accent */}
           <div className="flex items-center gap-4">
             <motion.button

@@ -25,6 +25,7 @@ import RealtimeStatus from '../ui/RealtimeStatus';
 import { useRealtimeOrders } from '@/hooks/useRealtimeOrders';
 import { useRealtimePayments } from '@/hooks/useRealtimePayments';
 import { useDashboardData } from '@/hooks/useDashboardData';
+import { useIsMobile } from '@/hooks/useMediaQuery';
 import type { DraggableProvided } from '@hello-pangea/dnd';
 
 interface DraggableDashboardCardProps {
@@ -32,9 +33,16 @@ interface DraggableDashboardCardProps {
     children: React.ReactNode;
     provided: DraggableProvided;
     isDragging: boolean;
+    showDragHandle?: boolean;
 }
 
-const DraggableDashboardCard: React.FC<DraggableDashboardCardProps> = ({ title, children, provided, isDragging }) => (
+const DraggableDashboardCard: React.FC<DraggableDashboardCardProps> = ({
+    title,
+    children,
+    provided,
+    isDragging,
+    showDragHandle = true,
+}) => (
     <Card
         ref={provided.innerRef}
         {...provided.draggableProps}
@@ -43,21 +51,23 @@ const DraggableDashboardCard: React.FC<DraggableDashboardCardProps> = ({ title, 
             : 'shadow-lg hover:shadow-xl hover:shadow-blue-500/15 hover:-translate-y-1'
             } bg-white/90 dark:bg-gray-900/90 backdrop-blur-2xl border border-gray-200/60 dark:border-gray-700/60 rounded-3xl overflow-hidden`}
     >
-        <div className="flex justify-between items-center px-6 py-5 border-b border-gray-100/80 dark:border-gray-800/80 bg-gradient-to-r from-slate-50/90 via-blue-50/50 to-indigo-50/90 dark:from-slate-900/90 dark:via-blue-950/50 dark:to-indigo-950/90">
+        <div className="flex justify-between items-center px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100/80 dark:border-gray-800/80 bg-gradient-to-r from-slate-50/90 via-blue-50/50 to-indigo-50/90 dark:from-slate-900/90 dark:via-blue-950/50 dark:to-indigo-950/90">
             <div className="flex items-center gap-3">
                 <div className="w-1.5 h-6 rounded-full bg-gradient-to-b from-blue-500 to-indigo-600" />
-                <h3 className="font-display font-bold text-lg text-gray-800 dark:text-gray-100">
+                <h3 className="font-display font-bold text-base sm:text-lg text-gray-800 dark:text-gray-100">
                     {title}
                 </h3>
             </div>
-            <div
-                {...provided.dragHandleProps}
-                className="cursor-grab active:cursor-grabbing p-2.5 rounded-xl hover:bg-white/80 dark:hover:bg-gray-800/80 transition-all duration-200 group border border-transparent hover:border-gray-200/50 dark:hover:border-gray-700/50"
-            >
-                <GripVertical className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors duration-200" />
-            </div>
+            {showDragHandle ? (
+                <div
+                    {...provided.dragHandleProps}
+                    className="cursor-grab active:cursor-grabbing p-2 rounded-xl hover:bg-white/80 dark:hover:bg-gray-800/80 transition-all duration-200 group border border-transparent hover:border-gray-200/50 dark:hover:border-gray-700/50"
+                >
+                    <GripVertical className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors duration-200" />
+                </div>
+            ) : null}
         </div>
-        <div className="p-6 bg-gradient-to-b from-transparent to-slate-50/30 dark:to-slate-900/30">
+        <div className="p-4 sm:p-6 bg-gradient-to-b from-transparent to-slate-50/30 dark:to-slate-900/30">
             {children}
         </div>
     </Card>
@@ -76,6 +86,7 @@ const DEFAULT_ORDER = ['metrics', 'financialSummary', 'revenueChart', 'ordersCha
 
 const Dashboard: React.FC = () => {
     const { userProfile } = useUser();
+    const isMobile = useIsMobile();
     const [currentMonth, setCurrentMonth] = useState(new Date().toISOString().slice(0, 7));
     const [componentOrder, setComponentOrder] = useState<string[]>(() => {
         try {
@@ -246,7 +257,7 @@ const Dashboard: React.FC = () => {
             </Suspense>
             <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950/30">
                 {/* Decorative background elements */}
-                <div className="fixed inset-0 overflow-hidden pointer-events-none">
+                <div className="fixed inset-0 overflow-hidden pointer-events-none hidden sm:block">
                     <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-blue-400/20 to-indigo-400/20 rounded-full blur-3xl" />
                     <div className="absolute top-1/2 -left-40 w-80 h-80 bg-gradient-to-br from-purple-400/15 to-pink-400/15 rounded-full blur-3xl" />
                     <div className="absolute -bottom-20 right-1/3 w-72 h-72 bg-gradient-to-br from-emerald-400/15 to-teal-400/15 rounded-full blur-3xl" />
@@ -370,7 +381,7 @@ const Dashboard: React.FC = () => {
                                         const componentInfo = componentList.find(c => c.id === id);
                                         if (!componentInfo) return null;
                                         return (
-                                            <Draggable key={id} draggableId={id} index={index}>
+                                            <Draggable key={id} draggableId={id} index={index} isDragDisabled={isMobile}>
                                                 {(provided, snapshot) => (
                                                     <div className={`${componentInfo.gridClass}`}>
                                                         <motion.div
@@ -384,7 +395,12 @@ const Dashboard: React.FC = () => {
                                                                 damping: 20
                                                             }}
                                                         >
-                                                            <DraggableDashboardCard title={componentInfo.title} provided={provided} isDragging={snapshot.isDragging}>
+                                                            <DraggableDashboardCard
+                                                                title={componentInfo.title}
+                                                                provided={provided}
+                                                                isDragging={snapshot.isDragging}
+                                                                showDragHandle={!isMobile}
+                                                            >
                                                                 {renderComponent(id)}
                                                             </DraggableDashboardCard>
                                                         </motion.div>

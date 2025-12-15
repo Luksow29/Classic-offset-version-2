@@ -132,7 +132,7 @@ const InsightsPage: React.FC = () => {
       )}
 
       {/* Chat Section */}
-      <div className="h-[600px] bg-white dark:bg-gray-800/50 rounded-2xl shadow-lg">
+      <div className="h-[65vh] sm:h-[600px] bg-white dark:bg-gray-800/50 rounded-2xl shadow-lg">
         <GeminiChat key={chatKey} starterPrompt={starterPrompt} />
       </div>
     </div>

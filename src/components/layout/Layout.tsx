@@ -116,8 +116,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <TopHeader onMenuClick={() => setSidebarOpen(true)} />
         
         <main className="flex-1 overflow-y-auto custom-scrollbar main-content">
-          <div className="py-6">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+          <div className="py-4 sm:py-6">
+            <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
               <motion.div
                 key={useLocation().pathname}
                 initial={{ opacity: 0, y: 20 }}

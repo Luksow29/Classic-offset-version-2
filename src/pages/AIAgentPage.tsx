@@ -225,14 +225,20 @@ const AIAgentPage: React.FC = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 -mt-6">
         <div className="max-w-7xl mx-auto">
           <Tabs defaultValue="chat" className="w-full">
-            <TabsList className="mb-8 bg-white/80 dark:bg-gray-800/80 rounded-xl shadow-sm p-1 flex gap-2">
-              <TabsTrigger value="chat" className="flex-1 text-lg">💬 Chat</TabsTrigger>
-              <TabsTrigger value="features" className="flex-1 text-lg">✨ Features & How to Use</TabsTrigger>
+            <TabsList className="mb-6 sm:mb-8 bg-white/80 dark:bg-gray-800/80 rounded-xl shadow-sm p-1 flex gap-2">
+              <TabsTrigger value="chat" className="flex-1 text-sm sm:text-lg">
+                <span className="sm:hidden">Chat</span>
+                <span className="hidden sm:inline">💬 Chat</span>
+              </TabsTrigger>
+              <TabsTrigger value="features" className="flex-1 text-sm sm:text-lg">
+                <span className="sm:hidden">Features</span>
+                <span className="hidden sm:inline">✨ Features & How to Use</span>
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="chat">
               {/* Chat Interface */}
               <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
-                <div className="h-[650px] flex flex-col">
+                <div className="h-[70vh] sm:h-[650px] flex flex-col">
                   <ChatContainer
                     key={chatKey}
                     starterPrompt={starterPrompt}

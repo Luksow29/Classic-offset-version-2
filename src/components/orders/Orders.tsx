@@ -22,7 +22,7 @@ const Orders: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 dark:from-gray-950 dark:via-blue-950/20 dark:to-indigo-950/30">
       {/* Decorative Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none hidden sm:block">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 rounded-full blur-3xl" />
         <div className="absolute top-1/2 -left-40 w-96 h-96 bg-gradient-to-br from-purple-400/15 to-pink-500/15 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-1/4 w-72 h-72 bg-gradient-to-br from-cyan-400/10 to-teal-500/10 rounded-full blur-3xl" />
@@ -83,10 +83,10 @@ const Orders: React.FC = () => {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="relative"
         >
-          <div className="flex p-1.5 bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl rounded-2xl border border-gray-200/60 dark:border-gray-700/60 shadow-lg shadow-gray-200/40 dark:shadow-gray-900/40 w-fit">
+          <div className="flex w-full sm:w-fit p-1.5 bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl rounded-2xl border border-gray-200/60 dark:border-gray-700/60 shadow-lg shadow-gray-200/40 dark:shadow-gray-900/40">
             <button
               onClick={() => setActiveTab('manage')}
-              className={`relative flex items-center gap-2.5 px-6 py-3 text-sm font-semibold transition-all duration-300 rounded-xl ${
+              className={`relative flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition-all duration-300 rounded-xl ${
                 activeTab === 'manage'
                   ? 'text-white'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/50 dark:hover:bg-gray-700/50'
@@ -100,11 +100,12 @@ const Orders: React.FC = () => {
                 />
               )}
               <List size={18} className="relative z-10" />
-              <span className="relative z-10">Manage Orders</span>
+              <span className="relative z-10 sm:hidden">Manage</span>
+              <span className="relative z-10 hidden sm:inline">Manage Orders</span>
             </button>
             <button
               onClick={() => setActiveTab('add')}
-              className={`relative flex items-center gap-2.5 px-6 py-3 text-sm font-semibold transition-all duration-300 rounded-xl ${
+              className={`relative flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition-all duration-300 rounded-xl ${
                 activeTab === 'add'
                   ? 'text-white'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/50 dark:hover:bg-gray-700/50'
@@ -118,7 +119,8 @@ const Orders: React.FC = () => {
                 />
               )}
               <Plus size={18} className="relative z-10" />
-              <span className="relative z-10">Add New Order</span>
+              <span className="relative z-10 sm:hidden">Add</span>
+              <span className="relative z-10 hidden sm:inline">Add New Order</span>
             </button>
           </div>
         </motion.div>
@@ -141,8 +143,8 @@ const Orders: React.FC = () => {
                 animate={{ scale: 1 }}
                 transition={{ duration: 0.3 }}
               >
-                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-2xl p-8 rounded-3xl shadow-xl shadow-gray-200/40 dark:shadow-gray-900/40 border border-gray-200/60 dark:border-gray-700/60">
-                  <div className="flex items-center gap-3 mb-6 pb-6 border-b border-gray-200/60 dark:border-gray-700/60">
+                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-2xl p-4 sm:p-6 lg:p-8 rounded-3xl shadow-xl shadow-gray-200/40 dark:shadow-gray-900/40 border border-gray-200/60 dark:border-gray-700/60">
+                  <div className="flex items-center gap-3 mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-gray-200/60 dark:border-gray-700/60">
                     <div className="p-2.5 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl">
                       <Plus className="w-5 h-5 text-white" />
                     </div>

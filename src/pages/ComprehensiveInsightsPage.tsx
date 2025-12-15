@@ -376,12 +376,12 @@ const ComprehensiveInsightsPage: React.FC = () => {
       </Card>
 
       {/* Enhanced Chat Section */}
-      <Card className="p-6">
-        <div className="flex items-center gap-3 mb-6">
+      <Card className="p-4 sm:p-6">
+        <div className="flex items-center gap-3 mb-4 sm:mb-6">
           <Mic className="w-6 h-6 text-blue-500" />
           <h2 className="text-xl font-bold">AI Business Analyst Chat</h2>
         </div>
-        <div className="h-[600px] bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+        <div className="h-[65vh] sm:h-[600px] bg-gray-50 dark:bg-gray-800/50 rounded-xl">
           <GeminiChat key={chatKey} starterPrompt={starterPrompt} />
         </div>
       </Card>

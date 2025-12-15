@@ -14,6 +14,7 @@ import Button from '@/components/ui/Button'; // Import Button component
 import Send from 'lucide-react/dist/esm/icons/send';
 import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
 import PlusCircle from 'lucide-react/dist/esm/icons/plus-circle';
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
 
 dayjs.extend(relativeTime);
 dayjs.extend(calendar);
@@ -143,11 +144,13 @@ const TeamChatPage: React.FC = () => {
   return (
     <>
       <AddChatRoomModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-      <div className="flex h-[calc(100vh-64px)] bg-gray-50 dark:bg-zinc-900 border-t">
+      <div className="flex flex-col md:flex-row h-[75vh] md:h-[calc(100dvh-8rem)] bg-gray-50 dark:bg-zinc-900 border border-border rounded-2xl overflow-hidden">
 
         {/* Left Panel: Chat Rooms List */}
-        <aside className="w-1/3 min-w-[300px] max-w-[400px] flex flex-col border-r dark:border-zinc-700 bg-white dark:bg-zinc-800">
-          <div className="p-4 border-b dark:border-zinc-700 flex justify-between items-center">
+        <aside
+          className={`w-full md:w-1/3 md:min-w-[300px] md:max-w-[400px] flex-col md:border-r border-border bg-white dark:bg-zinc-800 ${selectedRoomId ? 'hidden md:flex' : 'flex'}`}
+        >
+          <div className="p-3 sm:p-4 border-b border-border flex justify-between items-center">
             <h2 className="text-xl font-bold">Chat Rooms</h2>
             <button onClick={() => setIsModalOpen(true)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-700" title="Start new chat">
               <PlusCircle className="w-6 h-6 text-primary" />
@@ -158,7 +161,7 @@ const TeamChatPage: React.FC = () => {
               <div
                 key={room.id}
                 onClick={() => setSelectedRoomId(room.id)}
-                className={`p-4 border-b dark:border-zinc-700 cursor-pointer ${selectedRoomId === room.id ? 'bg-primary-50 dark:bg-primary-900/50' : 'hover:bg-gray-100 dark:hover:bg-zinc-700/50'}`}
+                className={`p-3 sm:p-4 border-b border-border cursor-pointer ${selectedRoomId === room.id ? 'bg-primary-50 dark:bg-primary-900/50' : 'hover:bg-gray-100 dark:hover:bg-zinc-700/50'}`}
               >
                 <h3 className="font-semibold text-gray-800 dark:text-white truncate">{room.topic}</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{room.lastMessage}</p>
@@ -169,7 +172,7 @@ const TeamChatPage: React.FC = () => {
         </aside>
 
         {/* Right Panel: Messages Area */}
-        <main className="flex-1 flex flex-col">
+        <main className={`flex-1 flex flex-col ${selectedRoomId ? 'flex' : 'hidden md:flex'}`}>
           {!selectedRoomId ? (
             <div className="flex-1 flex flex-col justify-center items-center text-center p-4">
               <MessageSquare className="w-16 h-16 text-gray-300 dark:text-zinc-600" />
@@ -178,8 +181,36 @@ const TeamChatPage: React.FC = () => {
             </div>
           ) : (
             <>
+              {/* Mobile Chat Header */}
+              <div className="md:hidden flex items-center gap-2 p-3 bg-white dark:bg-zinc-800 border-b border-border">
+                <button
+                  type="button"
+                  onClick={() => setSelectedRoomId(null)}
+                  className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-700"
+                  aria-label="Back to rooms"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                    {rooms.find(room => room.id === selectedRoomId)?.topic || 'Chat'}
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    {dayjs().format('ddd, D MMM')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(true)}
+                  className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-700"
+                  aria-label="Create room"
+                >
+                  <PlusCircle className="w-5 h-5 text-primary" />
+                </button>
+              </div>
+
               {/* Messages Display */}
-              <div className="flex-1 overflow-y-auto p-4">
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4">
                 {loadingMessages ? <p className="text-center">Loading messages...</p> : Object.keys(groupedMessages).sort().map(date => (
                   <div key={date}>
                     <div className="relative my-5 text-center">
@@ -191,7 +222,7 @@ const TeamChatPage: React.FC = () => {
                       const isCurrentUser = msg.userId === user?.id;
                       return (
                         <div key={msg.id} className={`flex items-end gap-2 ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-md lg:max-w-lg p-3 rounded-2xl ${isCurrentUser ? 'bg-primary text-primary-foreground rounded-br-lg' : 'bg-card text-card-foreground rounded-bl-lg'}`}>
+                          <div className={`max-w-[85%] sm:max-w-md lg:max-w-lg p-3 rounded-2xl ${isCurrentUser ? 'bg-primary text-primary-foreground rounded-br-lg' : 'bg-card text-card-foreground rounded-bl-lg'}`}>
                             {!isCurrentUser && (<p className={`text-xs font-bold mb-1 ${msg.userRole === 'Owner' ? 'text-red-400' : msg.userRole === 'Manager' ? 'text-blue-400' : 'text-green-400'}`}>{msg.userName} ({msg.userRole})</p>)}
                             <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
                             <p className="text-xs opacity-70 mt-1 text-right">{dayjs(msg.createdAt?.toDate()).format('h:mm A')}</p>
@@ -206,7 +237,7 @@ const TeamChatPage: React.FC = () => {
               </div>
 
               {/* Input Form */}
-              <footer className="p-4 bg-background border-t">
+              <footer className="p-3 sm:p-4 bg-background border-t border-border">
                 <form onSubmit={handleSendMessage} className="flex items-center gap-3">
                   <Input
                     id="message-input"

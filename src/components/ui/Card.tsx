@@ -54,8 +54,8 @@ const Card = forwardRef<HTMLDivElement, CardProps>(({
   const cardContent = (
     <>
       {title && (
-        <div className={twMerge("p-6 border-b border-border flex items-center justify-between", titleClassName)}>
-          <h3 className="text-lg font-display font-semibold leading-none tracking-tight text-foreground">
+        <div className={twMerge("p-4 sm:p-6 border-b border-border flex items-center justify-between", titleClassName)}>
+          <h3 className="text-base sm:text-lg font-display font-semibold leading-none tracking-tight text-foreground">
             {title}
           </h3>
         </div>

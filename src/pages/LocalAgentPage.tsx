@@ -22,7 +22,7 @@ const LocalAgentPage: React.FC = () => {
       case 'chat':
         return (
           <div className="space-y-6">
-            <div className="h-[650px] bg-white/50 dark:bg-gray-800/50 backdrop-blur-xl rounded-3xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden shadow-2xl">
+            <div className="h-[70vh] sm:h-[650px] bg-white/50 dark:bg-gray-800/50 backdrop-blur-xl rounded-3xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden shadow-2xl">
               <LocalChatContainer />
             </div>
           </div>
@@ -147,7 +147,7 @@ const LocalAgentPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6 space-y-6 max-w-6xl">
+      <div className="container mx-auto p-4 sm:p-6 space-y-6 max-w-6xl">
         <div className="space-y-3 text-center">
           <p className="text-sm uppercase tracking-wide text-muted-foreground">Local AI Agent</p>
           <h1 className="text-3xl font-bold">Work the way you prefer</h1>
@@ -161,7 +161,7 @@ const LocalAgentPage: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
-              className={`flex items-center gap-2 px-5 py-2 rounded-full border transition ${activeTab === tab.id
+              className={`flex items-center gap-2 px-4 sm:px-5 py-2 rounded-full border transition ${activeTab === tab.id
                 ? 'bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/30'
                 : 'bg-background text-muted-foreground border-border hover:text-foreground hover:border-foreground/40'
                 }`}
