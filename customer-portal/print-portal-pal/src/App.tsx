@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import CustomerAuth from "./pages/CustomerAuth";
 import ProtectedLayout from "./components/layout/ProtectedLayout";
+import PWAInstallPrompt from "./components/PWAInstallPrompt";
 
 const queryClient = new QueryClient();
 
@@ -70,6 +71,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <PWAInstallPrompt />
         <RouterProvider router={router} />
       </TooltipProvider>
     </ThemeProvider>

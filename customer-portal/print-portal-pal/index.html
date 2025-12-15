@@ -2,23 +2,45 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>print-portal-pal</title>
-    <meta name="description" content="Lovable Generated Project" />
-    <meta name="author" content="Lovable" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Classic Offset - Customer Portal</title>
+    <meta name="description" content="Customer portal for Classic Offset - Track orders, chat with support, and manage your printing needs" />
+    <meta name="author" content="Classic Offset" />
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#0891b2" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="CO Customer" />
+    <meta name="application-name" content="CO Customer" />
+    <meta name="msapplication-TileColor" content="#0891b2" />
+    <meta name="msapplication-tap-highlight" content="no" />
+    <meta name="format-detection" content="telephone=no" />
+    
+    <!-- PWA Links -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.png" />
 
-  <!-- Content Security Policy -->
-  <!-- Allow Supabase Realtime (wss) and Vite HMR (ws) during development -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://lovable.dev https://*.supabase.co; connect-src 'self' http://localhost:3002 https://*.supabase.co wss://*.supabase.co ws://localhost:* ws://127.0.0.1:*; font-src 'self' https://r2cdn.perplexity.ai;" />
+    <!-- Splash Screens for iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
 
-    <meta property="og:title" content="print-portal-pal" />
-    <meta property="og:description" content="Lovable Generated Project" />
+    <!-- Content Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://lovable.dev https://*.supabase.co blob:; connect-src 'self' http://localhost:3002 https://*.supabase.co wss://*.supabase.co ws://localhost:* ws://127.0.0.1:*; font-src 'self' https://r2cdn.perplexity.ai; worker-src 'self' blob:;" />
+
+    <meta property="og:title" content="Classic Offset - Customer Portal" />
+    <meta property="og:description" content="Customer portal for Classic Offset - Track orders, chat with support, and manage your printing needs" />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta property="og:image" content="/icons/icon-512x512.png" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@lovable_dev" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta name="twitter:title" content="Classic Offset - Customer Portal" />
+    <meta name="twitter:image" content="/icons/icon-512x512.png" />
   </head>
 
   <body>
