@@ -288,39 +288,101 @@ export const useOrderChat = (orderId: number) => {
     return () => { mountedRef.current = false; };
   }, []);
 
+  // Track the current thread ID for realtime updates
+  const [currentThreadId, setCurrentThreadId] = useState<string | null>(null);
+
+  // Update currentThreadId when fetchMessages is called
+  const fetchMessagesWithTracking = useCallback(async (threadId: string) => {
+    setCurrentThreadId(threadId);
+    return fetchMessages(threadId);
+  }, [fetchMessages]);
+
   useEffect(() => {
     let active = true;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let currentUserId: string | null = null;
+
     const setupRealtimeSubscription = async () => {
       const user = await getCurrentUser();
       if (!user || !active) return;
+      
+      currentUserId = user.id;
+      console.log('[OrderChat Realtime] Setting up subscription for order:', orderId, 'user:', user.id);
 
-      const channel = supabase
-        .channel(`order_chat_${orderId}`)
+      channel = supabase
+        .channel(`order_chat_${orderId}_${Date.now()}`)
         .on('postgres_changes', {
           event: '*',
           schema: 'public',
           table: 'order_chat_threads',
           filter: `order_id=eq.${orderId}`,
-        }, () => {
-          fetchThreads();
+        }, (payload) => {
+          console.log('[OrderChat Realtime] Thread change:', payload);
+          if (active) fetchThreads();
         })
         .on('postgres_changes', {
           event: 'INSERT',
           schema: 'public',
           table: 'order_chat_messages',
-        }, (payload: any) => {
-          if (payload.new?.thread_id) {
-            // If we already loaded messages for this thread, refresh
-            fetchMessages(payload.new.thread_id);
+        }, (payload) => {
+          console.log('[OrderChat Realtime] New message received:', payload);
+          
+          if (payload.new && active) {
+            const newMsg = payload.new as ChatMessage;
+            console.log('[OrderChat Realtime] Message details - sender_type:', newMsg.sender_type, 'sender_id:', newMsg.sender_id, 'currentUserId:', currentUserId);
+            
+            // Show toast notification for messages from admin (not from self)
+            if (newMsg.sender_type === 'admin' && newMsg.sender_id !== currentUserId) {
+              console.log('[OrderChat Realtime] Showing notification for admin message');
+              
+              toast({
+                title: "📩 New Message from Admin",
+                description: newMsg.content?.substring(0, 100) + ((newMsg.content?.length || 0) > 100 ? '...' : ''),
+                duration: 8000,
+              });
+              
+              // Show browser push notification if permission granted
+              if ('Notification' in window && Notification.permission === 'granted') {
+                try {
+                  new Notification('New Order Chat Message', {
+                    body: newMsg.content?.substring(0, 100) || 'New message',
+                    icon: '/icons/icon-192x192.png',
+                    tag: `order-chat-${newMsg.id}`,
+                  });
+                  console.log('[OrderChat Realtime] Browser notification shown');
+                } catch (e) {
+                  console.error('[OrderChat] Browser notification error:', e);
+                }
+              } else {
+                console.log('[OrderChat Realtime] Browser notification permission:', Notification.permission);
+              }
+            }
+            
+            // If we have a current thread and the message belongs to it, refresh
+            if (currentThreadId && newMsg.thread_id === currentThreadId) {
+              console.log('[OrderChat Realtime] Refreshing messages for current thread');
+              fetchMessages(currentThreadId);
+            } else {
+              // Also refresh threads to update unread counts/last message time
+              fetchThreads();
+            }
           }
         })
-        .subscribe();
-
-      return () => { channel.unsubscribe(); };
+        .subscribe((status) => {
+          console.log('[OrderChat Realtime] Subscription status:', status);
+        });
     };
+
     setupRealtimeSubscription();
-    return () => { active = false; };
-  }, [orderId, fetchThreads, fetchMessages, getCurrentUser]);
+    
+    return () => { 
+      active = false;
+      if (channel) {
+        console.log('[OrderChat Realtime] Cleaning up subscription');
+        channel.unsubscribe();
+      }
+    };
+  }, [orderId, fetchThreads, fetchMessages, getCurrentUser, currentThreadId, toast]);
 
   useEffect(() => { fetchThreads(); }, [orderId, fetchThreads]);
 
@@ -329,7 +391,7 @@ export const useOrderChat = (orderId: number) => {
     messages,
     loading,
     fetchThreads,
-    fetchMessages,
+    fetchMessages: fetchMessagesWithTracking,
     createThread,
     sendMessage,
     lastError,

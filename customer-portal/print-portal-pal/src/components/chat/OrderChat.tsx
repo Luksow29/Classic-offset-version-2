@@ -25,8 +25,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useOrderChat } from '@/hooks/useOrderChat';
 import type { ChatThread, ChatMessage } from '@/types/chat';
-import { uploadChatFile, validateFileForUpload, getFileIcon, formatFileSize } from '@/lib/fileUpload';
-import { testDatabaseConnection } from '@/lib/chatDebug';
+import { uploadChatFile, validateFileForUpload, formatFileSize } from '@/lib/fileUpload';
 import { formatDistanceToNow } from 'date-fns';
 
 interface OrderChatProps {
@@ -66,9 +65,6 @@ const OrderChat: React.FC<OrderChatProps> = ({
   } = useOrderChat(orderId || 0);
 
   const [debugOpen, setDebugOpen] = useState(false);
-  const [debugRunning, setDebugRunning] = useState(false);
-  const [debugSteps, setDebugSteps] = useState<any[] | null>(null);
-  const [debugSummary, setDebugSummary] = useState<string | null>(null);
 
   // Scroll to bottom of messages
   const scrollToBottom = () => {
@@ -85,19 +81,6 @@ const OrderChat: React.FC<OrderChatProps> = ({
       fetchMessages(currentThread.id);
     }
   }, [currentThread, fetchMessages]);
-
-  // Debug database connection
-  const handleDebugTest = async () => {
-    setDebugRunning(true);
-    setDebugSteps(null);
-    setDebugSummary(null);
-    const result = await testDatabaseConnection();
-    console.log('Debug test result:', result);
-    setDebugSteps(result.steps || []);
-    setDebugSummary(`${result.success ? '✅' : '❌'} ${result.message}`);
-    setDebugRunning(false);
-    setDebugOpen(true);
-  };
 
   // Handle file upload
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -284,40 +267,19 @@ const OrderChat: React.FC<OrderChatProps> = ({
   };
 
   return (
-    <div className={`${className} flex gap-2`}>
-      {/* Debug button - remove in production */}
-      <div className="flex flex-col gap-2">
-        <Button
-          variant="destructive"
-          size="sm"
-          onClick={handleDebugTest}
-          className="text-xs"
-        >
-          {debugRunning ? 'Running Debug...' : 'Debug DB'}
-        </Button>
-        {(lastError || sessionUserId) && (
-          <div className="text-[10px] leading-tight max-w-xs border rounded p-2 bg-gray-50 dark:bg-gray-900/40">
-            <div>Session: {sessionUserId ? sessionUserId.slice(0,8) : 'none'}</div>
-            {lastError && <div className="text-red-600 dark:text-red-400">LastError: {lastError}</div>}
-            <button
-              onClick={() => setDebugOpen(o => !o)}
-              className="underline text-blue-600 text-[10px] mt-1"
-            >{debugOpen ? 'Hide' : 'Show'} Debug Panel</button>
-          </div>
-        )}
-      </div>
+    <div className={`${className}`}>
       
   <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogTrigger asChild>
           <Button
             variant="outline"
             size="sm"
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border-cyan-200 dark:border-cyan-800 hover:from-cyan-500/20 hover:to-blue-500/20"
           >
-            <MessageCircle size={16} />
-            Chat About Order
+            <MessageCircle size={16} className="text-cyan-600 dark:text-cyan-400" />
+            <span className="text-cyan-700 dark:text-cyan-300">Chat About Order</span>
             {threads.length > 0 && (
-              <Badge variant="secondary" className="ml-1">
+              <Badge variant="secondary" className="ml-1 bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300">
                 {threads.length}
               </Badge>
             )}
@@ -503,32 +465,6 @@ const OrderChat: React.FC<OrderChatProps> = ({
         </DialogContent>
       </Dialog>
 
-      {/* Inline Debug Panel */}
-      {debugOpen && (
-        <div className="fixed bottom-4 right-4 w-80 max-h-96 overflow-auto text-xs border bg-white dark:bg-gray-800 shadow-lg rounded p-3 z-50">
-          <div className="flex justify-between items-center mb-2">
-            <strong>Chat Debug Panel</strong>
-            <button onClick={() => setDebugOpen(false)} className="text-gray-400 hover:text-gray-700">✕</button>
-          </div>
-          {debugSummary && <div className="mb-2 font-medium">{debugSummary}</div>}
-          {debugSteps ? (
-            <ul className="space-y-1">
-              {debugSteps.map((s, idx) => (
-                <li key={idx} className="flex gap-2">
-                  <span>{s.status === 'ok' ? '✅' : s.status === 'fail' ? '❌' : '⏭️'}</span>
-                  <span className="break-all">{s.step}: {s.detail || s.error}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div>Run debug to see steps...</div>
-          )}
-          <div className="mt-3">
-            <Button size="sm" variant="outline" onClick={handleDebugTest} disabled={debugRunning}>{debugRunning ? 'Re-running...' : 'Re-run Debug'}</Button>
-          </div>
-        </div>
-      )}
-
       {/* New Thread Dialog */}
       <Dialog open={showNewThreadDialog} onOpenChange={setShowNewThreadDialog}>
         <DialogContent>
@@ -546,7 +482,7 @@ const OrderChat: React.FC<OrderChatProps> = ({
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Priority</label>
-              <Select value={newThreadPriority} onValueChange={(value: any) => setNewThreadPriority(value)}>
+              <Select value={newThreadPriority} onValueChange={(value: 'low' | 'normal' | 'high' | 'urgent') => setNewThreadPriority(value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

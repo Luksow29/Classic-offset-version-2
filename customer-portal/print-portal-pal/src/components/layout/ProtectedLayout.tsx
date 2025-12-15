@@ -4,6 +4,7 @@ import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import CustomerLayout from './CustomerLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
+import { useSupportNotifications } from '@/hooks/useSupportNotifications';
 
 type Customer = Tables<'customers'>;
 
@@ -12,6 +13,9 @@ const ProtectedLayout: React.FC = () => {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
   const location = useLocation();
+
+  // Global support chat notifications
+  useSupportNotifications(customer?.id || null);
 
   useEffect(() => {
     let isMounted = true;

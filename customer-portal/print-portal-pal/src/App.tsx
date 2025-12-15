@@ -10,6 +10,7 @@ import NotFound from "./pages/NotFound";
 import CustomerAuth from "./pages/CustomerAuth";
 import ProtectedLayout from "./components/layout/ProtectedLayout";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
+import NotificationPermissionBanner from "./components/notifications/NotificationPermissionBanner";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <PWAInstallPrompt />
+        <NotificationPermissionBanner />
         <RouterProvider router={router} />
       </TooltipProvider>
     </ThemeProvider>

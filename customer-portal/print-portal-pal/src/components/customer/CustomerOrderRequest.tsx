@@ -205,9 +205,9 @@ const CustomerOrderRequestForm: React.FC<CustomerOrderRequestProps> = ({ custome
             request_data: requestDataWithCustomerInfo,
         };
 
-        const { error } = await supabase.from('order_requests').insert(payload);
+        const { data, error } = await supabase.from('order_requests').insert(payload).select('id').single();
 
-        if (error) {
+        if (error || !data) {
             console.error("Submission Error:", error);
             toast({ title: "Submission Failed", description: `An error occurred: ${error.message}`, variant: "destructive" });
         } else {

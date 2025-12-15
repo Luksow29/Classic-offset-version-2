@@ -8,6 +8,7 @@ import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, Pagi
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar,
   Package,
@@ -15,19 +16,22 @@ import {
   CheckCircle,
   XCircle,
   Truck,
-  ChevronsUpDown,
+  ChevronDown,
+  ChevronUp,
   AlertTriangle,
+  IndianRupee,
+  FileText,
+  Filter,
+  ArrowUpDown,
+  MessageCircle,
+  RefreshCw,
 } from "lucide-react";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import { Skeleton } from "@/components/ui/skeleton";
 import ServiceChargeDisplay from "./ServiceChargeDisplay";
 import OrderChat from "@/components/chat/OrderChat";
 import { OrderTimeline } from "@shared/order-timeline";
 import { useOrderTimeline } from "@/hooks/useOrderTimeline";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface DisplayOrder {
   id: number;
@@ -54,21 +58,29 @@ interface CustomerOrdersProps {
 }
 
 const OrderCardSkeleton = () => (
-  <Card>
-    <CardContent className="p-4">
-      <div className="flex justify-between items-center">
-        <div className="space-y-2">
-          <Skeleton className="h-6 w-48" />
-          <Skeleton className="h-4 w-64" />
+  <Card className="overflow-hidden">
+    <CardContent className="p-0">
+      <div className="p-4 md:p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-3 flex-1">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-7 w-32" />
+              <Skeleton className="h-6 w-20 rounded-full" />
+            </div>
+            <div className="flex flex-wrap gap-4">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-28" />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-28" />
+          </div>
         </div>
-        <Skeleton className="h-10 w-24" />
       </div>
     </CardContent>
   </Card>
 );
 
-
-import { RefreshCw } from "lucide-react";
 
 const OrderActivityTimeline = ({ orderId }: { orderId: number }) => {
   const { events, isLoading, error, refresh } = useOrderTimeline(orderId, { enabled: Boolean(orderId) });
@@ -278,7 +290,7 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
 
       setOrders(combinedList);
 
-    } catch (error: any) {
+    } catch (error) {
       toast({ variant: "destructive", title: "Error", description: "Failed to fetch order history." });
     } finally {
       setTimeout(() => setIsLoading(false), 300);
@@ -336,7 +348,7 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
     if (isNaN(d.getTime())) return '-';
     return d.toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
   };
-  const formatCurrency = (val: any) => Number(val ?? 0).toLocaleString('en-IN');
+  const formatCurrency = (val: number | string | null | undefined) => Number(val ?? 0).toLocaleString('en-IN');
 
   // Sorting/filtering logic
   const filteredOrders = statusFilter ? orders.filter(o => o.status === statusFilter) : orders;
@@ -353,6 +365,13 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
     return 0;
   });
   const pagedOrders = sortedOrders.slice((page - 1) * pageSize, page * pageSize);
+
+  // Track expanded orders
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  
+  const toggleOrderExpansion = (orderId: string) => {
+    setExpandedOrderId(prev => prev === orderId ? null : orderId);
+  };
 
   if (isLoading) return (
     <div className="space-y-4">
@@ -372,163 +391,379 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
 
   return (
     <TooltipProvider>
-      <div className="space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <h2 className="text-xl font-semibold">{t('orders.title')}</h2>
-            <p className="text-sm text-muted-foreground">{t('orders.count', { count: orders.length })}</p>
-          </div>
-          <div className="flex flex-wrap gap-2 items-center">
-            <label className="text-sm">{t('orders.sort_by')}</label>
-            <select className="border rounded px-2 py-1 text-sm" value={sortKey} onChange={e => setSortKey(e.target.value as any)}>
-              <option value="date">{t('orders.sort_date')}</option>
-              <option value="total_amount">{t('orders.sort_amount')}</option>
-              <option value="status">{t('orders.sort_status')}</option>
-            </select>
-            <button className="text-xs underline" onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}>{sortDir === 'asc' ? t('orders.asc') : t('orders.desc')}</button>
-            <label className="text-sm ml-2">{t('orders.filter_status')}</label>
-            <select className="border rounded px-2 py-1 text-sm" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-              <option value="">{t('orders.status_all')}</option>
-              <option value="Pending">{t('orders.status_pending')}</option>
-              <option value="In Progress">{t('orders.status_inprogress')}</option>
-              <option value="Completed">{t('orders.status_completed')}</option>
-              <option value="Delivered">{t('orders.status_delivered')}</option>
-              <option value="Rejected">{t('orders.status_rejected')}</option>
-            </select>
-          </div>
-        </div>
-        <div className="space-y-4">
-          {pagedOrders.map((order) => (
-            <Collapsible key={`${order.is_request}-${order.id}`} asChild>
-              <Card className="transition-shadow hover:shadow-md">
-                <div className="p-4">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-4">
-                        <h3 className="font-semibold text-lg">{order.is_request ? t('orders.request_number', { id: order.id }) : t('orders.order_number', { id: order.id })}</h3>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span>{getStatusBadge(order.status)}</span>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            {t('orders.status')}: {t('orders.status_' + order.status.replace(/\s/g, '').toLowerCase())}
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                      <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-2"><Calendar className="h-4 w-4" /><span>{formatDate(order.date)}</span></div>
-                        {order.delivery_date && <div className="flex items-center gap-2"><Truck className="h-4 w-4" /><span>Delivery by {formatDate(order.delivery_date)}</span></div>}
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                      <CollapsibleTrigger asChild><Button variant="outline" size="sm" className="w-full sm:w-auto">{t('orders.view_details')}<ChevronsUpDown className="h-4 w-4 ml-2" /></Button></CollapsibleTrigger>
-                      {/* Quick Re-order button */}
-                      {(order.status === 'Completed' || order.status === 'Delivered') && !order.is_request && typeof onQuickReorder === 'function' && (
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          className="w-full sm:w-auto flex items-center gap-1"
-                          onClick={() => {
-                            // Try to match product by category (order_type) and/or name heuristically
-                            let productInfo = null;
-                            // Try to match by category (order_type)
-                            if (order.order_type) {
-                              productInfo = products.find(p => p.category === order.order_type);
-                            }
-                            // Compose reorderData with product info
-                            const reorderData = {
-                              ...order,
-                              productId: productInfo ? String(productInfo.id) : undefined,
-                              product_name: productInfo ? productInfo.name : undefined,
-                            };
-                            onQuickReorder(reorderData);
-                          }}
-                        >
-                          <RefreshCw className="h-4 w-4" /> {t('orders.quick_reorder')}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
+      <div className="space-y-5">
+        {/* Header Section with Filters */}
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-r from-primary/5 via-primary/3 to-transparent dark:from-primary/10 dark:via-primary/5 dark:to-transparent rounded-xl p-4 md:p-6 border border-border/40"
+        >
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+                  {t('orders.title')}
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {t('orders.count', { count: orders.length })}
+                </p>
+              </div>
+            </div>
+            
+            {/* Filter Controls */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex items-center gap-2 flex-1">
+                <div className="flex items-center gap-2 bg-background/80 backdrop-blur-sm rounded-lg px-3 py-2 border border-border/50 flex-1 sm:flex-none">
+                  <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+                  <Select 
+                    value={sortKey} 
+                    onValueChange={(value: 'date' | 'total_amount' | 'status') => setSortKey(value)}
+                  >
+                    <SelectTrigger className="border-0 bg-transparent h-auto p-0 w-auto min-w-[100px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="date">{t('orders.sort_date')}</SelectItem>
+                      <SelectItem value="total_amount">{t('orders.sort_amount')}</SelectItem>
+                      <SelectItem value="status">{t('orders.sort_status')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 px-2 text-xs"
+                    onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}
+                  >
+                    {sortDir === 'asc' ? '↑ Asc' : '↓ Desc'}
+                  </Button>
                 </div>
-                <CollapsibleContent>
-                  <div className="p-4 border-t dark:border-zinc-700">
-                    {order.rejection_reason && (
-                      <div className="mb-4 p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive flex items-start gap-3">
-                        <AlertTriangle className="h-5 w-5 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <h4 className="font-semibold">{t('orders.rejection_reason')}</h4>
-                          <p className="text-sm">{order.rejection_reason}</p>
+                
+                <div className="flex items-center gap-2 bg-background/80 backdrop-blur-sm rounded-lg px-3 py-2 border border-border/50 flex-1 sm:flex-none">
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <Select value={statusFilter || 'all'} onValueChange={(value) => setStatusFilter(value === 'all' ? '' : value)}>
+                    <SelectTrigger className="border-0 bg-transparent h-auto p-0 w-auto min-w-[80px]">
+                      <SelectValue placeholder="All" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t('orders.status_all')}</SelectItem>
+                      <SelectItem value="Pending">{t('orders.status_pending')}</SelectItem>
+                      <SelectItem value="In Progress">{t('orders.status_inprogress')}</SelectItem>
+                      <SelectItem value="Completed">{t('orders.status_completed')}</SelectItem>
+                      <SelectItem value="Delivered">{t('orders.status_delivered')}</SelectItem>
+                      <SelectItem value="Rejected">{t('orders.status_rejected')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Orders List */}
+        <div className="space-y-4">
+          <AnimatePresence mode="popLayout">
+            {pagedOrders.map((order, index) => {
+              const orderKey = `${order.is_request}-${order.id}`;
+              const isExpanded = expandedOrderId === orderKey;
+              
+              return (
+                <motion.div
+                  key={orderKey}
+                  layout
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <Card className={`
+                    overflow-hidden transition-all duration-300
+                    ${isExpanded 
+                      ? 'ring-2 ring-primary/30 shadow-lg shadow-primary/5' 
+                      : 'hover:shadow-md hover:border-border/60'}
+                    bg-gradient-to-br from-card via-card to-card/95
+                    dark:from-card dark:via-card/98 dark:to-card/90
+                  `}>
+                    {/* Order Header */}
+                    <div className="p-4 md:p-5">
+                      <div className="flex flex-col gap-4">
+                        {/* Top Row: Order Info & Status */}
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 dark:from-primary/30 dark:to-primary/10 flex items-center justify-center">
+                                {order.is_request 
+                                  ? <FileText className="h-5 w-5 text-primary" />
+                                  : <Package className="h-5 w-5 text-primary" />
+                                }
+                              </div>
+                              <div>
+                                <h3 className="font-bold text-base md:text-lg">
+                                  {order.is_request 
+                                    ? t('orders.request_number', { id: order.id }) 
+                                    : t('orders.order_number', { id: order.id })}
+                                </h3>
+                                <p className="text-xs text-muted-foreground">{order.order_type || 'Order'}</p>
+                              </div>
+                            </div>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span>{getStatusBadge(order.status)}</span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {t('orders.status')}: {order.status}
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                          
+                          {/* Amount Display (Mobile: visible in header) */}
+                          <div className="flex items-center gap-2 sm:hidden">
+                            <IndianRupee className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-bold text-lg">
+                              {formatCurrency(order.total_amount)}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {/* Bottom Row: Meta Info & Action */}
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                          <div className="flex flex-wrap items-center gap-3 md:gap-4 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1.5">
+                              <Calendar className="h-4 w-4" />
+                              <span>{formatDate(order.date)}</span>
+                            </div>
+                            {order.delivery_date && (
+                              <div className="flex items-center gap-1.5">
+                                <Truck className="h-4 w-4" />
+                                <span>Due: {formatDate(order.delivery_date)}</span>
+                              </div>
+                            )}
+                            {/* Amount Display (Desktop) */}
+                            <div className="hidden sm:flex items-center gap-1.5 font-medium text-foreground">
+                              <IndianRupee className="h-4 w-4" />
+                              <span>{formatCurrency(order.total_amount)}</span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex gap-2 w-full sm:w-auto">
+                            <Button 
+                              variant={isExpanded ? "default" : "outline"} 
+                              size="sm" 
+                              className="flex-1 sm:flex-none"
+                              onClick={() => toggleOrderExpansion(orderKey)}
+                            >
+                              {t('orders.view_details')}
+                              {isExpanded ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
+                            </Button>
+                            {(order.status === 'Completed' || order.status === 'Delivered') && !order.is_request && typeof onQuickReorder === 'function' && (
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                className="flex-1 sm:flex-none"
+                                onClick={() => {
+                                  let productInfo = null;
+                                  if (order.order_type) {
+                                    productInfo = products.find(p => p.category === order.order_type);
+                                  }
+                                  const reorderData = {
+                                    ...order,
+                                    productId: productInfo ? String(productInfo.id) : undefined,
+                                    product_name: productInfo ? productInfo.name : undefined,
+                                  };
+                                  onQuickReorder(reorderData);
+                                }}
+                              >
+                                <RefreshCw className="h-4 w-4 mr-1" /> {t('orders.quick_reorder')}
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    )}
-                    <div className="grid md:grid-cols-2 gap-6">
-                      {!order.is_request ? (
-                        <div>
-                          <h4 className="font-semibold mb-3">{t('orders.history')}</h4>
-                          <OrderActivityTimeline orderId={order.id} />
-                        </div>
-                      ) : <div className="text-sm text-muted-foreground">{t('orders.request_pending')}</div>}
-                      <div className="space-y-6">
-                        <div><h4 className="font-semibold mb-2">{t('orders.payment_details')}</h4><div className="bg-muted/50 p-4 rounded-lg space-y-2 text-sm">
-                          <div className="flex justify-between"><span>{t('orders.total')}</span><span className="font-semibold">₹{formatCurrency(order.total_amount)}</span></div>
-                          <div className="flex justify-between"><span>{t('orders.paid')}</span><span className="text-green-600">₹{formatCurrency(order.amount_received)}</span></div>
-                          <div className="flex justify-between font-semibold"><span>{t('orders.balance')}</span><span className={order.balance_amount > 0 ? "text-orange-600" : ""}>₹{formatCurrency(order.balance_amount)}</span></div>
-                        </div></div>
-                        <div><h4 className="font-semibold mb-2">{t('orders.details')}</h4><div className="space-y-2 text-sm text-muted-foreground">
-                          <div><strong>{t('orders.type')}</strong> {order.order_type}</div>
-                          <div><strong>{t('orders.quantity')}</strong> {order.quantity}</div>
-                          {order.notes && <p className="pt-2"><strong>{t('orders.notes')}</strong> {order.notes}</p>}
-                        </div></div>
-                      </div>
                     </div>
-
-                    {/* Service Charge Display for requests */}
-                    {order.is_request && (
-                      <div className="mt-6">
-                        <ServiceChargeDisplay
-                          order={order}
-                          customerId={customerId}
-                          onResponseSubmitted={() => {
-                            setIsLoading(true);
-                            fetchOrdersAndHistory();
-                          }}
-                        />
-                      </div>
-                    )}
-
-                    {/* Order Chat Component */}
-                    <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300">Need help with this order?</h4>
-                        <OrderChat
-                          orderId={order.id}
-                          orderNumber={`#${order.id}`}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </CollapsibleContent>
-              </Card>
-            </Collapsible>
-          ))}
+                    
+                    {/* Expandable Details Section */}
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3, ease: 'easeInOut' }}
+                          className="overflow-hidden"
+                        >
+                          <div className="border-t border-border/50 bg-muted/20 dark:bg-muted/10">
+                            <div className="p-4 md:p-6 space-y-6">
+                              {/* Rejection Reason Alert */}
+                              {order.rejection_reason && (
+                                <motion.div 
+                                  initial={{ opacity: 0, scale: 0.95 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive flex items-start gap-3"
+                                >
+                                  <AlertTriangle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                                  <div>
+                                    <h4 className="font-semibold">{t('orders.rejection_reason')}</h4>
+                                    <p className="text-sm mt-1 opacity-90">{order.rejection_reason}</p>
+                                  </div>
+                                </motion.div>
+                              )}
+                              
+                              {/* Main Content Grid */}
+                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {/* Left Column: Timeline/Status */}
+                                {!order.is_request ? (
+                                  <div className="bg-background/60 dark:bg-background/40 rounded-xl p-4 border border-border/30">
+                                    <h4 className="font-semibold mb-4 flex items-center gap-2">
+                                      <Clock className="h-4 w-4 text-primary" />
+                                      {t('orders.history')}
+                                    </h4>
+                                    <div className="max-h-[280px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+                                      <OrderActivityTimeline orderId={order.id} />
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-4 border border-yellow-200 dark:border-yellow-800/30">
+                                    <p className="text-sm text-yellow-700 dark:text-yellow-300 flex items-center gap-2">
+                                      <Clock className="h-4 w-4" />
+                                      {t('orders.request_pending')}
+                                    </p>
+                                  </div>
+                                )}
+                                
+                                {/* Right Column: Payment & Details */}
+                                <div className="space-y-4">
+                                  {/* Payment Card */}
+                                  <div className="bg-gradient-to-br from-green-50 to-emerald-50/50 dark:from-green-900/20 dark:to-emerald-900/10 rounded-xl p-4 border border-green-200/50 dark:border-green-800/30">
+                                    <h4 className="font-semibold mb-3 flex items-center gap-2 text-green-800 dark:text-green-300">
+                                      <IndianRupee className="h-4 w-4" />
+                                      {t('orders.payment_details')}
+                                    </h4>
+                                    <div className="space-y-2.5">
+                                      <div className="flex justify-between items-center">
+                                        <span className="text-sm text-muted-foreground">{t('orders.total')}</span>
+                                        <span className="font-bold text-lg">₹{formatCurrency(order.total_amount)}</span>
+                                      </div>
+                                      <div className="flex justify-between items-center">
+                                        <span className="text-sm text-muted-foreground">{t('orders.paid')}</span>
+                                        <span className="font-medium text-green-600 dark:text-green-400">₹{formatCurrency(order.amount_received)}</span>
+                                      </div>
+                                      <div className="h-px bg-border/50 my-2" />
+                                      <div className="flex justify-between items-center">
+                                        <span className="text-sm font-medium">{t('orders.balance')}</span>
+                                        <span className={`font-bold text-lg ${order.balance_amount > 0 ? "text-orange-600 dark:text-orange-400" : "text-green-600 dark:text-green-400"}`}>
+                                          ₹{formatCurrency(order.balance_amount)}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Order Details Card */}
+                                  <div className="bg-background/60 dark:bg-background/40 rounded-xl p-4 border border-border/30">
+                                    <h4 className="font-semibold mb-3 flex items-center gap-2">
+                                      <FileText className="h-4 w-4 text-primary" />
+                                      {t('orders.details')}
+                                    </h4>
+                                    <div className="space-y-2 text-sm">
+                                      <div className="flex justify-between">
+                                        <span className="text-muted-foreground">{t('orders.type')}</span>
+                                        <span className="font-medium">{order.order_type || '-'}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-muted-foreground">{t('orders.quantity')}</span>
+                                        <span className="font-medium">{order.quantity}</span>
+                                      </div>
+                                      {order.notes && (
+                                        <div className="pt-2 border-t border-border/30">
+                                          <span className="text-muted-foreground block mb-1">{t('orders.notes')}</span>
+                                          <p className="text-foreground/80">{order.notes}</p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Service Charge Display for requests */}
+                              {order.is_request && (
+                                <div className="bg-background/60 dark:bg-background/40 rounded-xl p-4 border border-border/30">
+                                  <ServiceChargeDisplay
+                                    order={order}
+                                    customerId={customerId}
+                                    onResponseSubmitted={() => {
+                                      setIsLoading(true);
+                                      fetchOrdersAndHistory();
+                                    }}
+                                  />
+                                </div>
+                              )}
+                              
+                              {/* Order Chat Section */}
+                              <div className="bg-gradient-to-r from-blue-50 to-indigo-50/50 dark:from-blue-900/20 dark:to-indigo-900/10 rounded-xl p-4 border border-blue-200/50 dark:border-blue-800/30">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                  <div className="flex items-center gap-3">
+                                    <div className="h-10 w-10 rounded-xl bg-blue-100 dark:bg-blue-800/30 flex items-center justify-center">
+                                      <MessageCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                    </div>
+                                    <div>
+                                      <h4 className="font-semibold text-sm text-blue-800 dark:text-blue-200">Need help with this order?</h4>
+                                      <p className="text-xs text-blue-600/70 dark:text-blue-300/70">Chat with our support team</p>
+                                    </div>
+                                  </div>
+                                  <OrderChat
+                                    orderId={order.id}
+                                    orderNumber={`#${order.id}`}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
         </div>
+        
         {/* Pagination Controls */}
         {totalPages > 1 && (
-          <Pagination className="mt-4">
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious href="#" onClick={e => { e.preventDefault(); setPage(p => Math.max(1, p - 1)); }} />
-              </PaginationItem>
-              {[...Array(totalPages)].map((_, i) => (
-                <PaginationItem key={i}>
-                  <PaginationLink href="#" isActive={page === i + 1} onClick={e => { e.preventDefault(); setPage(i + 1); }}>{i + 1}</PaginationLink>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex justify-center pt-4"
+          >
+            <Pagination>
+              <PaginationContent className="bg-background/80 backdrop-blur-sm rounded-xl p-2 border border-border/50">
+                <PaginationItem>
+                  <PaginationPrevious 
+                    href="#" 
+                    onClick={e => { e.preventDefault(); setPage(p => Math.max(1, p - 1)); }}
+                    className={page === 1 ? 'pointer-events-none opacity-50' : ''}
+                  />
                 </PaginationItem>
-              ))}
-              <PaginationItem>
-                <PaginationNext href="#" onClick={e => { e.preventDefault(); setPage(p => Math.min(totalPages, p + 1)); }} />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
+                {[...Array(totalPages)].map((_, i) => (
+                  <PaginationItem key={i}>
+                    <PaginationLink 
+                      href="#" 
+                      isActive={page === i + 1} 
+                      onClick={e => { e.preventDefault(); setPage(i + 1); }}
+                      className={page === i + 1 ? 'bg-primary text-primary-foreground' : ''}
+                    >
+                      {i + 1}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                <PaginationItem>
+                  <PaginationNext 
+                    href="#" 
+                    onClick={e => { e.preventDefault(); setPage(p => Math.min(totalPages, p + 1)); }}
+                    className={page === totalPages ? 'pointer-events-none opacity-50' : ''}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </motion.div>
         )}
       </div>
     </TooltipProvider>

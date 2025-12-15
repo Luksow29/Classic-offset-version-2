@@ -28,7 +28,7 @@ import FeaturesTable from '../components/admin/FeaturesTable';
 import BrandingContentForm from '../components/admin/BrandingContentForm';
 import TestimonialFormModal from '../components/admin/TestimonialFormModal';
 import TestimonialsTable from '../components/admin/TestimonialsTable';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import GalleryUploader from '../components/showcase/GalleryUploader';
 import GalleryItemsTable from '../components/admin/GalleryItemsTable';
 import GalleryItemFormModal from '../components/admin/GalleryItemFormModal';
@@ -48,9 +48,17 @@ import OrderRequestsTable from '../components/admin/OrderRequestsTable';
 
 interface Template { id: string; name: string; category: string; body: string; }
 
+const TAB_IDS = ['showcase', 'templates', 'staff_management', 'order_requests', 'others'] as const;
+type TabId = (typeof TAB_IDS)[number];
+const isTabId = (value: string | null): value is TabId => TAB_IDS.includes(value as TabId);
+
 const AdminContentManagement: React.FC = () => {
   const [refreshKey, setRefreshKey] = useState(0);
-  const [activeTab, setActiveTab] = useState<'showcase' | 'templates' | 'staff_management' | 'order_requests' | 'others'>('showcase');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<TabId>(() => {
+    const tab = searchParams.get('tab');
+    return isTabId(tab) ? tab : 'showcase';
+  });
 
   // Feature Modals
   const [showFeatureModal, setShowFeatureModal] = useState(false);
@@ -100,6 +108,18 @@ const AdminContentManagement: React.FC = () => {
   useEffect(() => {
     fetchTemplates();
   }, [fetchTemplates, refreshKey]);
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (isTabId(tab) && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams, activeTab]);
+
+  const handleTabSelect = (tab: TabId) => {
+    setActiveTab(tab);
+    setSearchParams({ tab }, { replace: true });
+  };
 
   // Feature Handlers
   const handleAddFeature = () => {
@@ -403,7 +423,7 @@ const AdminContentManagement: React.FC = () => {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => handleTabSelect(tab.id as TabId)}
                 className={`flex items-center gap-2 px-1 py-3 text-sm font-medium whitespace-nowrap border-b-2
                   ${activeTab === tab.id
                     ? 'border-primary-600 text-primary-600 dark:text-primary-400'

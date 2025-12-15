@@ -282,10 +282,62 @@ export default function CustomerSupport({ customer }: CustomerSupportProps) {
         console.log('Customer: Tickets subscription status:', status);
       });
 
+    // Global subscription for ALL support messages (for notifications)
+    const globalMessagesChannel = supabase
+      .channel(`customer_all_messages_${customer.id}_${Date.now()}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'support_messages',
+        },
+        async (payload) => {
+          console.log('Customer: Global message received:', payload);
+          const newMessage = payload.new as SupportMessage;
+          
+          // Check if this message belongs to one of the customer's tickets
+          const isMyTicket = tickets.some(t => t.id === newMessage.ticket_id);
+          
+          // Show notification for admin messages on customer's tickets
+          if (newMessage.sender_type === 'admin' && isMyTicket) {
+            console.log('Customer: Showing notification for admin message');
+            
+            // Show toast notification
+            toast({
+              title: "📩 New Support Message",
+              description: newMessage.message.substring(0, 100) + (newMessage.message.length > 100 ? '...' : ''),
+              duration: 8000,
+            });
+            
+            // Show browser push notification if permission granted
+            if ('Notification' in window && Notification.permission === 'granted') {
+              try {
+                new Notification('New Support Message', {
+                  body: newMessage.message.substring(0, 100),
+                  icon: '/icons/icon-192x192.png',
+                  tag: `support-global-${newMessage.id}`,
+                });
+              } catch (e) {
+                console.error('[CustomerSupport] Browser notification error:', e);
+              }
+            }
+            
+            // Refresh tickets to update unread count
+            loadTickets();
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('Customer: Global messages subscription status:', status);
+      });
+
     return () => {
       supabase.removeChannel(ticketsChannel);
+      supabase.removeChannel(globalMessagesChannel);
     };
-  }, [customer.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customer.id, tickets, toast]);
 
   useEffect(() => {
     if (!selectedTicket) return;
@@ -308,13 +360,33 @@ export default function CustomerSupport({ customer }: CustomerSupportProps) {
           const newMessage = payload.new as SupportMessage;
           setMessages(prev => [...prev, newMessage]);
           
-          // Mark as read if it's from admin
+          // Mark as read if it's from admin and show notifications
           if (newMessage.sender_type === 'admin') {
             console.log('Customer: Marking admin message as read');
             supabase.rpc('mark_messages_as_read', {
               p_ticket_id: selectedTicket.id,
               p_reader_type: 'customer'
             });
+            
+            // Show toast notification
+            toast({
+              title: "New Support Message",
+              description: newMessage.message.substring(0, 100) + (newMessage.message.length > 100 ? '...' : ''),
+              duration: 5000,
+            });
+            
+            // Show browser push notification if permission granted
+            if ('Notification' in window && Notification.permission === 'granted') {
+              try {
+                new Notification('New Support Message', {
+                  body: newMessage.message.substring(0, 100),
+                  icon: '/icons/icon-192x192.png',
+                  tag: `support-${newMessage.id}`,
+                });
+              } catch (e) {
+                console.error('[CustomerSupport] Browser notification error:', e);
+              }
+            }
           }
         }
       )
@@ -325,7 +397,8 @@ export default function CustomerSupport({ customer }: CustomerSupportProps) {
     return () => {
       supabase.removeChannel(messagesChannel);
     };
-  }, [selectedTicket?.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTicket?.id, toast]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {

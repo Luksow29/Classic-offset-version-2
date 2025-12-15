@@ -32,6 +32,9 @@ export const NotificationCenter: React.FC = () => {
     switch (type) {
       case 'order_update': return '📝';
       case 'payment_received': return '💰';
+      case 'delivery_update': return '🚚';
+      case 'message': return '💬';
+      case 'quote_ready': return '📄';
       case 'system_alert': return '⚠️';
       default: return '🔔';
     }
@@ -44,6 +47,9 @@ export const NotificationCenter: React.FC = () => {
       case 'system_alert': return 'text-red-600 dark:text-red-400';
       case 'payment_received': return 'text-green-600 dark:text-green-400';
       case 'order_update': return 'text-blue-600 dark:text-blue-400';
+      case 'delivery_update': return 'text-teal-600 dark:text-teal-400';
+      case 'message': return 'text-indigo-600 dark:text-indigo-400';
+      case 'quote_ready': return 'text-amber-700 dark:text-amber-300';
       default: return 'text-gray-600 dark:text-gray-400';
     }
   };
@@ -94,7 +100,7 @@ export const NotificationCenter: React.FC = () => {
 
       {/* Notification Dropdown */}
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-96 bg-white dark:bg-gray-800 rounded-lg shadow-lg border dark:border-gray-700 z-50 max-h-[80vh] flex flex-col">
+        <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-96 bg-white dark:bg-gray-800 rounded-lg shadow-lg border dark:border-gray-700 z-50 max-h-[80vh] flex flex-col">
           {/* Header */}
           <div className="p-4 border-b dark:border-gray-700 flex-shrink-0">
             <div className="flex items-center justify-between">

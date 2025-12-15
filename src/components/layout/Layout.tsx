@@ -8,6 +8,7 @@ import CommandPalette from '../ui/CommandPalette';
 import { useTheme } from '@/lib/ThemeProvider';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useCommandPalette } from '@/hooks/useCommandPalette';
+import { useAdminInAppNotifications } from '@/hooks/useAdminInAppNotifications';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -34,6 +35,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     return saved ? JSON.parse(saved) : false;
   });
   const { theme } = useTheme();
+
+  useAdminInAppNotifications();
   
   // Command palette state
   const { isOpen: isCommandPaletteOpen, closePalette: closeCommandPalette } = useCommandPalette();

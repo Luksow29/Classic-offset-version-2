@@ -4,6 +4,8 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import type { Database } from '@/types/supabase';
+import { useUser } from '@/context/UserContext';
+import toast from 'react-hot-toast';
 import { 
   MessageCircle, 
   Send, 
@@ -25,12 +27,6 @@ const Badge: React.FC<{ children: React.ReactNode; className?: string }> = ({ ch
   </span>
 );
 
-// Simple toast function
-const toast = {
-  success: (message: string) => console.log('✅', message),
-  error: (message: string) => console.error('❌', message)
-};
-
 type SupportTicket = Database['public']['Tables']['support_tickets']['Row'] & {
   customer_name: string;
   customer_phone: string;
@@ -51,6 +47,7 @@ interface Customer {
 }
 
 const CustomerSupportPage: React.FC = () => {
+  const { user } = useUser();
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [messages, setMessages] = useState<SupportMessage[]>([]);
@@ -121,7 +118,7 @@ const CustomerSupportPage: React.FC = () => {
         (payload) => {
           console.log('Admin: New message received:', payload);
           const newMessage = payload.new as SupportMessage;
-          setMessages(prev => [...prev, newMessage]);
+          setMessages(prev => (prev.some(msg => msg.id === newMessage.id) ? prev : [...prev, newMessage]));
           
           // Mark as read if it's from customer
           if (newMessage.sender_type === 'customer') {
@@ -231,12 +228,16 @@ const CustomerSupportPage: React.FC = () => {
       return;
     }
 
+    if (!user?.id) {
+      toast.error('You must be signed in to send messages.');
+      return;
+    }
+
     console.log('Admin: Sending message:', newMessage.trim());
     setSending(true);
     
     try {
-      // For admin app, we'll use a fixed admin ID since we don't have auth setup
-      const currentUserId = 'admin-user';
+      const currentUserId = user.id;
 
       console.log('Admin: Inserting message with data:', {
         ticket_id: selectedTicket.id,
@@ -261,6 +262,10 @@ const CustomerSupportPage: React.FC = () => {
       }
 
       console.log('Admin: Message sent successfully:', data);
+      const insertedMessage = data?.[0] as SupportMessage | undefined;
+      if (insertedMessage) {
+        setMessages(prev => (prev.some(msg => msg.id === insertedMessage.id) ? prev : [...prev, insertedMessage]));
+      }
       setNewMessage('');
       toast.success('Message sent!');
     } catch (error) {
@@ -580,7 +585,7 @@ const CustomerSupportPage: React.FC = () => {
                           value={newMessage}
                           onChange={(e) => setNewMessage(e.target.value)}
                           placeholder="Type a message..."
-                          onKeyPress={(e) => {
+                          onKeyDown={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
                               e.preventDefault();
                               sendMessage();

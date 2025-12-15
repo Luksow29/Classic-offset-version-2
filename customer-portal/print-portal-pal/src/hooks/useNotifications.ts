@@ -63,8 +63,10 @@ export const useNotifications = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     
+    console.log('[Notifications] Setting up realtime subscription for user:', user.id);
+    
     const subscription = supabase
-      .channel('customer-notifications')
+      .channel(`customer-notifications-${user.id}-${Date.now()}`)
       .on('postgres_changes', 
         { 
           event: 'INSERT', 
@@ -73,19 +75,49 @@ export const useNotifications = () => {
           filter: `user_id=eq.${user.id}`
         }, 
         (payload) => {
+          console.log('[Notifications] New notification received:', payload);
           const newNotification = payload.new as Notification;
           setNotifications(prev => [newNotification, ...prev]);
           setUnreadCount(prev => prev + 1);
           
-          // Show toast notification
+          // Show toast notification (in-app popup)
           toast({
             title: newNotification.title,
             description: newNotification.message.substring(0, 100) + (newNotification.message.length > 100 ? '...' : ''),
             variant: newNotification.type === 'system_alert' ? 'destructive' : 'default',
+            duration: 5000,
           });
+          
+          // Show browser push notification if permission granted
+          if ('Notification' in window && Notification.permission === 'granted') {
+            try {
+              const browserNotification = new Notification(newNotification.title, {
+                body: newNotification.message,
+                icon: '/icons/icon-192x192.png',
+                badge: '/icons/icon-72x72.png',
+                tag: `notification-${newNotification.id}`,
+                requireInteraction: newNotification.type === 'system_alert',
+              });
+              
+              browserNotification.onclick = () => {
+                window.focus();
+                if (newNotification.link_to) {
+                  window.location.href = newNotification.link_to;
+                }
+                browserNotification.close();
+              };
+              
+              // Auto close after 8 seconds
+              setTimeout(() => browserNotification.close(), 8000);
+            } catch (error) {
+              console.error('[Notifications] Failed to show browser notification:', error);
+            }
+          }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[Notifications] Subscription status:', status);
+      });
 
     return () => {
       subscription.unsubscribe();

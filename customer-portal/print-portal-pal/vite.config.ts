@@ -28,6 +28,9 @@ export default defineConfig({
       includeAssets: ['favicon.ico', 'icons/*.png', 'robots.txt'],
       manifest: false, // Use static manifest.json from public folder
       workbox: {
+        // Workbox's production minification uses Rollup+Terser; disable it for compatibility.
+        mode: 'development',
+        disableDevLogs: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
           {

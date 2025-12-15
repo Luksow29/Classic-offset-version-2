@@ -1,0 +1,180 @@
+// Script to generate PWA icons
+// Run with: node generate-icons.js
+
+const fs = require('fs');
+const path = require('path');
+
+// Simple PNG generator for solid color icons with text
+// This creates a basic icon - for production, use proper design tools
+
+const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+
+// Create a simple HTML file to generate icons
+const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Generate PWA Icons</title>
+  <style>
+    body { font-family: Inter, Arial, sans-serif; padding: 20px; background: #1f2937; color: white; }
+    .icon { margin: 10px; display: inline-block; }
+    canvas { border: 1px solid #444; margin: 5px; }
+    h1 { color: #3B82F6; }
+    .instructions { background: #374151; padding: 20px; border-radius: 8px; margin: 20px 0; }
+    button { background: #3B82F6; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin: 5px; }
+    button:hover { background: #2563EB; }
+  </style>
+</head>
+<body>
+  <h1>Classic Offset PWA Icon Generator</h1>
+  
+  <div class="instructions">
+    <h3>Instructions:</h3>
+    <ol>
+      <li>Click "Generate All Icons" button</li>
+      <li>Right-click on each canvas and "Save image as..."</li>
+      <li>Save to <code>public/icons/</code> folder with the filename shown</li>
+      <li>Or click "Download All" to download as zip (if supported)</li>
+    </ol>
+  </div>
+
+  <button onclick="generateAll()">Generate All Icons</button>
+  <button onclick="downloadAll()">Download All Icons</button>
+
+  <div id="icons"></div>
+
+  <script>
+    const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+    
+    function generateIcon(size, isMaskable = false) {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      
+      // Create gradient background
+      const gradient = ctx.createLinearGradient(0, 0, size, size);
+      gradient.addColorStop(0, '#3B82F6');
+      gradient.addColorStop(1, '#8B5CF6');
+      
+      if (isMaskable) {
+        // Maskable icons need safe zone (40% from edges)
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, size, size);
+        
+        // Draw text smaller for maskable
+        ctx.fillStyle = 'white';
+        ctx.font = \`bold \${size * 0.35}px Inter, Arial, sans-serif\`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('CO', size / 2, size / 2);
+      } else {
+        // Regular icon with rounded corners
+        const radius = size * 0.2;
+        ctx.beginPath();
+        ctx.moveTo(radius, 0);
+        ctx.lineTo(size - radius, 0);
+        ctx.quadraticCurveTo(size, 0, size, radius);
+        ctx.lineTo(size, size - radius);
+        ctx.quadraticCurveTo(size, size, size - radius, size);
+        ctx.lineTo(radius, size);
+        ctx.quadraticCurveTo(0, size, 0, size - radius);
+        ctx.lineTo(0, radius);
+        ctx.quadraticCurveTo(0, 0, radius, 0);
+        ctx.closePath();
+        ctx.fillStyle = gradient;
+        ctx.fill();
+        
+        // Draw text
+        ctx.fillStyle = 'white';
+        ctx.font = \`bold \${size * 0.42}px Inter, Arial, sans-serif\`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('CO', size / 2, size / 2 + size * 0.05);
+      }
+      
+      return canvas;
+    }
+    
+    function generateAll() {
+      const container = document.getElementById('icons');
+      container.innerHTML = '';
+      
+      sizes.forEach(size => {
+        const div = document.createElement('div');
+        div.className = 'icon';
+        
+        const canvas = generateIcon(size);
+        canvas.id = \`icon-\${size}\`;
+        
+        const label = document.createElement('p');
+        label.textContent = \`icon-\${size}x\${size}.png\`;
+        
+        div.appendChild(canvas);
+        div.appendChild(label);
+        container.appendChild(div);
+      });
+      
+      // Generate maskable icon
+      const maskableDiv = document.createElement('div');
+      maskableDiv.className = 'icon';
+      
+      const maskableCanvas = generateIcon(512, true);
+      maskableCanvas.id = 'maskable-icon-512';
+      
+      const maskableLabel = document.createElement('p');
+      maskableLabel.textContent = 'maskable-icon-512x512.png';
+      
+      maskableDiv.appendChild(maskableCanvas);
+      maskableDiv.appendChild(maskableLabel);
+      container.appendChild(maskableDiv);
+      
+      // Generate apple touch icon
+      const appleDiv = document.createElement('div');
+      appleDiv.className = 'icon';
+      
+      const appleCanvas = generateIcon(180);
+      appleCanvas.id = 'apple-touch-icon';
+      
+      const appleLabel = document.createElement('p');
+      appleLabel.textContent = 'apple-touch-icon.png';
+      
+      appleDiv.appendChild(appleCanvas);
+      appleDiv.appendChild(appleLabel);
+      container.appendChild(appleDiv);
+    }
+    
+    function downloadAll() {
+      sizes.forEach(size => {
+        const canvas = document.getElementById(\`icon-\${size}\`) || generateIcon(size);
+        const link = document.createElement('a');
+        link.download = \`icon-\${size}x\${size}.png\`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      });
+      
+      // Download maskable
+      const maskableCanvas = document.getElementById('maskable-icon-512') || generateIcon(512, true);
+      const maskableLink = document.createElement('a');
+      maskableLink.download = 'maskable-icon-512x512.png';
+      maskableLink.href = maskableCanvas.toDataURL('image/png');
+      maskableLink.click();
+      
+      // Download apple touch icon
+      const appleCanvas = document.getElementById('apple-touch-icon') || generateIcon(180);
+      const appleLink = document.createElement('a');
+      appleLink.download = 'apple-touch-icon.png';
+      appleLink.href = appleCanvas.toDataURL('image/png');
+      appleLink.click();
+    }
+    
+    // Auto generate on load
+    generateAll();
+  </script>
+</body>
+</html>
+`;
+
+fs.writeFileSync(path.join(__dirname, 'public', 'generate-icons.html'), html);
+console.log('Icon generator created at public/generate-icons.html');
+console.log('Open this file in a browser to generate and download the icons.');

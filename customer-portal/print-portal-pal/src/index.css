@@ -145,6 +145,30 @@
   @apply bg-gray-400 dark:bg-gray-500;
 }
 
+/* Thin scrollbar for smaller sections */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  @apply bg-transparent rounded-full;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  @apply bg-border/60 rounded-full transition-colors;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  @apply bg-border;
+}
+
+/* Firefox scrollbar support */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border) / 0.6) transparent;
+}
+
 /* Hide scrollbar for clean UI in some components */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;

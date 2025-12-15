@@ -3,7 +3,9 @@ import { supabase } from '@/lib/supabaseClient';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import { useUser } from '@/context/UserContext';
 import { uploadAdminChatFile, validateFileForUpload, formatFileSize } from '@/lib/adminFileUpload';
+import toast from 'react-hot-toast';
 import { 
   MessageCircle, 
   Send, 
@@ -32,12 +34,6 @@ const Badge: React.FC<{ children: React.ReactNode; className?: string }> = ({ ch
     {children}
   </span>
 );
-
-// Simple toast function
-const toast = {
-  success: (message: string) => console.log('✅', message),
-  error: (message: string) => console.error('❌', message)
-};
 
 interface OrderChatThread {
   id: string;
@@ -92,6 +88,7 @@ interface Order {
 }
 
 const OrderChatAdminPage: React.FC = () => {
+  const { user } = useUser();
   const [threads, setThreads] = useState<OrderChatThread[]>([]);
   const [selectedThread, setSelectedThread] = useState<OrderChatThread | null>(null);
   const [messages, setMessages] = useState<OrderChatMessage[]>([]);
@@ -178,7 +175,7 @@ const OrderChatAdminPage: React.FC = () => {
         (payload) => {
           console.log('Admin: New order message received:', payload);
           const newMessage = payload.new as OrderChatMessage;
-          setMessages(prev => [...prev, newMessage]);
+          setMessages(prev => (prev.some(msg => msg.id === newMessage.id) ? prev : [...prev, newMessage]));
           
           // Mark as read if it's from customer
           if (newMessage.sender_type === 'customer') {
@@ -414,8 +411,11 @@ const OrderChatAdminPage: React.FC = () => {
       // Determine message type based on file type
       const messageType = file.type.startsWith('image/') ? 'image' : 'file';
       
-      // For admin app, we'll use a fixed admin UUID
-      const currentUserId = '00000000-0000-0000-0000-000000000001';
+      if (!user?.id) {
+        toast.error('You must be signed in to send files.');
+        return;
+      }
+      const currentUserId = user.id;
 
       const messageData = {
         thread_id: selectedThread.id,
@@ -477,13 +477,15 @@ const OrderChatAdminPage: React.FC = () => {
 
     console.log('Admin: Sending order message:', newMessage.trim());
     console.log('Admin: Selected thread ID:', selectedThread.id);
-    console.log('Admin: Thread status:', selectedThread.status);
+      console.log('Admin: Thread status:', selectedThread.status);
     setSending(true);
     
     try {
-      // For admin app, we'll use a fixed admin UUID since we don't have auth setup
-      // Using a consistent UUID for admin user
-      const currentUserId = '00000000-0000-0000-0000-000000000001'; // Fixed admin UUID
+      if (!user?.id) {
+        toast.error('You must be signed in to send messages.');
+        return;
+      }
+      const currentUserId = user.id;
 
       const messageData = {
         thread_id: selectedThread.id,

@@ -10,6 +10,7 @@ import Button from '../ui/Button';
 import { Loader2, CheckCircle, Pencil, Printer, Truck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { OrdersTableOrder } from '@/types';
+import { sendOrderUpdateNotification } from '@/lib/customerNotifications';
 
 interface Props {
   order: OrdersTableOrder;
@@ -48,6 +49,45 @@ const UpdateStatusModal: React.FC<Props> = ({ order, isOpen, onClose, onStatusUp
 
     toast.success(`Status updated to "${newStatus}"!`);
 
+    // Send notification to customer portal (Supabase)
+    try {
+      // Get customer's Supabase user_id through orders -> customers
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .select('customer_id')
+        .eq('id', order.order_id)
+        .single();
+      
+      if (orderError || !orderData?.customer_id) {
+        console.error('[UpdateStatusModal] Error fetching order customer_id:', orderError);
+      } else {
+        // Now get user_id from customers table
+        const { data: customerData, error: customerError } = await supabase
+          .from('customers')
+          .select('user_id')
+          .eq('id', orderData.customer_id)
+          .single();
+        
+        if (customerError) {
+          console.error('[UpdateStatusModal] Error fetching customer:', customerError);
+        }
+        
+        if (customerData?.user_id) {
+          await sendOrderUpdateNotification(
+            customerData.user_id,
+            order.order_id,
+            newStatus,
+            `Your order #${order.order_id} status has been updated to "${newStatus}".`
+          );
+          console.log('[UpdateStatusModal] Customer portal notification sent to:', customerData.user_id);
+        }
+      }
+    } catch (notifError) {
+      console.error('[UpdateStatusModal] Error sending customer notification:', notifError);
+      // Don't fail the entire operation if notification fails
+    }
+
+    // Send notification to admin panel (Firebase)
     try {
       await addDoc(collection(db, "notifications"), {
         orderId: order.order_id,
