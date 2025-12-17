@@ -223,7 +223,23 @@ const TeamChatPage: React.FC = () => {
                       return (
                         <div key={msg.id} className={`flex items-end gap-2 ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
                           <div className={`max-w-[85%] sm:max-w-md lg:max-w-lg p-3 rounded-2xl ${isCurrentUser ? 'bg-primary text-primary-foreground rounded-br-lg' : 'bg-card text-card-foreground rounded-bl-lg'}`}>
-                            {!isCurrentUser && (<p className={`text-xs font-bold mb-1 ${msg.userRole === 'Owner' ? 'text-red-400' : msg.userRole === 'Manager' ? 'text-blue-400' : 'text-green-400'}`}>{msg.userName} ({msg.userRole})</p>)}
+                            {!isCurrentUser && (
+                              <p
+                                className={`text-xs font-bold mb-1 ${
+                                  String(msg.userRole || '')
+                                    .toLowerCase()
+                                    .trim() === 'owner'
+                                    ? 'text-red-400'
+                                    : String(msg.userRole || '')
+                                          .toLowerCase()
+                                          .trim() === 'manager'
+                                      ? 'text-blue-400'
+                                      : 'text-green-400'
+                                }`}
+                              >
+                                {msg.userName} ({msg.userRole})
+                              </p>
+                            )}
                             <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
                             <p className="text-xs opacity-70 mt-1 text-right">{dayjs(msg.createdAt?.toDate()).format('h:mm A')}</p>
                           </div>

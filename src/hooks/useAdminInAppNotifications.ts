@@ -20,7 +20,7 @@ type AdminNotificationDoc = {
   read: boolean;
 };
 
-const ADMIN_ROLES = new Set(['Owner', 'Manager', 'Staff', 'admin']);
+const ADMIN_ROLES = new Set(['owner', 'manager', 'office', 'designer', 'production', 'purchase']);
 const TOAST_NOTIFICATION_TYPES = new Set<AdminNotificationType>(['support_message', 'order_chat_message', 'order_request']);
 
 const truncate = (value: string, maxLen = 80) => {

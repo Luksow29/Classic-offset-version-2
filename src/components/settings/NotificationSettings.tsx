@@ -3,14 +3,13 @@ import React, { useState, useEffect } from 'react';
 import Card from '../ui/Card';
 import { useUser } from '@/context/UserContext';
 import { Bell, Mail, MessageSquare, AlertCircle, Clock, ShoppingBag, DollarSign, Phone } from 'lucide-react';
-import toast from 'react-hot-toast';
-import { useUserSettings } from '@/lib/settingsService';
+import { useSettings } from '@/context/SettingsContext';
 import { Loader2 } from 'lucide-react';
 import Button from '../ui/Button';
 
 const NotificationSettings: React.FC = () => {
   const { user } = useUser();
-  const { settings, updateSettings, loading } = useUserSettings();
+  const { settings, updateSettings, loading } = useSettings();
   const [saving, setSaving] = useState(false);
   
   // Local state for notification preferences
@@ -28,17 +27,17 @@ const NotificationSettings: React.FC = () => {
   
   // Sync local state with settings from Supabase
   useEffect(() => {
-    if (settings) {
+    if (settings?.notification_preferences) {
       setLocalSettings({
-        emailNotifications: settings.notification_preferences.email,
-        pushNotifications: settings.notification_preferences.push,
-        smsNotifications: settings.notification_preferences.sms,
-        whatsappNotifications: settings.notification_preferences.whatsapp,
-        orderUpdates: settings.notification_preferences.types.orders,
-        paymentAlerts: settings.notification_preferences.types.payments,
-        stockAlerts: settings.notification_preferences.types.stock,
-        systemAnnouncements: settings.notification_preferences.types.system,
-        notificationFrequency: settings.notification_preferences.frequency,
+        emailNotifications: settings.notification_preferences.email ?? true,
+        pushNotifications: settings.notification_preferences.push ?? true,
+        smsNotifications: settings.notification_preferences.sms ?? false,
+        whatsappNotifications: settings.notification_preferences.whatsapp ?? false,
+        orderUpdates: settings.notification_preferences.types?.orders ?? true,
+        paymentAlerts: settings.notification_preferences.types?.payments ?? true,
+        stockAlerts: settings.notification_preferences.types?.stock ?? true,
+        systemAnnouncements: settings.notification_preferences.types?.system ?? true,
+        notificationFrequency: settings.notification_preferences.frequency ?? 'realtime',
       });
     }
   }, [settings]);

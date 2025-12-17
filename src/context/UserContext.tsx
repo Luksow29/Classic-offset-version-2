@@ -1,13 +1,12 @@
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react'; // useCallback ஐச் சேர்க்கவும்
 import { supabase } from '@/lib/supabaseClient';
-import { PostgrestError } from '@supabase/supabase-js';
-import { safeSingleQuery } from '@/lib/supabaseErrorHandler';
 import type { Session, User } from '@supabase/supabase-js';
+import { normalizeStaffRole, type StaffRole } from '@/lib/rbac';
 
 interface UserProfile {
   id: string; // public.users அட்டவணையில் id உள்ளது
   name: string;
-  role: 'Owner' | 'Manager' | 'Staff' | null;
+  role: StaffRole | null;
   email: string; // public.users அட்டவணையில் email உள்ளது
   phone?: string | null;
   address?: string | null;
@@ -44,22 +43,36 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error("Error fetching user profile:", error);
-        // பிழை ஏற்பட்டால், ஒரு குறைந்தபட்ச சுயவிவரத்தை அமைக்கவும்
-        setUserProfile({ id: supabaseUser.id, name: supabaseUser.email || 'Guest', role: 'Staff', email: supabaseUser.email || '' });
+        // If we can't load the profile, do NOT assume a role.
+        setUserProfile({
+          id: supabaseUser.id,
+          name: supabaseUser.email || 'Unknown User',
+          role: null,
+          email: supabaseUser.email || '',
+        });
         return; // பிழை ஏற்பட்டால், மேலும் தொடராமல் திரும்பு
       }
 
       if (data) {
-        setUserProfile(data as UserProfile); // தரவை UserProfile ஆக மாற்றவும்
+        const normalizedRole = normalizeStaffRole((data as any).role);
+        setUserProfile({
+          ...(data as Omit<UserProfile, 'role'>),
+          role: normalizedRole,
+        });
       } else {
         // பயனர் public.users அட்டவணையில் இல்லை என்றால் (எ.கா. புதிய பதிவு)
-        console.warn("User profile not found in public.users for ID:", supabaseUser.id, "Setting default profile.");
-        setUserProfile({ id: supabaseUser.id, name: supabaseUser.email || 'New User', role: 'Staff', email: supabaseUser.email || '' });
+        console.warn("User profile not found in public.users for ID:", supabaseUser.id);
+        setUserProfile({
+          id: supabaseUser.id,
+          name: supabaseUser.email || 'New User',
+          role: null,
+          email: supabaseUser.email || '',
+        });
       }
     } catch (err: any) {
       console.error("Unexpected error in fetchUserProfile:", err);
       // எதிர்பாராத பிழை ஏற்பட்டால்
-      setUserProfile({ id: supabaseUser.id, name: 'Error User', role: null, email: '' });
+      setUserProfile({ id: supabaseUser.id, name: 'Error User', role: null, email: supabaseUser.email || '' });
     } finally {
       setLoading(false); // சுயவிவரத்தைப் பெற்ற பிறகு loading ஐ false ஆக அமைக்கவும்
     }

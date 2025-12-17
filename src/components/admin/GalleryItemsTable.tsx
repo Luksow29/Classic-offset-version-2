@@ -70,7 +70,7 @@ const GalleryItemsTable: React.FC<GalleryItemsTableProps> = ({ onDataChange, onE
   }, [fetchGalleryItems, onDataChange]); // onDataChange ஐயும் சேர்க்கவும்
 
   const handleEdit = (item: GalleryItem) => {
-    if (!userProfile || (userProfile.role !== 'Owner' && userProfile.role !== 'Manager')) {
+    if (!userProfile || (userProfile.role !== 'owner' && userProfile.role !== 'manager')) {
       toast.error('Permission denied: Only Owners and Managers can edit gallery items.');
       return;
     }
@@ -78,7 +78,7 @@ const GalleryItemsTable: React.FC<GalleryItemsTableProps> = ({ onDataChange, onE
   };
 
   const handleDelete = (item: GalleryItem) => {
-    if (!userProfile || (userProfile.role !== 'Owner' && userProfile.role !== 'Manager')) {
+    if (!userProfile || (userProfile.role !== 'owner' && userProfile.role !== 'manager')) {
       toast.error('Permission denied: Only Owners and Managers can delete gallery items.');
       return;
     }

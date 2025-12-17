@@ -65,7 +65,7 @@ const BrandingContentForm: React.FC<BrandingContentFormProps> = ({ sectionName }
   }, [sectionName]);
 
   const handleSave = async () => {
-    if (!userProfile || (userProfile.role !== 'Owner' && userProfile.role !== 'Manager')) {
+    if (!userProfile || (userProfile.role !== 'owner' && userProfile.role !== 'manager')) {
       toast.error('Permission denied: Only Owners and Managers can edit site content.');
       return;
     }

@@ -7,11 +7,11 @@ import { useUser } from '@/context/UserContext';
 import { Loader2, Lock, Key, Shield, Eye, EyeOff, LogOut } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
-import { useUserSettings } from '@/lib/settingsService';
+import { useSettings } from '@/context/SettingsContext';
 
 const SecuritySettings: React.FC = () => {
   const { user } = useUser();
-  const { settings, updateSettings, loading: settingsLoading } = useUserSettings();
+  const { settings, updateSettings, loading: settingsLoading } = useSettings();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -28,8 +28,8 @@ const SecuritySettings: React.FC = () => {
   
   // Sync with Supabase settings
   useEffect(() => {
-    if (settings) {
-      setTwoFactorEnabled(settings.security_preferences.two_factor_enabled);
+    if (settings?.security_preferences) {
+      setTwoFactorEnabled(settings.security_preferences.two_factor_enabled ?? false);
     }
   }, [settings]);
 

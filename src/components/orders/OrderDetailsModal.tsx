@@ -29,6 +29,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ isOpen, onClose, 
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showFiles, setShowFiles] = useState(false);
   const {
     events: timelineEvents,
     isLoading: timelineLoading,
@@ -178,7 +179,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ isOpen, onClose, 
                 <div className="bg-gray-50 dark:bg-gray-800/50 p-4 border-b border-gray-100 dark:border-gray-700">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8">
                     {Object.entries(orderDetails.matter_content).map(([key, value]) => {
-                      if (key === 'matter_text') return null;
+                      if (key === 'matter_text' || key === 'reference_files') return null;
                       return (
                         <div key={key} className="flex flex-col">
                           <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-1">{key.replace(/_/g, ' ')}</span>
@@ -204,6 +205,56 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ isOpen, onClose, 
                   </div>
                 )}
               </Card>
+
+              {/* File Previews */}
+              {orderDetails.matter_content.reference_files && Array.isArray(orderDetails.matter_content.reference_files) && orderDetails.matter_content.reference_files.length > 0 && (
+                <div className="mt-4">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setShowFiles(!showFiles)}
+                    className="w-full mb-4 flex items-center justify-center gap-2"
+                  >
+                    {showFiles ? 'Hide' : 'Show'} Attached Files ({orderDetails.matter_content.reference_files.length})
+                  </Button>
+
+                  {showFiles && (
+                    <div className="p-5 border border-gray-100 dark:border-gray-700 bg-gray-50/30 dark:bg-gray-800/20 rounded-lg animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                        {orderDetails.matter_content.reference_files.map((file: any, index: number) => (
+                          <a
+                            key={index}
+                            href={file.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group relative flex flex-col items-center bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-primary-400 transition-all overflow-hidden shadow-sm hover:shadow-md"
+                          >
+                            <div className="w-full h-32 bg-gray-100 dark:bg-gray-900 flex items-center justify-center overflow-hidden">
+                              {file.type?.startsWith('image/') ? (
+                                <img
+                                  src={file.url}
+                                  alt={file.name}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                />
+                              ) : (
+                                <FileText className="w-10 h-10 text-gray-400 group-hover:text-primary-500 transition-colors" />
+                              )}
+                            </div>
+                            <div className="w-full p-2 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700">
+                              <p className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate w-full text-center group-hover:text-primary-600">
+                                {file.name}
+                              </p>
+                              <p className="text-[10px] text-gray-400 text-center mt-0.5">
+                                {(file.size / 1024).toFixed(0)} KB
+                              </p>
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </section>
           )}
 

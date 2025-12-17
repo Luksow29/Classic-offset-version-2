@@ -6,11 +6,12 @@ import Card from '../ui/Card';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 import { ArrowUpDown, Search, Edit2, Trash2, ToggleLeft, ToggleRight, Loader2, ShieldAlert } from 'lucide-react';
+import type { StaffRole } from '@/lib/rbac';
 
 interface UserTableProps {
   onEditUser: (user: User) => void;
   onDataChange: () => void;
-  currentUserRole?: 'Owner' | 'Manager' | 'Staff' | null;
+  currentUserRole?: StaffRole | null;
   currentUserId?: string | null;
 }
 
@@ -50,7 +51,7 @@ const UserTable: React.FC<UserTableProps> = ({ onEditUser, onDataChange, current
   }, [fetchUsers, onDataChange]); // onDataChange மாறும்போதும் புதுப்பிக்கவும்
 
   const handleDelete = async (userToDelete: User) => {
-    if (currentUserRole !== 'Owner') return alert('Permission Denied.');
+    if (currentUserRole !== 'owner') return alert('Permission Denied.');
     if (userToDelete.id === currentUserId) return alert("You cannot delete your own account.");
     if (!confirm(`Are you sure you want to delete ${userToDelete.name}?`)) return;
 
@@ -67,7 +68,7 @@ const UserTable: React.FC<UserTableProps> = ({ onEditUser, onDataChange, current
   };
   
   const handleStatusToggle = async (userToToggle: User) => {
-    if (currentUserRole !== 'Owner') return alert('Permission Denied.');
+    if (currentUserRole !== 'owner') return alert('Permission Denied.');
     if (userToToggle.id === currentUserId) return alert("You cannot change your own status.");
     const newStatus = userToToggle.user_status?.status === 'active' ? 'inactive' : 'active';
     
@@ -104,7 +105,7 @@ const UserTable: React.FC<UserTableProps> = ({ onEditUser, onDataChange, current
                     <th className="px-4 py-3 text-left text-xs font-medium uppercase">Email</th>
                     <th className="px-4 py-3 text-left text-xs font-medium uppercase">Role</th>
                     <th className="px-4 py-3 text-left text-xs font-medium uppercase">Status</th>
-                    {currentUserRole === 'Owner' && <th scope="col" className="px-4 py-3 text-left text-xs font-medium uppercase">Actions</th>}
+                    {currentUserRole === 'owner' && <th scope="col" className="px-4 py-3 text-left text-xs font-medium uppercase">Actions</th>}
                 </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -114,7 +115,7 @@ const UserTable: React.FC<UserTableProps> = ({ onEditUser, onDataChange, current
                         <td className="px-4 py-3 whitespace-nowrap">{user.email}</td>
                         <td className="px-4 py-3 whitespace-nowrap">{user.role}</td>
                         <td className="px-4 py-3 whitespace-nowrap">{user.user_status?.status || 'N/A'}</td>
-                        {currentUserRole === 'Owner' && (
+                        {currentUserRole === 'owner' && (
                             <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium space-x-2">
                                 <Button variant="icon" onClick={() => handleStatusToggle(user)} title="Toggle Status">
                                     {user.user_status?.status === 'active' ? <ToggleRight className="text-green-500"/> : <ToggleLeft className="text-red-500"/>}

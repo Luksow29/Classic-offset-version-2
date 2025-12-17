@@ -4,13 +4,12 @@ import Card from '../ui/Card';
 import { useTheme } from '@/lib/ThemeProvider';
 import { Sun, Moon, Monitor, Check } from 'lucide-react';
 import Button from '../ui/Button';
-import toast from 'react-hot-toast';
-import { useUserSettings } from '@/lib/settingsService';
+import { useSettings } from '@/context/SettingsContext';
 import { Loader2 } from 'lucide-react';
 
 const AppearanceSettings: React.FC = () => {
   const { theme, setTheme } = useTheme();
-  const { settings, updateSettings, loading } = useUserSettings();
+  const { settings, updateSettings, loading } = useSettings();
   
   const [localSettings, setLocalSettings] = useState({
     fontSize: 'medium',
@@ -23,17 +22,17 @@ const AppearanceSettings: React.FC = () => {
   useEffect(() => {
     if (settings) {
       setLocalSettings({
-        fontSize: settings.font_size,
-        reducedMotion: settings.reduced_motion,
-        highContrast: settings.high_contrast,
-        colorScheme: settings.color_scheme,
+        fontSize: settings.font_size || 'medium',
+        reducedMotion: settings.reduced_motion || false,
+        highContrast: settings.high_contrast || false,
+        colorScheme: settings.color_scheme || 'blue',
       });
     }
   }, [settings]);
   
   const handleSaveAppearance = async () => {
     await updateSettings({
-      theme_preference: theme,
+      theme_preference: theme as 'light' | 'dark' | 'system',
       font_size: localSettings.fontSize as 'small' | 'medium' | 'large',
       reduced_motion: localSettings.reducedMotion,
       high_contrast: localSettings.highContrast,

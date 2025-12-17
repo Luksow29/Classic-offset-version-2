@@ -18,13 +18,14 @@ const queryClient = new QueryClient();
 const CustomerDashboard = lazy(() => import("./pages/CustomerDashboard"));
 const CustomerOrders = lazy(() => import("./pages/CustomerOrdersPage"));
 const CustomerRequests = lazy(() => import("./pages/CustomerRequestsPage"));
+const NewRequestPage = lazy(() => import("./pages/NewRequestPage"));
 const CustomerInvoices = lazy(() => import("./pages/CustomerInvoicesPage"));
 const CustomerSupport = lazy(() => import("./pages/CustomerSupportPage"));
 const CustomerProfile = lazy(() => import("./pages/CustomerProfilePage"));
 const CustomerContact = lazy(() => import("./pages/CustomerContactPage"));
 const ProductLibraryPage = lazy(() => import("./pages/ProductLibraryPage"));
 
-const NotificationTestPage = lazy(() => import("./pages/NotificationTest"));
+const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
 const NotificationPreferencesPage = lazy(() => import("./pages/NotificationPreferences"));
 
 // Suspense wrapper component
@@ -51,12 +52,13 @@ const router = createBrowserRouter(
         <Route path="/customer-portal" element={Suspended(CustomerDashboard)} />
         <Route path="/customer-portal/orders" element={Suspended(CustomerOrders)} />
         <Route path="/customer-portal/requests" element={Suspended(CustomerRequests)} />
+        <Route path="/customer-portal/new-request" element={Suspended(NewRequestPage)} />
         <Route path="/customer-portal/invoices" element={Suspended(CustomerInvoices)} />
         <Route path="/customer-portal/support" element={Suspended(CustomerSupport)} />
         <Route path="/customer-portal/profile" element={Suspended(CustomerProfile)} />
         <Route path="/customer-portal/contact" element={Suspended(CustomerContact)} />
         <Route path="/customer-portal/showcase" element={Suspended(ProductLibraryPage)} />
-        <Route path="/customer-portal/notifications" element={Suspended(NotificationTestPage)} />
+        <Route path="/customer-portal/notifications" element={Suspended(NotificationsPage)} />
         <Route path="/customer-portal/notification-preferences" element={Suspended(NotificationPreferencesPage)} />
       </Route>
 

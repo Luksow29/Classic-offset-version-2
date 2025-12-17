@@ -7,20 +7,21 @@ import Button from '../ui/Button';
 import { supabase } from '@/lib/supabaseClient';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { User } from './UserManagement';
+import { normalizeStaffRole, STAFF_ROLE_LABEL, type StaffRole } from '@/lib/rbac';
 
 interface UserFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: () => void;
   editingUser: User | null;
-  currentUserRole?: 'Owner' | 'Manager' | 'Staff' | null;
+  currentUserRole?: StaffRole | null;
 }
 
 const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, editingUser, currentUserRole }) => {
   // படிவத் தரவிற்கான state-கள்
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState('Staff');
+  const [role, setRole] = useState<StaffRole>('office');
   const [password, setPassword] = useState(''); // ✅ புதிய பயனருக்கான கடவுச்சொல்
 
   const [loading, setLoading] = useState(false);
@@ -30,12 +31,12 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
     if (editingUser) {
       setName(editingUser.name || '');
       setEmail(editingUser.email || '');
-      setRole(editingUser.role || 'Staff');
+      setRole(normalizeStaffRole(editingUser.role) || 'office');
       setPassword(''); // திருத்தும்போது கடவுச்சொல் புலத்தைக் காலியாக வைக்கவும்
     } else {
       setName('');
       setEmail('');
-      setRole('Staff');
+      setRole('office');
       setPassword('');
     }
     setError(null);
@@ -53,7 +54,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
           .from('users')
           .update({
             name: name,
-            ...(currentUserRole === 'Owner' && { role: role }),
+            ...(currentUserRole === 'owner' && { role: role }),
           })
           .eq('id', editingUser.id)
           .select()
@@ -139,14 +140,17 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
           id="role"
           label="User Role"
           value={role}
-          onChange={(e) => setRole(e.target.value)}
+          onChange={(e) => setRole(e.target.value as StaffRole)}
           options={[
-            { value: 'Staff', label: 'Staff' },
-            { value: 'Manager', label: 'Manager' },
-            ...(currentUserRole === 'Owner' ? [{ value: 'Owner', label: 'Owner' }] : []),
+            { value: 'office', label: STAFF_ROLE_LABEL.office },
+            { value: 'designer', label: STAFF_ROLE_LABEL.designer },
+            { value: 'production', label: STAFF_ROLE_LABEL.production },
+            { value: 'purchase', label: STAFF_ROLE_LABEL.purchase },
+            { value: 'manager', label: STAFF_ROLE_LABEL.manager },
+            ...(currentUserRole === 'owner' ? [{ value: 'owner', label: STAFF_ROLE_LABEL.owner }] : []),
           ]}
           required
-          disabled={currentUserRole !== 'Owner'}
+          disabled={currentUserRole !== 'owner'}
         />
         <div className="flex justify-end gap-3 pt-5">
           <Button type="button" variant="outline" onClick={onClose} disabled={loading}>Cancel</Button>

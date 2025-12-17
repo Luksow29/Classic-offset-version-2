@@ -44,7 +44,7 @@ const UserManagement: React.FC = () => {
     <div className="p-4 sm:p-6 space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
         <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">👥 User Management</h1>
-        {currentUserRole === 'Owner' && (
+        {currentUserRole === 'owner' && (
           <Button onClick={handleOpenAddModal} variant="primary" className="flex items-center w-full sm:w-auto">
             <UserPlus className="w-5 h-5 mr-2" />
             Add New User

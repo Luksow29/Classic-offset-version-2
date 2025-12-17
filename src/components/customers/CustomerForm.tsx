@@ -12,6 +12,7 @@ import CustomerTagging from './enhancements/CustomerTagging';
 import { logActivity } from '@/lib/activityLogger';
 import { db } from '@/lib/firebaseClient';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { hasAnyStaffRole } from '@/lib/rbac';
 
 import { Customer } from '@/types';
 
@@ -85,8 +86,8 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ selectedCustomer, onSave, o
     e.preventDefault();
     setError(null);
 
-    if (!userProfile || (userProfile.role !== 'Owner' && userProfile.role !== 'Manager')) {
-      toast.error('Permission denied: Only Owners and Managers can add/edit customers.');
+    if (!userProfile || !hasAnyStaffRole(userProfile.role, ['owner', 'manager', 'office'])) {
+      toast.error('Permission denied: You do not have access to add/edit customers.');
       return;
     }
 

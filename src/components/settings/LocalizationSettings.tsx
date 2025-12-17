@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import { Globe, Loader2, Languages } from 'lucide-react';
-import toast from 'react-hot-toast';
-import { useUserSettings } from '@/lib/settingsService';
+import { useSettings } from '@/context/SettingsContext';
 
 const LocalizationSettings: React.FC = () => {
-  const { settings, updateSettings, loading } = useUserSettings();
+  const { settings, updateSettings, loading } = useSettings();
   const [saving, setSaving] = useState(false);
   
   const [localSettings, setLocalSettings] = useState({
@@ -21,11 +20,11 @@ const LocalizationSettings: React.FC = () => {
   useEffect(() => {
     if (settings) {
       setLocalSettings({
-        language: settings.language_preference,
-        dateFormat: settings.date_format,
-        timeFormat: settings.time_format,
-        currency: settings.currency,
-        timezone: settings.timezone,
+        language: settings.language_preference || 'en',
+        dateFormat: settings.date_format || 'DD/MM/YYYY',
+        timeFormat: settings.time_format || '24h',
+        currency: settings.currency || 'INR',
+        timezone: settings.timezone || 'Asia/Kolkata',
       });
     }
   }, [settings]);

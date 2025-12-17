@@ -20,7 +20,7 @@ const TopHeader: React.FC<TopHeaderProps> = ({ onMenuClick }) => {
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const { userProfile } = useUser();
   const { openPalette } = useCommandPalette();
-  const isAdminOrOwner = userProfile?.role === 'Owner' || userProfile?.role === 'Manager';
+  const isAdminOrOwner = userProfile?.role === 'owner' || userProfile?.role === 'manager';
 
   // Enhanced glassmorphism header to match dashboard and sidebar
   return (

@@ -53,7 +53,7 @@ const TestimonialsTable: React.FC<TestimonialsTableProps> = ({ onEditTestimonial
   }, [fetchTestimonials, onDataChange]);
 
   const handleDelete = (testimonial: Testimonial) => {
-    if (!userProfile || (userProfile.role !== 'Owner' && userProfile.role !== 'Manager')) {
+    if (!userProfile || (userProfile.role !== 'owner' && userProfile.role !== 'manager')) {
       toast.error('Permission denied: Only Owners and Managers can delete testimonials.');
       return;
     }
@@ -84,7 +84,7 @@ const TestimonialsTable: React.FC<TestimonialsTableProps> = ({ onEditTestimonial
   };
 
   const handleToggleApproval = async (testimonial: Testimonial) => {
-    if (!userProfile || (userProfile.role !== 'Owner' && userProfile.role !== 'Manager')) {
+    if (!userProfile || (userProfile.role !== 'owner' && userProfile.role !== 'manager')) {
       toast.error('Permission denied: Only Owners and Managers can toggle testimonial approval.');
       return;
     }

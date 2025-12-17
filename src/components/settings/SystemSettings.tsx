@@ -4,13 +4,13 @@ import Input from '../ui/Input';
 import Button from '../ui/Button';
 import { Database, Loader2, HardDrive, Server, RefreshCw, Download, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useUserSettings, UserSettings } from '@/lib/settingsService';
+import { useSettings, UserSettings } from '@/context/SettingsContext';
 import { supabase } from '@/lib/supabaseClient';
 import { useUser } from '@/context/UserContext';
 
 const SystemSettings: React.FC = () => {
   const { user } = useUser();
-  const { settings, updateSettings, loading: settingsLoading } = useUserSettings();
+  const { settings, updateSettings, loading: settingsLoading } = useSettings();
   const [loading, setLoading] = useState(false);
   const [backupLoading, setBackupLoading] = useState(false);
   const [restoreLoading, setRestoreLoading] = useState(false);

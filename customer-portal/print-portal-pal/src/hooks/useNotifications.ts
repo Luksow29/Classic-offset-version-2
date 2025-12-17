@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -18,111 +18,128 @@ export const useNotifications = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useEffect(() => {
-    fetchNotifications();
-    const subscription = setupRealtimeSubscription();
+    let isMounted = true;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
 
-    return () => {
-      subscription?.then(unsub => unsub?.());
-    };
-  }, []);
+    const fetchNotificationsLocal = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setLoading(false);
+          return;
+        }
 
-  const fetchNotifications = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setLoading(false);
-        return;
-      }
+        const { data, error } = await supabase
+          .from('notifications')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(50);
 
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(50);
+        if (error) throw error;
 
-      if (error) throw error;
-
-      setNotifications(data || []);
-      setUnreadCount(data?.filter(n => !n.is_read).length || 0);
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load notifications. Please refresh the page.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const setupRealtimeSubscription = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    
-    console.log('[Notifications] Setting up realtime subscription for user:', user.id);
-    
-    const subscription = supabase
-      .channel(`customer-notifications-${user.id}-${Date.now()}`)
-      .on('postgres_changes', 
-        { 
-          event: 'INSERT', 
-          schema: 'public', 
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`
-        }, 
-        (payload) => {
-          console.log('[Notifications] New notification received:', payload);
-          const newNotification = payload.new as Notification;
-          setNotifications(prev => [newNotification, ...prev]);
-          setUnreadCount(prev => prev + 1);
-          
-          // Show toast notification (in-app popup)
+        if (isMounted) {
+          setNotifications(data || []);
+          setUnreadCount(data?.filter(n => !n.is_read).length || 0);
+        }
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+        if (isMounted) {
           toast({
-            title: newNotification.title,
-            description: newNotification.message.substring(0, 100) + (newNotification.message.length > 100 ? '...' : ''),
-            variant: newNotification.type === 'system_alert' ? 'destructive' : 'default',
-            duration: 5000,
+            title: "Error",
+            description: "Failed to load notifications. Please refresh the page.",
+            variant: "destructive",
           });
-          
-          // Show browser push notification if permission granted
-          if ('Notification' in window && Notification.permission === 'granted') {
-            try {
-              const browserNotification = new Notification(newNotification.title, {
-                body: newNotification.message,
-                icon: '/icons/icon-192x192.png',
-                badge: '/icons/icon-72x72.png',
-                tag: `notification-${newNotification.id}`,
-                requireInteraction: newNotification.type === 'system_alert',
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    const setupSubscription = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !isMounted) return;
+      
+      console.log('[Notifications] Setting up realtime subscription for user:', user.id);
+      
+      channel = supabase
+        .channel(`customer-notifications-${user.id}-${Date.now()}`)
+        .on('postgres_changes', 
+          { 
+            event: 'INSERT', 
+            schema: 'public', 
+            table: 'notifications',
+            filter: `user_id=eq.${user.id}`
+          }, 
+          (payload) => {
+            console.log('[Notifications] 🔔 New notification received:', payload);
+            const newNotification = payload.new as Notification;
+            
+            if (isMounted) {
+              setNotifications(prev => [newNotification, ...prev]);
+              setUnreadCount(prev => prev + 1);
+              
+              // Show toast notification (in-app popup)
+              console.log('[Notifications] Showing toast popup');
+              toast({
+                title: `🔔 ${newNotification.title}`,
+                description: newNotification.message.substring(0, 100) + (newNotification.message.length > 100 ? '...' : ''),
+                variant: newNotification.type === 'system_alert' ? 'destructive' : 'default',
+                duration: 8000,
               });
               
-              browserNotification.onclick = () => {
-                window.focus();
-                if (newNotification.link_to) {
-                  window.location.href = newNotification.link_to;
+              // Show browser push notification if permission granted
+              if ('Notification' in window && Notification.permission === 'granted') {
+                try {
+                  const browserNotification = new window.Notification(newNotification.title, {
+                    body: newNotification.message,
+                    icon: '/icons/icon-192x192.png',
+                    badge: '/icons/icon-72x72.png',
+                    tag: `notification-${newNotification.id}`,
+                    requireInteraction: newNotification.type === 'system_alert',
+                  });
+                  
+                  browserNotification.onclick = () => {
+                    window.focus();
+                    if (newNotification.link_to) {
+                      window.location.href = newNotification.link_to;
+                    }
+                    browserNotification.close();
+                  };
+                  
+                  // Auto close after 8 seconds
+                  setTimeout(() => browserNotification.close(), 8000);
+                  console.log('[Notifications] Browser notification shown');
+                } catch (error) {
+                  console.error('[Notifications] Failed to show browser notification:', error);
                 }
-                browserNotification.close();
-              };
-              
-              // Auto close after 8 seconds
-              setTimeout(() => browserNotification.close(), 8000);
-            } catch (error) {
-              console.error('[Notifications] Failed to show browser notification:', error);
+              }
             }
           }
-        }
-      )
-      .subscribe((status) => {
-        console.log('[Notifications] Subscription status:', status);
-      });
+        )
+        .subscribe((status) => {
+          console.log('[Notifications] Subscription status:', status);
+        });
+      
+      channelRef.current = channel;
+    };
+
+    fetchNotificationsLocal();
+    setupSubscription();
 
     return () => {
-      subscription.unsubscribe();
+      isMounted = false;
+      if (channel) {
+        console.log('[Notifications] Cleaning up subscription');
+        supabase.removeChannel(channel);
+      }
     };
-  };
+  }, [toast]);
 
   const markAsRead = async (notificationId: number) => {
     try {
@@ -174,6 +191,27 @@ export const useNotifications = () => {
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
       throw error;
+    }
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+
+      setNotifications(data || []);
+      setUnreadCount(data?.filter(n => !n.is_read).length || 0);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
     }
   };
 

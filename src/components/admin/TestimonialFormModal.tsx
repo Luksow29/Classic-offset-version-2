@@ -62,7 +62,7 @@ const TestimonialFormModal: React.FC<TestimonialFormModalProps> = ({ isOpen, onC
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userProfile || (userProfile.role !== 'Owner' && userProfile.role !== 'Manager')) {
+    if (!userProfile || (userProfile.role !== 'owner' && userProfile.role !== 'manager')) {
       toast.error('Permission denied: Only Owners and Managers can manage testimonials.');
       return;
     }

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import OrderForm from './OrderForm';
+import UnifiedOrderWizard from './UnifiedOrderWizard';
 import OrdersTable from './OrdersTable';
 import { Plus, List, Package, TrendingUp, Clock, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -138,22 +138,13 @@ const Orders: React.FC = () => {
               <OrdersTable highlightOrderId={highlightOrderId} />
             ) : (
               <motion.div 
-                className="max-w-4xl mx-auto"
+                className="max-w-5xl mx-auto"
                 initial={{ scale: 0.95 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 0.3 }}
               >
                 <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-2xl p-4 sm:p-6 lg:p-8 rounded-3xl shadow-xl shadow-gray-200/40 dark:shadow-gray-900/40 border border-gray-200/60 dark:border-gray-700/60">
-                  <div className="flex items-center gap-3 mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-gray-200/60 dark:border-gray-700/60">
-                    <div className="p-2.5 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl">
-                      <Plus className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-bold text-gray-800 dark:text-white">Create New Order</h2>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Fill in the details to create a new order</p>
-                    </div>
-                  </div>
-                  <OrderForm onSuccess={() => setActiveTab('manage')} />
+                  <UnifiedOrderWizard onSuccess={() => setActiveTab('manage')} />
                 </div>
               </motion.div>
             )}

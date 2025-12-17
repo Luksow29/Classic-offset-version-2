@@ -7,6 +7,7 @@ import {
 } from 'react-router-dom';
 import { ThemeProvider } from './lib/ThemeProvider';
 import { UserProvider } from './context/UserContext';
+import { SettingsProvider } from './context/SettingsContext';
 import { RealtimeProvider } from './context/RealtimeContext';
 import { Toaster } from 'react-hot-toast';
 import ErrorBoundary from './components/ui/ErrorBoundary';
@@ -59,6 +60,7 @@ const LoyaltyProgram = lazy(() => import('./components/loyalty/LoyaltyProgram'))
 const CustomerSupportPage = lazy(() => import('./components/admin/CustomerSupportPage'));
 const OrderChatAdminPage = lazy(() => import('./components/admin/OrderChatAdminPage'));
 const JobCreationWizard = lazy(() => import('./components/jobs/JobCreationWizard'));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
 
 // Helper function to wrap routes with Suspense and ErrorBoundary
 const Suspended = (element: React.ReactNode) => (
@@ -110,6 +112,7 @@ const router = createBrowserRouter(
         <Route path="/order-chat-admin" element={Suspended(<OrderChatAdminPage />)} />
         {/* Job Creation Wizard */}
         <Route path="/jobs/new" element={Suspended(<JobCreationWizard />)} />
+        <Route path="/notifications" element={Suspended(<NotificationsPage />)} />
       </Route>
 
       {/* 404 page */}
@@ -122,10 +125,11 @@ function App() {
   return (
     <ThemeProvider>
       <UserProvider>
-        <RealtimeProvider>
-          <Toaster
-            position="top-right"
-            toastOptions={{
+        <SettingsProvider>
+          <RealtimeProvider>
+            <Toaster
+              position="top-right"
+              toastOptions={{
               success: {
                 duration: 3000,
                 style: {
@@ -159,8 +163,9 @@ function App() {
           <RouterProvider router={router} />
           <PWAInstallPrompt />
         </RealtimeProvider>
-      </UserProvider>
-    </ThemeProvider>
+      </SettingsProvider>
+    </UserProvider>
+  </ThemeProvider>
   );
 }
 

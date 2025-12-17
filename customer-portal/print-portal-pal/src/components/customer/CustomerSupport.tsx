@@ -258,7 +258,15 @@ export default function CustomerSupport({ customer }: CustomerSupportProps) {
     }
   };
 
-  // Real-time subscriptions
+  // Use ref to track tickets for notifications without causing re-renders
+  const ticketsRef = useRef<SupportTicket[]>([]);
+  
+  // Keep ref in sync with tickets state
+  useEffect(() => {
+    ticketsRef.current = tickets;
+  }, [tickets]);
+
+  // Real-time subscriptions - only depend on customer.id
   useEffect(() => {
     loadTickets();
 
@@ -294,19 +302,19 @@ export default function CustomerSupport({ customer }: CustomerSupportProps) {
         },
         async (payload) => {
           console.log('Customer: Global message received:', payload);
-          const newMessage = payload.new as SupportMessage;
+          const newMsg = payload.new as SupportMessage;
           
-          // Check if this message belongs to one of the customer's tickets
-          const isMyTicket = tickets.some(t => t.id === newMessage.ticket_id);
+          // Check if this message belongs to one of the customer's tickets (using ref)
+          const isMyTicket = ticketsRef.current.some(t => t.id === newMsg.ticket_id);
           
           // Show notification for admin messages on customer's tickets
-          if (newMessage.sender_type === 'admin' && isMyTicket) {
+          if (newMsg.sender_type === 'admin' && isMyTicket) {
             console.log('Customer: Showing notification for admin message');
             
             // Show toast notification
             toast({
               title: "📩 New Support Message",
-              description: newMessage.message.substring(0, 100) + (newMessage.message.length > 100 ? '...' : ''),
+              description: newMsg.message.substring(0, 100) + (newMsg.message.length > 100 ? '...' : ''),
               duration: 8000,
             });
             
@@ -314,9 +322,9 @@ export default function CustomerSupport({ customer }: CustomerSupportProps) {
             if ('Notification' in window && Notification.permission === 'granted') {
               try {
                 new Notification('New Support Message', {
-                  body: newMessage.message.substring(0, 100),
+                  body: newMsg.message.substring(0, 100),
                   icon: '/icons/icon-192x192.png',
-                  tag: `support-global-${newMessage.id}`,
+                  tag: `support-global-${newMsg.id}`,
                 });
               } catch (e) {
                 console.error('[CustomerSupport] Browser notification error:', e);
@@ -337,7 +345,7 @@ export default function CustomerSupport({ customer }: CustomerSupportProps) {
       supabase.removeChannel(globalMessagesChannel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customer.id, tickets, toast]);
+  }, [customer.id]);
 
   useEffect(() => {
     if (!selectedTicket) return;

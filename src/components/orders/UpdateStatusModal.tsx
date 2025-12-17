@@ -51,12 +51,16 @@ const UpdateStatusModal: React.FC<Props> = ({ order, isOpen, onClose, onStatusUp
 
     // Send notification to customer portal (Supabase)
     try {
+      console.log('[UpdateStatusModal] Attempting to send notification for order:', order.order_id);
+      
       // Get customer's Supabase user_id through orders -> customers
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .select('customer_id')
         .eq('id', order.order_id)
         .single();
+      
+      console.log('[UpdateStatusModal] Order data:', orderData, 'Error:', orderError);
       
       if (orderError || !orderData?.customer_id) {
         console.error('[UpdateStatusModal] Error fetching order customer_id:', orderError);
@@ -68,18 +72,23 @@ const UpdateStatusModal: React.FC<Props> = ({ order, isOpen, onClose, onStatusUp
           .eq('id', orderData.customer_id)
           .single();
         
+        console.log('[UpdateStatusModal] Customer data:', customerData, 'Error:', customerError);
+        
         if (customerError) {
           console.error('[UpdateStatusModal] Error fetching customer:', customerError);
         }
         
         if (customerData?.user_id) {
-          await sendOrderUpdateNotification(
+          console.log('[UpdateStatusModal] Sending notification to user_id:', customerData.user_id);
+          const result = await sendOrderUpdateNotification(
             customerData.user_id,
             order.order_id,
             newStatus,
             `Your order #${order.order_id} status has been updated to "${newStatus}".`
           );
-          console.log('[UpdateStatusModal] Customer portal notification sent to:', customerData.user_id);
+          console.log('[UpdateStatusModal] Notification result:', result);
+        } else {
+          console.warn('[UpdateStatusModal] No user_id found for customer');
         }
       }
     } catch (notifError) {

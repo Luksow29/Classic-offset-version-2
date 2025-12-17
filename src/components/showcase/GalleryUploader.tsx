@@ -25,7 +25,7 @@ const GalleryUploader: React.FC<GalleryUploaderProps> = ({ onUploadSuccess }) =>
       return;
     }
     // அங்கீகாரச் சரிபார்ப்பு: Owner அல்லது Manager ஆக இருக்க வேண்டும்
-    if (userProfile.role !== 'Owner' && userProfile.role !== 'Manager') {
+    if (userProfile.role !== 'owner' && userProfile.role !== 'manager') {
       toast.error('Permission Denied: Only Owners and Managers can upload images.');
       return;
     }
@@ -93,7 +93,7 @@ const GalleryUploader: React.FC<GalleryUploaderProps> = ({ onUploadSuccess }) =>
     <div className="space-y-4 p-4 bg-gray-50 dark:bg-zinc-800 rounded-md shadow border border-gray-200 dark:border-gray-700">
       <h3 className="text-lg font-semibold text-gray-800 dark:text-white"> Upload Gallery Image</h3>
 
-      {!(userProfile?.role === 'Owner' || userProfile?.role === 'Manager') && !userLoading ? (
+      {!(userProfile?.role === 'owner' || userProfile?.role === 'manager') && !userLoading ? (
         <p className="text-red-600 dark:text-red-400 text-sm">
           You do not have permission to upload images. Only Owners and Managers can upload.
         </p>

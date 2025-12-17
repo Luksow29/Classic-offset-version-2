@@ -43,19 +43,56 @@ export default function CustomerDashboard() {
   const [loadingOrders, setLoadingOrders] = useState(true);
 
   useEffect(() => {
-    if (customer?.id) {
-      const fetchRecentOrders = async () => {
-        const { data } = await supabase
-          .from('orders')
-          .select('*')
-          .eq('customer_id', customer.id)
-          .order('created_at', { ascending: false })
-          .limit(5);
-        if (data) setRecentOrders(data);
-        setLoadingOrders(false);
-      }
-      fetchRecentOrders();
-    }
+    if (!customer?.id) return;
+
+    const fetchRecentOrders = async () => {
+      const { data } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('customer_id', customer.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      if (data) setRecentOrders(data);
+      setLoadingOrders(false);
+    };
+
+    fetchRecentOrders();
+
+    // Realtime subscription for recent orders
+    const channel = supabase
+      .channel(`dashboard-recent-orders-${customer.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: `customer_id=eq.${customer.id}`,
+        },
+        (payload) => {
+          console.log('[Dashboard] Order change detected:', payload);
+          fetchRecentOrders();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'order_status_log',
+        },
+        (payload) => {
+          console.log('[Dashboard] Status change detected:', payload);
+          fetchRecentOrders();
+        }
+      )
+      .subscribe((status) => {
+        console.log('[Dashboard] Realtime subscription status:', status);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [customer?.id]);
 
   if (showRecovery) {

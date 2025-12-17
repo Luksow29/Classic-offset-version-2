@@ -73,7 +73,7 @@ const FeaturesTable: React.FC<FeaturesTableProps> = ({ onEditFeature, onDataChan
   }, [fetchFeatures, onDataChange]); 
 
   const handleDelete = (feature: Feature) => {
-    if (!userProfile || (userProfile.role !== 'Owner' && userProfile.role !== 'Manager')) {
+    if (!userProfile || (userProfile.role !== 'owner' && userProfile.role !== 'manager')) {
       toast.error('Permission denied: Only Owners and Managers can delete features.');
       return;
     }
@@ -104,7 +104,7 @@ const FeaturesTable: React.FC<FeaturesTableProps> = ({ onEditFeature, onDataChan
   };
 
   const handleToggleActive = async (feature: Feature) => {
-    if (!userProfile || (userProfile.role !== 'Owner' && userProfile.role !== 'Manager')) {
+    if (!userProfile || (userProfile.role !== 'owner' && userProfile.role !== 'manager')) {
       toast.error('Permission denied: Only Owners and Managers can toggle feature status.');
       return;
     }
@@ -125,7 +125,7 @@ const FeaturesTable: React.FC<FeaturesTableProps> = ({ onEditFeature, onDataChan
   };
 
   const handleReorder = async (feature: Feature, direction: 'up' | 'down') => {
-    if (!userProfile || (userProfile.role !== 'Owner' && userProfile.role !== 'Manager')) {
+    if (!userProfile || (userProfile.role !== 'owner' && userProfile.role !== 'manager')) {
       toast.error('Permission denied: Only Owners and Managers can reorder features.');
       return;
     }

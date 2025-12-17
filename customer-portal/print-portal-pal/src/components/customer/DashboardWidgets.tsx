@@ -113,7 +113,7 @@ const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ customerId, setActi
     fetchStats();
 
     const channel = supabase
-      .channel('dashboard-stats-updates')
+      .channel(`dashboard-stats-${customerId}-${Date.now()}`)
       .on(
         'postgres_changes',
         {
@@ -122,7 +122,8 @@ const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ customerId, setActi
           table: 'orders',
           filter: `customer_id=eq.${customerId}`,
         },
-        () => {
+        (payload) => {
+          console.log('[DashboardWidgets] Orders change:', payload);
           fetchStats();
         }
       )
@@ -134,12 +135,27 @@ const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ customerId, setActi
           table: 'customers',
           filter: `id=eq.${customerId}`,
         },
-        () => {
+        (payload) => {
+          console.log('[DashboardWidgets] Customer change:', payload);
           // Refresh stats when loyalty points change
           fetchStats();
         }
       )
-      .subscribe();
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'order_status_log',
+        },
+        (payload) => {
+          console.log('[DashboardWidgets] Status log change:', payload);
+          fetchStats();
+        }
+      )
+      .subscribe((status) => {
+        console.log('[DashboardWidgets] Realtime subscription status:', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);

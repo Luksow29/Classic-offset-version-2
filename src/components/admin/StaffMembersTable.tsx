@@ -73,7 +73,7 @@ const StaffMembersTable: React.FC<StaffMembersTableProps> = ({ onDataChange, onA
   }, [fetchEmployees, onDataChange]); // onDataChange ஐயும் சேர்க்கவும்
 
   const handleDelete = (employee: Employee) => {
-    if (!userProfile || (userProfile.role !== 'Owner' && userProfile.role !== 'Manager')) {
+    if (!userProfile || (userProfile.role !== 'owner' && userProfile.role !== 'manager')) {
       toast.error('Permission denied: Only Owners and Managers can delete employees.');
       return;
     }
@@ -107,7 +107,7 @@ const StaffMembersTable: React.FC<StaffMembersTableProps> = ({ onDataChange, onA
   };
 
   const handleToggleActive = async (employee: Employee) => {
-    if (!userProfile || (userProfile.role !== 'Owner' && userProfile.role !== 'Manager')) {
+    if (!userProfile || (userProfile.role !== 'owner' && userProfile.role !== 'manager')) {
       toast.error('Permission denied: Only Owners and Managers can toggle employee status.');
       return;
     }
@@ -229,7 +229,7 @@ const StaffMembersTable: React.FC<StaffMembersTableProps> = ({ onDataChange, onA
                     <Button variant="ghost" size="sm" onClick={() => handleDelete(employee)} title="Delete Employee">
                       <Trash2 size={16} className="text-red-500" />
                     </Button>
-                    {employee.app_user_id && (userProfile?.role === 'Owner' || userProfile?.role === 'Manager') && (
+                    {employee.app_user_id && (userProfile?.role === 'owner' || userProfile?.role === 'manager') && (
                       <Link to="/users" className="flex items-center justify-center text-blue-600 hover:underline text-xs">
                         <ExternalLink size={14} /> User Profile
                       </Link>

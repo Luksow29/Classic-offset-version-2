@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
 import { useUser } from '@/context/UserContext';
+import type { StaffRole } from '@/lib/rbac';
 
 interface SidebarProps {
   isDocked: boolean;
@@ -23,7 +24,7 @@ interface NavItem {
   name: string;
   path: string;
   icon: JSX.Element;
-  requiredRole?: 'Owner' | 'Manager' | 'Staff';
+  requiredRole?: StaffRole;
 }
 
 interface NavGroup {
@@ -121,7 +122,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: <ActivitySquare size={20} />,
       items: [
         { name: 'Staff Management', path: '/staff', icon: <UserCircle size={18} /> },
-        { name: 'User Management', path: '/users', icon: <Users size={18} />, requiredRole: 'Owner' },
+        { name: 'User Management', path: '/users', icon: <Users size={18} />, requiredRole: 'owner' },
       ],
     },
     {
@@ -136,7 +137,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: <Settings size={20} />,
       items: [
         { name: 'Settings', path: '/settings', icon: <Settings size={18} /> },
-        { name: 'Admin Content', path: '/admin/content', icon: <Zap size={18} />, requiredRole: 'Owner' },
+        { name: 'Admin Content', path: '/admin/content', icon: <Zap size={18} />, requiredRole: 'owner' },
       ],
     },
     {
@@ -242,7 +243,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         {navGroups.map((group, groupIndex) => {
           // Filter items based on user role
           const filteredItems = group.items.filter(item =>
-            !item.requiredRole || (userProfile?.role === item.requiredRole || userProfile?.role === 'Owner')
+            !item.requiredRole || (userProfile?.role === item.requiredRole || userProfile?.role === 'owner')
           );
 
           // Skip empty groups
