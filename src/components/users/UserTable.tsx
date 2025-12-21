@@ -48,7 +48,7 @@ const UserTable: React.FC<UserTableProps> = ({ onEditUser, onDataChange, current
 
   useEffect(() => {
     fetchUsers();
-  }, [fetchUsers, onDataChange]); // onDataChange மாறும்போதும் புதுப்பிக்கவும்
+  }, [fetchUsers]);
 
   const handleDelete = async (userToDelete: User) => {
     if (currentUserRole !== 'owner') return alert('Permission Denied.');

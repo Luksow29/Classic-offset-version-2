@@ -5,6 +5,8 @@ import CustomerSelect from '../../users/CustomerSelect';
 import CustomerFormModal from '../../customers/CustomerFormModal';
 import { User, PlusCircle, ChevronRight } from 'lucide-react';
 import { Customer } from '@/types';
+import { useUser } from '@/context/UserContext';
+import { hasAnyStaffRole } from '@/lib/rbac';
 
 interface CustomerStepProps {
     customerId: string;
@@ -19,6 +21,8 @@ const CustomerStep: React.FC<CustomerStepProps> = ({
     onCustomerSelect,
     onNext
 }) => {
+    const { userProfile } = useUser();
+    const canCreateCustomer = hasAnyStaffRole(userProfile?.role, ['owner', 'manager', 'office']);
     const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
     const [customerListVersion, setCustomerListVersion] = useState(0);
 
@@ -55,16 +59,18 @@ const CustomerStep: React.FC<CustomerStepProps> = ({
                                     onSelect={onCustomerSelect}
                                 />
                             </div>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => setIsCustomerModalOpen(true)}
-                                className="flex items-center gap-2 h-10"
-                                title="Add New Customer"
-                            >
-                                <PlusCircle size={18} />
-                                <span className="hidden sm:inline">New Customer</span>
-                            </Button>
+                            {canCreateCustomer && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setIsCustomerModalOpen(true)}
+                                    className="flex items-center gap-2 h-10"
+                                    title="Add New Customer"
+                                >
+                                    <PlusCircle size={18} />
+                                    <span className="hidden sm:inline">New Customer</span>
+                                </Button>
+                            )}
                         </div>
 
                         {customerId && (

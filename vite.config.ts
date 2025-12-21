@@ -80,8 +80,8 @@ export default defineConfig({
   server: {
     hmr: {
       clientPort: process.env.PORT ? parseInt(process.env.PORT) : 5173,
-      protocol: 'wss',
-      host: '0.0.0.0'
+      protocol: (process.env.HMR_PROTOCOL as 'ws' | 'wss') || 'ws',
+      host: process.env.HMR_HOST || 'localhost',
     },
     fs: {
       allow: [

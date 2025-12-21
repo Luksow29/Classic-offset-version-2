@@ -6,10 +6,14 @@ import UnifiedOrderWizard from './UnifiedOrderWizard';
 import OrdersTable from './OrdersTable';
 import { Plus, List, Package, TrendingUp, Clock, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useUser } from '@/context/UserContext';
+import { hasAnyStaffRole } from '@/lib/rbac';
 
 const Orders: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'add' | 'manage'>('manage');
   const [searchParams] = useSearchParams(); 
+  const { userProfile } = useUser();
+  const canCreateOrder = hasAnyStaffRole(userProfile?.role, ['owner', 'manager', 'office']);
   
   const highlightOrderId = searchParams.get('highlight');
 
@@ -18,6 +22,12 @@ const Orders: React.FC = () => {
       setActiveTab('manage');
     }
   }, [highlightOrderId]);
+
+  useEffect(() => {
+    if (!canCreateOrder && activeTab === 'add') {
+      setActiveTab('manage');
+    }
+  }, [activeTab, canCreateOrder]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 dark:from-gray-950 dark:via-blue-950/20 dark:to-indigo-950/30">
@@ -103,25 +113,27 @@ const Orders: React.FC = () => {
               <span className="relative z-10 sm:hidden">Manage</span>
               <span className="relative z-10 hidden sm:inline">Manage Orders</span>
             </button>
-            <button
-              onClick={() => setActiveTab('add')}
-              className={`relative flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition-all duration-300 rounded-xl ${
-                activeTab === 'add'
-                  ? 'text-white'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/50 dark:hover:bg-gray-700/50'
-              }`}
-            >
-              {activeTab === 'add' && (
-                <motion.div
-                  layoutId="activeTab"
-                  className="absolute inset-0 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-lg shadow-blue-500/30"
-                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                />
-              )}
-              <Plus size={18} className="relative z-10" />
-              <span className="relative z-10 sm:hidden">Add</span>
-              <span className="relative z-10 hidden sm:inline">Add New Order</span>
-            </button>
+            {canCreateOrder && (
+              <button
+                onClick={() => setActiveTab('add')}
+                className={`relative flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition-all duration-300 rounded-xl ${
+                  activeTab === 'add'
+                    ? 'text-white'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/50 dark:hover:bg-gray-700/50'
+                }`}
+              >
+                {activeTab === 'add' && (
+                  <motion.div
+                    layoutId="activeTab"
+                    className="absolute inset-0 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-lg shadow-blue-500/30"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+                <Plus size={18} className="relative z-10" />
+                <span className="relative z-10 sm:hidden">Add</span>
+                <span className="relative z-10 hidden sm:inline">Add New Order</span>
+              </button>
+            )}
           </div>
         </motion.div>
 

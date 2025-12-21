@@ -11,6 +11,7 @@ import { logActivity } from '@/lib/activityLogger';
 import { db } from '@/lib/firebaseClient'; // Import Firestore instance
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore'; // Import Firestore functions
 import { Customer } from '@/types';
+import { hasAnyStaffRole } from '@/lib/rbac';
 
 interface Order {
   id: number;
@@ -33,6 +34,7 @@ interface PaymentFormProps {
 
 const PaymentForm: React.FC<PaymentFormProps> = ({ onSuccess }) => {
   const { user, userProfile } = useUser();
+  const canRecordPayment = hasAnyStaffRole(userProfile?.role, ['owner', 'manager', 'office']);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
@@ -54,6 +56,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onSuccess }) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!canRecordPayment) return;
     const fetchInitialData = async () => {
       setLoading(true);
       setError(null);
@@ -116,7 +119,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onSuccess }) => {
       }
     };
     fetchInitialData();
-  }, []);
+  }, [canRecordPayment]);
 
   const handleCustomerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const customerId = e.target.value;
@@ -155,6 +158,10 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onSuccess }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canRecordPayment) {
+      toast.error('Permission denied: You do not have access to record payments.');
+      return;
+    }
     if (!user || !selectedOrder) {
       setError("User and order must be selected.");
       return;
@@ -222,6 +229,16 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onSuccess }) => {
       setLoading(false);
     }
   };
+
+  if (!canRecordPayment) {
+    return (
+      <Card title="Record New Payment">
+        <div className="p-4 text-sm text-red-700 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+          Permission denied: only Owner, Manager, or Office staff can record payments.
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card title="Record New Payment">

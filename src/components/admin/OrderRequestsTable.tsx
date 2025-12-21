@@ -25,6 +25,7 @@ const fetchOrderRequests = async () => {
       customer:customers (name)
     `)
     .in('pricing_status', ['pending', 'quoted', 'accepted'])
+    .neq('status', 'rejected')
     .order('created_at', { ascending: true });
   if (error) throw error;
   return data;
@@ -73,10 +74,10 @@ const OrderRequestsTable = () => {
         .select('*')
         .eq('id', requestId)
         .single();
-      
+
       if (fetchError) throw fetchError;
       if (!request) throw new Error('Request not found');
-      
+
       // Extract data from the request
       const requestData = request.request_data as any;
       // Base numbers
@@ -84,7 +85,7 @@ const OrderRequestsTable = () => {
       const rate = Number(requestData?.rate) || 0;
       const originalSubtotal = qty * rate;
       // Prefer admin_total_amount, else provided totalAmount, else compute from qty*rate
-  const finalAmount = Number((request.admin_total_amount ?? requestData?.totalAmount ?? originalSubtotal) ?? 0);
+      const finalAmount = Number((request.admin_total_amount ?? requestData?.totalAmount ?? originalSubtotal) ?? 0);
       // Map service charges into orders service charge fields used by trigger
       const serviceChargeAmount = Math.max(0, finalAmount - originalSubtotal);
       const hasServiceCharge = serviceChargeAmount > 0;
@@ -92,9 +93,9 @@ const OrderRequestsTable = () => {
       const serviceChargeDescription = Array.isArray(request.service_charges) && request.service_charges.length > 0
         ? request.service_charges.map((c: any) => c.description).join(', ')
         : (hasServiceCharge ? 'Additional charges' : null);
-      
+
       // Create the order using simple insert
-    const { data: newOrder, error: orderError } = await supabase
+      const { data: newOrder, error: orderError } = await supabase
         .from('orders')
         .insert({
           customer_id: request.customer_id,
@@ -102,26 +103,26 @@ const OrderRequestsTable = () => {
           customer_phone: requestData.phoneNumber || requestData.phone || '',
           date: new Date().toISOString().split('T')[0],
           order_type: requestData.printType || requestData.orderType || requestData.type || 'Print Order',
-      quantity: qty,
-      rate: rate,
+          quantity: qty,
+          rate: rate,
           design_needed: requestData.designNeeded || false,
           delivery_date: requestData.deliveryDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      // Provide fields expected by the totals trigger so it can compute safely
-      subtotal: originalSubtotal,
-      service_charge_type: serviceChargeType,
-      service_charge_value: serviceChargeAmount,
-      service_charge_description: serviceChargeDescription || undefined,
-      total_amount: finalAmount, // trigger will recalc to subtotal + service_charge_value
-          user_id: request.user_id,
-          notes: request.service_charges && Array.isArray(request.service_charges) && request.service_charges.length > 0 
+          // Provide fields expected by the totals trigger so it can compute safely
+          subtotal: originalSubtotal,
+          service_charge_type: serviceChargeType,
+          service_charge_value: serviceChargeAmount,
+          service_charge_description: serviceChargeDescription || undefined,
+          total_amount: finalAmount, // trigger will recalc to subtotal + service_charge_value
+          user_id: null, // Admin creates order, not customer (fixes RLS policy)
+          notes: request.service_charges && Array.isArray(request.service_charges) && request.service_charges.length > 0
             ? `Service charges applied: ${request.service_charges.map((charge: any) => `${charge.description} (₹${charge.amount})`).join(', ')}`
             : requestData.notes || requestData.description || ''
         })
         .select()
         .single();
-      
+
       if (orderError) throw orderError;
-      
+
       // Update request status
       const { error: updateError } = await supabase
         .from('order_requests')
@@ -130,9 +131,9 @@ const OrderRequestsTable = () => {
           pricing_status: 'approved'
         })
         .eq('id', requestId);
-      
+
       if (updateError) throw updateError;
-      
+
       return newOrder;
     },
     onSuccess: () => {
@@ -150,7 +151,7 @@ const OrderRequestsTable = () => {
   });
 
   const rejectMutation = useMutation({
-    mutationFn: async ({ requestId, reason }: { requestId: number; reason:string }) => {
+    mutationFn: async ({ requestId, reason }: { requestId: number; reason: string }) => {
       const { error } = await supabase.rpc('reject_order_request', { request_id: requestId, reason: reason });
       if (error) throw error;
     },
@@ -190,108 +191,107 @@ const OrderRequestsTable = () => {
         onSubmit={(reason) => rejectMutation.mutate({ requestId: selectedRequest.id, reason })}
         loading={rejectMutation.isPending}
       />
-      
+
       <div className="space-y-4">
         {requests.length === 0 ? (
           <div className="text-center py-12 text-gray-500 border-2 border-dashed rounded-lg">
-             <AlertTriangle className="mx-auto h-10 w-10 text-gray-400" />
-             <h3 className="mt-2 text-lg font-medium">No Pending Order Requests</h3>
-             <p className="mt-1 text-sm">New requests from the customer portal will appear here in real-time.</p>
+            <AlertTriangle className="mx-auto h-10 w-10 text-gray-400" />
+            <h3 className="mt-2 text-lg font-medium">No Pending Order Requests</h3>
+            <p className="mt-1 text-sm">New requests from the customer portal will appear here in real-time.</p>
           </div>
         ) : (
           requests.map((req) => (
-              <Card key={req.id} className="shadow-sm">
-                <div className="flex items-center justify-between p-4">
-                  <div className="flex-1">
-                     <p className="font-bold text-lg text-primary-700">{(req.customer as any)?.name || 'Unknown Customer'}</p>
-                     <p className="text-sm text-gray-600 dark:text-gray-300">
-                        {req.request_data.quantity} x {req.request_data.orderType}
-                     </p>
-                      <p className="text-xs text-gray-500">
-                        Requested on {formatDate(req.created_at)}
-                      </p>
-                  </div>
-                  <div className="text-right">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      req.pricing_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      req.pricing_status === 'quoted' ? 'bg-blue-100 text-blue-800' :
+            <Card key={req.id} className="shadow-sm">
+              <div className="flex items-center justify-between p-4">
+                <div className="flex-1">
+                  <p className="font-bold text-lg text-primary-700">{(req.customer as any)?.name || 'Unknown Customer'}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    {req.request_data.quantity} x {req.request_data.orderType}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Requested on {formatDate(req.created_at)}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${req.pricing_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                    req.pricing_status === 'quoted' ? 'bg-blue-100 text-blue-800' :
                       req.pricing_status === 'accepted' ? 'bg-green-100 text-green-800' :
-                      'bg-gray-100 text-gray-800'
+                        'bg-gray-100 text-gray-800'
                     }`}>
-                      {req.pricing_status === 'pending' ? 'Pending Review' :
-                       req.pricing_status === 'quoted' ? 'Quote Sent' :
-                       req.pricing_status === 'accepted' ? 'Quote Accepted' :
-                       req.pricing_status}
-                    </span>
+                    {req.pricing_status === 'pending' ? 'Pending Review' :
+                      req.pricing_status === 'quoted' ? 'Quote Sent' :
+                        req.pricing_status === 'accepted' ? 'Quote Accepted' :
+                          req.pricing_status}
+                  </span>
+                </div>
+              </div>
+
+              <div className="border-t bg-gray-50 dark:bg-gray-800/50 p-4">
+                <div className="space-y-6">
+                  {/* Service Charge Manager */}
+                  <ServiceChargeManager
+                    requestId={req.id}
+                    originalAmount={req.request_data.totalAmount || 0}
+                    serviceCharges={req.service_charges || []}
+                    adminTotalAmount={req.admin_total_amount}
+                    pricingStatus={req.pricing_status || 'pending'}
+                    onChargesUpdated={() => queryClient.invalidateQueries({ queryKey: ['orderRequests'] })}
+                  />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="font-semibold mb-2">Order Details</h4>
+                      <dl className="text-sm space-y-2">
+                        <div className="flex justify-between"><dt className="text-gray-500">Product:</dt><dd className="font-medium">{req.request_data.productId}</dd></div>
+                        <div className="flex justify-between"><dt className="text-gray-500">Quantity:</dt><dd>{req.request_data.quantity}</dd></div>
+                        <div className="flex justify-between"><dt className="text-gray-500">Rate:</dt><dd>{req.request_data.rate ? `₹${req.request_data.rate.toLocaleString()}` : <span className="text-yellow-600 font-semibold">Price TBD</span>}</dd></div>
+                        <div className="flex justify-between"><dt className="text-gray-500">Estimated Amount:</dt><dd className="font-bold">{(() => { const amount = req.request_data.totalAmount || (req.request_data.quantity * req.request_data.rate); return (amount && amount > 0) ? `₹${amount.toLocaleString()}` : <span className="text-yellow-600">Price TBD</span>; })()}</dd></div>
+                        <div className="flex justify-between"><dt className="text-gray-500">Delivery:</dt><dd>{formatDate(req.request_data.deliveryDate)}</dd></div>
+                        <div className="flex justify-between"><dt className="text-gray-500">Design:</dt><dd>{req.request_data.designNeeded ? 'Yes' : 'No'}</dd></div>
+                      </dl>
+                    </div>
+                    <div className="space-y-4">
+                      {req.request_data.notes && <div><h4 className="font-semibold mb-1">Customer Notes</h4><p className="text-sm bg-yellow-50 p-2 rounded border border-yellow-200">{req.request_data.notes}</p></div>}
+
+                      {/* Quote Status */}
+                      {req.quote_sent_at && (
+                        <div>
+                          <h4 className="font-semibold mb-1">Quote Status</h4>
+                          <p className="text-sm text-blue-600">Quote sent on {formatDate(req.quote_sent_at)}</p>
+                          {req.quote_response_at && (
+                            <p className="text-sm text-green-600">
+                              Customer responded on {formatDate(req.quote_response_at)}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Action Buttons */}
+                      <div className="flex justify-end gap-3 pt-4">
+                        {req.pricing_status === 'pending' && (
+                          <Button variant="success" onClick={() => approveMutation.mutate(req.id)} disabled={approveMutation.isPending}>
+                            <CheckCircle className="h-4 w-4 mr-2" /> Approve Directly
+                          </Button>
+                        )}
+                        {req.pricing_status === 'accepted' && (
+                          <Button variant="success" onClick={() => approveMutation.mutate(req.id)} disabled={approveMutation.isPending}>
+                            <CheckCircle className="h-4 w-4 mr-2" /> Create Order
+                          </Button>
+                        )}
+                        {req.pricing_status === 'quoted' && (
+                          <Button variant="outline" disabled className="text-blue-600">
+                            Waiting for Customer Response
+                          </Button>
+                        )}
+                        <Button variant="destructive" onClick={() => handleRejectClick(req)} disabled={rejectMutation.isPending}>
+                          <XCircle className="h-4 w-4 mr-2" /> Reject
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                
-                  <div className="border-t bg-gray-50 dark:bg-gray-800/50 p-4">
-                      <div className="space-y-6">
-                          {/* Service Charge Manager */}
-                          <ServiceChargeManager
-                            requestId={req.id}
-                            originalAmount={req.request_data.totalAmount || 0}
-                            serviceCharges={req.service_charges || []}
-                            adminTotalAmount={req.admin_total_amount}
-                            pricingStatus={req.pricing_status || 'pending'}
-                            onChargesUpdated={() => queryClient.invalidateQueries({ queryKey: ['orderRequests'] })}
-                          />
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              <div>
-                                  <h4 className="font-semibold mb-2">Order Details</h4>
-                                  <dl className="text-sm space-y-2">
-                                      <div className="flex justify-between"><dt className="text-gray-500">Product:</dt><dd className="font-medium">{req.request_data.productId}</dd></div>
-                                      <div className="flex justify-between"><dt className="text-gray-500">Quantity:</dt><dd>{req.request_data.quantity}</dd></div>
-                                      <div className="flex justify-between"><dt className="text-gray-500">Rate:</dt><dd>₹{req.request_data.rate?.toLocaleString()}</dd></div>
-                                      <div className="flex justify-between"><dt className="text-gray-500">Original Total:</dt><dd className="font-bold">₹{req.request_data.totalAmount?.toLocaleString()}</dd></div>
-                                      <div className="flex justify-between"><dt className="text-gray-500">Delivery:</dt><dd>{formatDate(req.request_data.deliveryDate)}</dd></div>
-                                      <div className="flex justify-between"><dt className="text-gray-500">Design:</dt><dd>{req.request_data.designNeeded ? 'Yes' : 'No'}</dd></div>
-                                  </dl>
-                              </div>
-                              <div className="space-y-4">
-                                {req.request_data.notes && <div><h4 className="font-semibold mb-1">Customer Notes</h4><p className="text-sm bg-yellow-50 p-2 rounded border border-yellow-200">{req.request_data.notes}</p></div>}
-                                
-                                {/* Quote Status */}
-                                {req.quote_sent_at && (
-                                  <div>
-                                    <h4 className="font-semibold mb-1">Quote Status</h4>
-                                    <p className="text-sm text-blue-600">Quote sent on {formatDate(req.quote_sent_at)}</p>
-                                    {req.quote_response_at && (
-                                      <p className="text-sm text-green-600">
-                                        Customer responded on {formatDate(req.quote_response_at)}
-                                      </p>
-                                    )}
-                                  </div>
-                                )}
-                                
-                                {/* Action Buttons */}
-                                <div className="flex justify-end gap-3 pt-4">
-                                    {req.pricing_status === 'pending' && (
-                                      <Button variant="success" onClick={() => approveMutation.mutate(req.id)} disabled={approveMutation.isPending}>
-                                          <CheckCircle className="h-4 w-4 mr-2" /> Approve Directly
-                                      </Button>
-                                    )}
-                                    {req.pricing_status === 'accepted' && (
-                                      <Button variant="success" onClick={() => approveMutation.mutate(req.id)} disabled={approveMutation.isPending}>
-                                          <CheckCircle className="h-4 w-4 mr-2" /> Create Order
-                                      </Button>
-                                    )}
-                                    {req.pricing_status === 'quoted' && (
-                                      <Button variant="outline" disabled className="text-blue-600">
-                                          Waiting for Customer Response
-                                      </Button>
-                                    )}
-                                    <Button variant="destructive" onClick={() => handleRejectClick(req)} disabled={rejectMutation.isPending}>
-                                        <XCircle className="h-4 w-4 mr-2" /> Reject
-                                    </Button>
-                                </div>
-                              </div>
-                          </div>
-                      </div>
-                  </div>
-              </Card>
+              </div>
+            </Card>
           ))
         )}
       </div>

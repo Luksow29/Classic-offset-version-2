@@ -103,9 +103,15 @@ export function usePWA() {
   const updateApp = useCallback(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.ready.then((registration) => {
-        registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
+        if (registration.waiting) {
+          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+          
+          // Wait for the new service worker to take control
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            window.location.reload();
+          });
+        }
       });
-      window.location.reload();
     }
   }, []);
 

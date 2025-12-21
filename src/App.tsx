@@ -15,6 +15,7 @@ import PWAInstallPrompt from './components/ui/PWAInstallPrompt';
 
 // Layout and Loading components
 import ProtectedLayout from './components/layout/ProtectedLayout';
+import RequireRoles from './components/layout/RequireRoles';
 import Login from './components/dashboard/auth/Login';
 
 // A simple loading fallback component for suspense
@@ -91,7 +92,14 @@ const router = createBrowserRouter(
         <Route path="/status-overview" element={Suspended(<StatusOverview />)} />
         <Route path="/invoices" element={Suspended(<InvoiceList />)} />
         <Route path="/invoices/:id" element={Suspended(<InvoicePage />)} />
-        <Route path="/users" element={Suspended(<UserManagement />)} />
+        <Route
+          path="/users"
+          element={Suspended(
+            <RequireRoles allowed={['owner']}>
+              <UserManagement />
+            </RequireRoles>
+          )}
+        />
         <Route path="/stock" element={Suspended(<StockPage />)} />
         <Route path="/showcase" element={Suspended(<ShowcasePage />)} />
         <Route path="/whatsapp" element={Suspended(<WhatsAppDashboard />)} />
@@ -100,7 +108,14 @@ const router = createBrowserRouter(
         <Route path="/team-chat" element={Suspended(<TeamChatPage />)} />
         <Route path="/classic-assistant" element={Suspended(<AIAgentPage />)} />
         <Route path="/local-agent" element={Suspended(<LocalAgentPage />)} />
-        <Route path="/admin/content" element={Suspended(<AdminContentManagement />)} />
+        <Route
+          path="/admin/content"
+          element={Suspended(
+            <RequireRoles allowed={['owner', 'manager']}>
+              <AdminContentManagement />
+            </RequireRoles>
+          )}
+        />
         <Route path="/insights" element={Suspended(<InsightsPage />)} />
         <Route path="/reports" element={Suspended(<ReportsPage />)} />
         <Route path="/business-insights" element={Suspended(<BusinessInsights />)} />
@@ -111,7 +126,14 @@ const router = createBrowserRouter(
         <Route path="/customer-support" element={Suspended(<CustomerSupportPage />)} />
         <Route path="/order-chat-admin" element={Suspended(<OrderChatAdminPage />)} />
         {/* Job Creation Wizard */}
-        <Route path="/jobs/new" element={Suspended(<JobCreationWizard />)} />
+        <Route
+          path="/jobs/new"
+          element={Suspended(
+            <RequireRoles allowed={['owner', 'manager', 'office']}>
+              <JobCreationWizard />
+            </RequireRoles>
+          )}
+        />
         <Route path="/notifications" element={Suspended(<NotificationsPage />)} />
       </Route>
 

@@ -32,15 +32,50 @@ serve(async (req) => {
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     );
 
+    const requiresAuth =
+      path.endsWith('/subscribe') || path.endsWith('/unsubscribe') || path.endsWith('/send-notification');
+
+    let authUserId: string | null = null;
+    if (requiresAuth) {
+      const authHeader = req.headers.get('Authorization') || '';
+      if (!authHeader.startsWith('Bearer ')) {
+        return new Response(JSON.stringify({ error: 'Missing Authorization header' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401,
+        });
+      }
+
+      const {
+        data: { user: authUser },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (authError || !authUser) {
+        return new Response(JSON.stringify({ error: 'Invalid or expired session' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401,
+        });
+      }
+
+      authUserId = authUser.id;
+    }
+
     // --- SUBSCRIBE ---
     if (path.endsWith('/subscribe')) {
       const { subscription, userId } = body;
-      if (!subscription || !userId || !subscription.endpoint) {
-        throw new Error('Subscription, userId, and endpoint are required');
+      if (!authUserId) throw new Error('Invalid or expired session');
+      if (userId && userId !== authUserId) {
+        return new Response(JSON.stringify({ error: 'userId must match the authenticated user' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 403,
+        });
+      }
+      if (!subscription || !subscription.endpoint) {
+        throw new Error('Subscription and endpoint are required');
       }
 
       const { error } = await supabase.from('push_subscriptions').upsert({
-        user_id: userId,
+        user_id: authUserId,
         endpoint: subscription.endpoint,
         subscription_details: subscription,
         user_type: 'customer',
@@ -58,16 +93,24 @@ serve(async (req) => {
     // --- UNSUBSCRIBE ---
     if (path.endsWith('/unsubscribe')) {
         const { userId, endpoint } = body;
-        if (!userId && !endpoint) {
-            throw new Error('userId or endpoint is required');
+        if (!authUserId) throw new Error('Invalid or expired session');
+        if (userId && userId !== authUserId) {
+          return new Response(JSON.stringify({ error: 'userId must match the authenticated user' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 403,
+          });
         }
-        let query = supabase.from('push_subscriptions').delete();
-        if (endpoint) {
-            query = query.eq('endpoint', endpoint);
-        } else {
-            query = query.eq('user_id', userId);
+        if (!endpoint) {
+          // Allow deleting all subscriptions for the current user
+          const { error } = await supabase.from('push_subscriptions').delete().eq('user_id', authUserId);
+          if (error) throw error;
+          return new Response(JSON.stringify({ success: true, message: 'Subscriptions removed' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200,
+          });
         }
-        const { error } = await query;
+
+        const { error } = await supabase.from('push_subscriptions').delete().eq('endpoint', endpoint).eq('user_id', authUserId);
 
         if (error) throw error;
         return new Response(JSON.stringify({ success: true, message: 'Subscription removed' }), {
@@ -79,9 +122,48 @@ serve(async (req) => {
 
     // --- SEND NOTIFICATION ---
     if (path.endsWith('/send-notification')) {
-      const { userId, title, body: notificationBody, data } = body;
+      const { userId, title, body: notificationBody, data, category = 'system' } = body;
+      
       if (!userId) throw new Error('userId is required');
+      if (!authUserId) throw new Error('Invalid or expired session');
 
+      // 1. Check User Settings
+      const { data: settings, error: settingsError } = await supabase
+        .from('user_settings')
+        .select('notification_preferences')
+        .eq('user_id', userId)
+        .single();
+
+      if (settingsError && settingsError.code !== 'PGRST116') {
+        console.error('Error fetching settings:', settingsError);
+        // Continue but log error, maybe default to sending? 
+        // For now, let's be safe and assume if we can't check settings, we proceed with caution or default values.
+        // But better to fail safe if critical. 
+        // Let's assume default is ON if no settings found (which matches app default).
+      }
+
+      const prefs = settings?.notification_preferences || { 
+        push: true, 
+        types: { orders: true, payments: true, stock: true, system: true } 
+      };
+
+      // 2. Filter based on preferences
+      if (!prefs.push) {
+        return new Response(JSON.stringify({ success: false, message: 'User has disabled push notifications', skipped: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
+      }
+
+      // Check specific category if provided
+      if (category && prefs.types && prefs.types[category] === false) {
+         return new Response(JSON.stringify({ success: false, message: `User has disabled ${category} notifications`, skipped: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
+      }
+
+      // 3. Fetch Subscriptions
       const { data: subscriptions, error } = await supabase
         .from('push_subscriptions')
         .select('subscription_details, endpoint')
@@ -89,10 +171,12 @@ serve(async (req) => {
         .eq('is_active', true);
 
       if (error) throw error;
+      
       if (!subscriptions || subscriptions.length === 0) {
-        return new Response(JSON.stringify({ error: 'No active subscriptions found for user' }), {
+        // Not an error, just no subscriptions
+        return new Response(JSON.stringify({ success: false, message: 'No active subscriptions found for user' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 404,
+          status: 200,
         });
       }
 
@@ -102,16 +186,18 @@ serve(async (req) => {
         data: data || { url: '/' },
       });
 
+      let sentCount = 0;
       for (const sub of subscriptions) {
         try {
           await webpush.sendNotification(sub.subscription_details, notificationPayload);
+          sentCount++;
         } catch (err) {
           if (err.statusCode === 410) {
             await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
           }
         }
       }
-      return new Response(JSON.stringify({ success: true, message: 'Notifications sent' }), {
+      return new Response(JSON.stringify({ success: true, message: 'Notifications sent', sentCount }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       });

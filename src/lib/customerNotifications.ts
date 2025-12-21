@@ -13,6 +13,22 @@ export interface SendNotificationParams {
   linkTo?: string;
 }
 
+const getCategory = (type: NotificationType) => {
+  switch (type) {
+    case 'order_update':
+    case 'quote_ready':
+    case 'delivery_update':
+      return 'orders';
+    case 'payment_received':
+      return 'payments';
+    case 'system_alert':
+      return 'system';
+    case 'message':
+    default:
+      return 'orders';
+  }
+};
+
 /**
  * Send a notification to a customer via Supabase
  * This will appear in the customer portal's notification bell
@@ -26,6 +42,7 @@ export async function sendCustomerNotification({
   linkTo
 }: SendNotificationParams): Promise<{ success: boolean; id?: number; error?: string }> {
   try {
+    // 1. Insert into database (In-App Notification)
     const { data: result, error } = await supabase
       .from('notifications')
       .insert({
@@ -45,7 +62,39 @@ export async function sendCustomerNotification({
       return { success: false, error: error.message };
     }
 
-    console.log('[sendCustomerNotification] Notification sent:', result);
+    console.log('[sendCustomerNotification] In-app notification sent:', result);
+
+    // 2. Trigger Push Notification via Edge Function
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      // If we are logged in (as admin), we can call the function
+      if (session?.access_token) {
+        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-notifications/send-notification`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          },
+          body: JSON.stringify({
+            userId,
+            title,
+            body: message,
+            category: getCategory(type),
+            data: { 
+              url: linkTo || '/customer-portal',
+              notificationId: result.id
+            }
+          })
+        }).then(res => res.json())
+          .then(data => console.log('[sendCustomerNotification] Push result:', data))
+          .catch(err => console.error('[sendCustomerNotification] Push error:', err));
+      }
+    } catch (pushError) {
+      console.error('[sendCustomerNotification] Failed to trigger push:', pushError);
+      // We don't fail the whole operation if push fails, as in-app succeeded
+    }
+
     return { success: true, id: result.id };
   } catch (error) {
     console.error('[sendCustomerNotification] Unexpected error:', error);

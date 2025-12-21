@@ -11,6 +11,7 @@ import { Loader2, CheckCircle, Pencil, Printer, Truck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { OrdersTableOrder } from '@/types';
 import { sendOrderUpdateNotification } from '@/lib/customerNotifications';
+import { hasAnyStaffRole } from '@/lib/rbac';
 
 interface Props {
   order: OrdersTableOrder;
@@ -30,8 +31,13 @@ const UpdateStatusModal: React.FC<Props> = ({ order, isOpen, onClose, onStatusUp
   const [newStatus, setNewStatus] = useState(order.status);
   const [loading, setLoading] = useState(false);
   const { userProfile } = useUser();
+  const canUpdateStatus = hasAnyStaffRole(userProfile?.role, ['owner', 'manager', 'office', 'designer', 'production']);
 
   const handleUpdate = async () => {
+    if (!canUpdateStatus) {
+      toast.error('Permission denied: you do not have access to update order status.');
+      return;
+    }
     setLoading(true);
     const userName = userProfile?.name || 'Admin';
     
@@ -124,11 +130,17 @@ const UpdateStatusModal: React.FC<Props> = ({ order, isOpen, onClose, onStatusUp
     <Modal isOpen={isOpen} onClose={onClose} title={`Update Status for Order #${order.order_id}`}>
       <div className="space-y-4 pt-2">
         <p className="text-sm text-gray-600 dark:text-gray-400">Select the new status for this order. This will notify relevant parties.</p>
+        {!canUpdateStatus && (
+          <div className="p-3 text-sm text-red-700 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+            Permission denied: you don’t have access to update order status.
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-4">
             {statusOptions.map(({name, icon: Icon}) => (
                 <button 
                     key={name} 
                     onClick={() => setNewStatus(name)}
+                    disabled={!canUpdateStatus || loading}
                     className={`relative p-4 text-left rounded-lg border-2 transition-all transform hover:scale-105 ${
                         newStatus === name ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/50 shadow-lg' : 'border-gray-200 dark:border-gray-600 hover:border-primary-400'
                     }`}
@@ -143,7 +155,7 @@ const UpdateStatusModal: React.FC<Props> = ({ order, isOpen, onClose, onStatusUp
         </div>
         <div className="flex justify-end gap-3 pt-4">
             <Button variant="outline" onClick={onClose} disabled={loading}>Cancel</Button>
-            <Button onClick={handleUpdate} disabled={loading || newStatus === order.status}>
+            <Button onClick={handleUpdate} disabled={loading || !canUpdateStatus || newStatus === order.status}>
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin"/>}
                 Update Status
             </Button>

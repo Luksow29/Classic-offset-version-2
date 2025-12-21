@@ -1,32 +1,33 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { ThemeProvider } from "@/components/ui/theme-provider";
+import { Toaster } from "@/shared/components/ui/toaster";
+import { Toaster as Sonner } from "@/shared/components/ui/sonner";
+import { TooltipProvider } from "@/shared/components/ui/tooltip";
+import { ThemeProvider } from "@/shared/components/ui/theme-provider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, createBrowserRouter, RouterProvider, createRoutesFromElements } from "react-router-dom";
 import { lazy, Suspense } from "react";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import CustomerAuth from "./pages/CustomerAuth";
-import ProtectedLayout from "./components/layout/ProtectedLayout";
-import PWAInstallPrompt from "./components/PWAInstallPrompt";
-import NotificationPermissionBanner from "./components/notifications/NotificationPermissionBanner";
+import LandingPage from "./pages/LandingPage";
+import NotFound from "./shared/components/common/NotFound";
+import AuthPage from "./features/auth/pages/AuthPage";
+import ProtectedLayout from "./shared/components/layout/ProtectedLayout";
+import PWAInstallPrompt from "./shared/components/common/PWAInstallPrompt";
+import NotificationPermissionBanner from "./features/notifications/components/NotificationPermissionBanner";
 
 const queryClient = new QueryClient();
 
-// Lazy load components for better performance
-const CustomerDashboard = lazy(() => import("./pages/CustomerDashboard"));
-const CustomerOrders = lazy(() => import("./pages/CustomerOrdersPage"));
-const CustomerRequests = lazy(() => import("./pages/CustomerRequestsPage"));
-const NewRequestPage = lazy(() => import("./pages/NewRequestPage"));
-const CustomerInvoices = lazy(() => import("./pages/CustomerInvoicesPage"));
-const CustomerSupport = lazy(() => import("./pages/CustomerSupportPage"));
-const CustomerProfile = lazy(() => import("./pages/CustomerProfilePage"));
-const CustomerContact = lazy(() => import("./pages/CustomerContactPage"));
-const ProductLibraryPage = lazy(() => import("./pages/ProductLibraryPage"));
+// Lazy load feature pages for better performance
+const DashboardPage = lazy(() => import("./features/dashboard/pages/DashboardPage"));
+const OrdersPage = lazy(() => import("./features/orders/pages/OrdersPage"));
+const RequestsPage = lazy(() => import("./features/requests/pages/RequestsPage"));
+const NewRequestPage = lazy(() => import("./features/requests/pages/NewRequestPage"));
+const InvoicesPage = lazy(() => import("./features/invoices/pages/InvoicesPage"));
+const SupportPage = lazy(() => import("./features/support/pages/SupportPage"));
+const ProfilePage = lazy(() => import("./features/profile/pages/ProfilePage"));
+const ContactPage = lazy(() => import("./features/support/pages/ContactPage"));
+const LibraryPage = lazy(() => import("./features/products/pages/LibraryPage"));
 
-const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
-const NotificationPreferencesPage = lazy(() => import("./pages/NotificationPreferences"));
+const NotificationsPage = lazy(() => import("./features/notifications/pages/NotificationsPage"));
+const PreferencesPage = lazy(() => import("./features/notifications/pages/PreferencesPage"));
+const NotificationTestPage = lazy(() => import("./features/notifications/pages/NotificationTestPage"));
 
 // Suspense wrapper component
 const Suspended = (Component: React.ComponentType) => (
@@ -44,22 +45,23 @@ const router = createBrowserRouter(
   createRoutesFromElements(
     <>
       {/* Public routes */}
-      <Route path="/" element={<Index />} />
-      <Route path="/customer-auth" element={<CustomerAuth />} />
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/customer-auth" element={<AuthPage />} />
 
       {/* Protected routes with layout */}
       <Route element={<ProtectedLayout />}>
-        <Route path="/customer-portal" element={Suspended(CustomerDashboard)} />
-        <Route path="/customer-portal/orders" element={Suspended(CustomerOrders)} />
-        <Route path="/customer-portal/requests" element={Suspended(CustomerRequests)} />
+        <Route path="/customer-portal" element={Suspended(DashboardPage)} />
+        <Route path="/customer-portal/orders" element={Suspended(OrdersPage)} />
+        <Route path="/customer-portal/requests" element={Suspended(RequestsPage)} />
         <Route path="/customer-portal/new-request" element={Suspended(NewRequestPage)} />
-        <Route path="/customer-portal/invoices" element={Suspended(CustomerInvoices)} />
-        <Route path="/customer-portal/support" element={Suspended(CustomerSupport)} />
-        <Route path="/customer-portal/profile" element={Suspended(CustomerProfile)} />
-        <Route path="/customer-portal/contact" element={Suspended(CustomerContact)} />
-        <Route path="/customer-portal/showcase" element={Suspended(ProductLibraryPage)} />
+        <Route path="/customer-portal/invoices" element={Suspended(InvoicesPage)} />
+        <Route path="/customer-portal/support" element={Suspended(SupportPage)} />
+        <Route path="/customer-portal/profile" element={Suspended(ProfilePage)} />
+        <Route path="/customer-portal/contact" element={Suspended(ContactPage)} />
+        <Route path="/customer-portal/showcase" element={Suspended(LibraryPage)} />
         <Route path="/customer-portal/notifications" element={Suspended(NotificationsPage)} />
-        <Route path="/customer-portal/notification-preferences" element={Suspended(NotificationPreferencesPage)} />
+        <Route path="/customer-portal/notification-preferences" element={Suspended(PreferencesPage)} />
+        <Route path="/customer-portal/notification-test" element={Suspended(NotificationTestPage)} />
       </Route>
 
       {/* Catch-all route */}

@@ -25,6 +25,7 @@ interface NavItem {
   path: string;
   icon: JSX.Element;
   requiredRole?: StaffRole;
+  requiredRoles?: readonly StaffRole[];
 }
 
 interface NavGroup {
@@ -75,7 +76,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       name: 'Orders',
       icon: <Package size={20} />,
       items: [
-        { name: 'New Job', path: '/jobs/new', icon: <PlusBase size={18} /> },
+        { name: 'New Job', path: '/jobs/new', icon: <PlusBase size={18} />, requiredRoles: ['owner', 'manager', 'office'] },
         { name: 'Order Management', path: '/orders', icon: <FileText size={18} /> },
         { name: 'Invoices', path: '/invoices', icon: <FileSignature size={18} /> },
         { name: 'Status Overview', path: '/status-overview', icon: <Clock size={18} /> },
@@ -122,7 +123,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: <ActivitySquare size={20} />,
       items: [
         { name: 'Staff Management', path: '/staff', icon: <UserCircle size={18} /> },
-        { name: 'User Management', path: '/users', icon: <Users size={18} />, requiredRole: 'owner' },
+        { name: 'User Management', path: '/users', icon: <Users size={18} />, requiredRoles: ['owner'] },
       ],
     },
     {
@@ -137,7 +138,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: <Settings size={20} />,
       items: [
         { name: 'Settings', path: '/settings', icon: <Settings size={18} /> },
-        { name: 'Admin Content', path: '/admin/content', icon: <Zap size={18} />, requiredRole: 'owner' },
+        { name: 'Admin Content', path: '/admin/content', icon: <Zap size={18} />, requiredRoles: ['owner', 'manager'] },
       ],
     },
     {
@@ -242,9 +243,14 @@ const Sidebar: React.FC<SidebarProps> = ({
       <nav className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
         {navGroups.map((group, groupIndex) => {
           // Filter items based on user role
-          const filteredItems = group.items.filter(item =>
-            !item.requiredRole || (userProfile?.role === item.requiredRole || userProfile?.role === 'owner')
-          );
+          const filteredItems = group.items.filter((item) => {
+            const role = userProfile?.role;
+            if (!item.requiredRole && !item.requiredRoles) return true;
+            if (!role) return false;
+            if (role === 'owner') return true;
+            if (item.requiredRoles) return item.requiredRoles.includes(role);
+            return item.requiredRole ? role === item.requiredRole : true;
+          });
 
           // Skip empty groups
           if (filteredItems.length === 0) return null;
