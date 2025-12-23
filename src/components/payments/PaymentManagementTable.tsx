@@ -13,10 +13,13 @@ import {
   Calendar, DollarSign, User, FileText, ArrowUpDown,
   CheckSquare, Square, MoreHorizontal, Loader2, AlertTriangle,
   Plus, Minus, CreditCard, Clock, TrendingUp, TrendingDown,
-  Phone, ChevronLeft, ChevronRight
+  Phone, ChevronLeft, ChevronRight, LayoutGrid, List, History
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { useResponsiveViewMode } from '../../hooks/useResponsiveViewMode';
+import PaymentGridCard from './PaymentGridCard';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Payment {
   id: string;
@@ -66,6 +69,9 @@ const PaymentManagementTable: React.FC = () => {
   const [groupedPayments, setGroupedPayments] = useState<GroupedPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // View Mode
+  const { viewMode, setViewMode } = useResponsiveViewMode();
 
   // Filter and search states
   const [searchQuery, setSearchQuery] = useState('');
@@ -209,7 +215,7 @@ const PaymentManagementTable: React.FC = () => {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const itemsPerPage = viewMode === 'grid' ? 12 : 10;
 
   // Computed pagination
   const paginatedPayments = useMemo(() => {
@@ -564,7 +570,30 @@ const PaymentManagementTable: React.FC = () => {
               />
             </div>
 
-            <div className="md:col-span-1 flex justify-end">
+            <div className="md:col-span-1 flex justify-end gap-2">
+              <div className="flex items-center bg-white dark:bg-gray-800 p-1 rounded-lg border border-border/50">
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-1.5 rounded-md transition-all ${viewMode === 'list'
+                    ? 'bg-primary/10 text-primary shadow-sm'
+                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                    }`}
+                  title="List View"
+                >
+                  <List size={16} />
+                </button>
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-1.5 rounded-md transition-all ${viewMode === 'grid'
+                    ? 'bg-primary/10 text-primary shadow-sm'
+                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                    }`}
+                  title="Grid View"
+                >
+                  <LayoutGrid size={16} />
+                </button>
+              </div>
+
               {(searchQuery || statusFilter || dateFilter || amountFilter.min || amountFilter.max) && (
                 <Button
                   variant="ghost"
@@ -586,187 +615,223 @@ const PaymentManagementTable: React.FC = () => {
         </div>
 
         {/* Table */}
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b border-border/50 bg-muted/40">
-                <th className="px-6 py-4 text-left w-12">
-                  <input
-                    type="checkbox"
-                    checked={selectAll}
-                    onChange={handleSelectAll}
-                    className="rounded border-border text-primary focus:ring-primary/20 cursor-pointer"
-                  />
-                </th>
-                <th className="px-6 py-4 text-left font-medium text-muted-foreground w-12"></th>
-                <th className="px-6 py-4 text-left font-semibold text-foreground">
-                  <SortButton field="customer_name">Customer</SortButton>
-                </th>
-                <th className="px-6 py-4 text-left font-semibold text-foreground">Order</th>
-                <th className="px-6 py-4 text-right font-semibold text-foreground">
-                  <SortButton field="order_total_amount">Total</SortButton>
-                </th>
-                <th className="px-6 py-4 text-right font-semibold text-foreground">
-                  <SortButton field="amount_paid">Paid</SortButton>
-                </th>
-                <th className="px-6 py-4 text-right font-semibold text-foreground">Due</th>
-                <th className="px-6 py-4 text-center font-semibold text-foreground">
-                  <SortButton field="status">Status</SortButton>
-                </th>
-                <th className="px-6 py-4 text-center font-semibold text-foreground">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/30">
-              {paginatedPayments.map((group) => (
-                <React.Fragment key={group.order_id}>
-                  <tr className={`group transition-colors ${expandedOrders.has(group.order_id) ? 'bg-muted/10' : 'hover:bg-muted/20'
-                    }`}>
-                    <td className="px-6 py-4">
-                      {/* Spacer or Checkbox if needed */}
-                    </td>
-                    <td className="px-2 py-4">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => toggleOrderExpansion(group.order_id)}
-                        className={`h-8 w-8 rounded-full transition-colors ${expandedOrders.has(group.order_id)
-                          ? 'bg-primary/10 text-primary'
-                          : 'hover:bg-muted text-muted-foreground'
-                          }`}
-                      >
-                        {expandedOrders.has(group.order_id) ? <Minus size={14} /> : <Plus size={14} />}
-                      </Button>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs uppercase border border-primary/20">
-                          {(group.customer_name || '??').substring(0, 2)}
-                        </div>
-                        <div>
-                          <div className="font-medium text-foreground">{group.customer_name}</div>
-                          <div className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Phone className="w-3 h-3" />
-                            {group.customer_phone}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <Link
-                        to={`/invoices/${group.order_id}`}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/50 text-xs font-medium text-foreground border border-border/50 hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all"
-                      >
-                        <FileText className="w-3 h-3" />
-                        #{group.order_id}
-                      </Link>
-                    </td>
-                    <td className="px-6 py-4 text-right font-medium text-foreground">₹{Number(group.order_total_amount ?? 0).toLocaleString('en-IN')}</td>
-                    <td className="px-6 py-4 text-right font-medium text-emerald-600">₹{Number(group.order_amount_paid ?? 0).toLocaleString('en-IN')}</td>
-                    <td className="px-6 py-4 text-right font-medium text-destructive">₹{Number(group.order_balance_due ?? 0).toLocaleString('en-IN')}</td>
-                    <td className="px-6 py-4 text-center">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-transparent ${getStatusColor(group.status)}`}>
-                        {group.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center text-muted-foreground">
-                      <span className="text-xs font-medium bg-muted px-2 py-1 rounded-full text-muted-foreground">
-                        {group.payments.length} txn
-                      </span>
-                    </td>
+        {/* Content */}
+        <AnimatePresence mode="wait">
+          {viewMode === 'list' ? (
+            <motion.div
+              key="list"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="overflow-x-auto"
+            >
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border/50 bg-muted/40">
+                    <th className="px-6 py-4 text-left w-12">
+                      <input
+                        type="checkbox"
+                        checked={selectAll}
+                        onChange={handleSelectAll}
+                        className="rounded border-border text-primary focus:ring-primary/20 cursor-pointer"
+                      />
+                    </th>
+                    <th className="px-6 py-4 text-left font-medium text-muted-foreground w-12"></th>
+                    <th className="px-6 py-4 text-left font-semibold text-foreground">
+                      <SortButton field="customer_name">Customer</SortButton>
+                    </th>
+                    <th className="px-6 py-4 text-left font-semibold text-foreground">Order</th>
+                    <th className="px-6 py-4 text-right font-semibold text-foreground">
+                      <SortButton field="order_total_amount">Total</SortButton>
+                    </th>
+                    <th className="px-6 py-4 text-right font-semibold text-foreground">
+                      <SortButton field="amount_paid">Paid</SortButton>
+                    </th>
+                    <th className="px-6 py-4 text-right font-semibold text-foreground">Due</th>
+                    <th className="px-6 py-4 text-center font-semibold text-foreground">
+                      <SortButton field="status">Status</SortButton>
+                    </th>
+                    <th className="px-6 py-4 text-center font-semibold text-foreground">Actions</th>
                   </tr>
-                  {expandedOrders.has(group.order_id) && (
-                    <tr className="bg-muted/5">
-                      <td colSpan={9} className="px-6 py-4 p-0">
-                        <div className="bg-card w-[95%] ml-auto mr-auto my-2 rounded-xl border border-border/50 shadow-sm overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                          <div className="px-4 py-2 bg-muted/30 border-b border-border/50 flex justify-between items-center">
-                            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Transaction History</span>
-                            <span className="text-xs text-muted-foreground">Order #{group.order_id}</span>
+                </thead>
+                <tbody className="divide-y divide-border/30">
+                  {paginatedPayments.map((group) => (
+                    <React.Fragment key={group.order_id}>
+                      <tr className={`group transition-colors ${expandedOrders.has(group.order_id) ? 'bg-muted/10' : 'hover:bg-muted/20'
+                        }`}>
+                        <td className="px-6 py-4">
+                          {/* Spacer or Checkbox if needed */}
+                        </td>
+                        <td className="px-2 py-4">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => toggleOrderExpansion(group.order_id)}
+                            className={`h-8 w-8 rounded-full transition-colors ${expandedOrders.has(group.order_id)
+                              ? 'bg-primary/10 text-primary'
+                              : 'hover:bg-muted text-muted-foreground'
+                              }`}
+                          >
+                            {expandedOrders.has(group.order_id) ? <Minus size={14} /> : <Plus size={14} />}
+                          </Button>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs uppercase border border-primary/20">
+                              {(group.customer_name || '??').substring(0, 2)}
+                            </div>
+                            <div>
+                              <div className="font-medium text-foreground">{group.customer_name}</div>
+                              <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Phone className="w-3 h-3" />
+                                {group.customer_phone}
+                              </div>
+                            </div>
                           </div>
-                          <table className="w-full text-xs">
-                            <thead className="bg-muted/20">
-                              <tr>
-                                <th className="px-4 py-2 text-left w-10">
-                                  {/* Select */}
-                                </th>
-                                <th className="px-4 py-2 text-right">Amount</th>
-                                <th className="px-4 py-2 text-left">Due Date</th>
-                                <th className="px-4 py-2 text-left">Method</th>
-                                <th className="px-4 py-2 text-center">Status</th>
-                                <th className="px-4 py-2 text-right">Actions</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border/20">
-                              {group.payments.map(payment => (
-                                <tr key={payment.id} className="hover:bg-muted/40 transition-colors">
-                                  <td className="px-4 py-3">
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedPayments.includes(payment.id)}
-                                      onChange={() => handleSelectPayment(payment.id)}
-                                      className="rounded border-border text-primary focus:ring-primary/20 cursor-pointer"
-                                    />
-                                  </td>
-                                  <td className="px-4 py-3 text-right font-medium text-foreground">₹{Number(payment.amount_paid ?? 0).toLocaleString('en-IN')}</td>
-                                  <td className="px-4 py-3 text-muted-foreground">
-                                    <div className="flex items-center gap-1.5">
-                                      <Calendar className="w-3 h-3" />
-                                      {new Date(payment.due_date).toLocaleDateString()}
-                                    </div>
-                                  </td>
-                                  <td className="px-4 py-3 text-muted-foreground">
-                                    <div className="flex items-center gap-1.5">
-                                      <CreditCard className="w-3 h-3" />
-                                      {payment.payment_method || '-'}
-                                    </div>
-                                  </td>
-                                  <td className="px-4 py-3 text-center">
-                                    <span className={`text-[10px] px-2 py-0.5 rounded-full border border-black/5 dark:border-white/10 ${getStatusColor(payment.status)}`}>
-                                      {payment.status}
-                                    </span>
-                                  </td>
-                                  <td className="px-4 py-3 text-right">
-                                    <div className="flex justify-end gap-1">
-                                      <Button variant="ghost" size="sm" onClick={() => handleView(payment)} className="h-7 w-7 p-0 rounded-full hover:bg-background hover:text-primary hover:shadow-sm" title="View"><Eye size={12} /></Button>
-                                      <Button variant="ghost" size="sm" onClick={() => handleEdit(payment)} className="h-7 w-7 p-0 rounded-full hover:bg-background hover:text-blue-500 hover:shadow-sm" title="Edit"><Edit size={12} /></Button>
-                                      <Button variant="ghost" size="sm" onClick={() => handleDelete(payment)} className="h-7 w-7 p-0 rounded-full hover:bg-background text-destructive/70 hover:text-destructive hover:shadow-sm" title="Delete"><Trash2 size={12} /></Button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </React.Fragment>
-              ))}
-            </tbody>
-          </table>
+                        </td>
+                        <td className="px-6 py-4">
+                          <Link
+                            to={`/invoices/${group.order_id}`}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/50 text-xs font-medium text-foreground border border-border/50 hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all"
+                          >
+                            <FileText className="w-3 h-3" />
+                            #{group.order_id}
+                          </Link>
+                        </td>
+                        <td className="px-6 py-4 text-right font-medium text-foreground">₹{Number(group.order_total_amount ?? 0).toLocaleString('en-IN')}</td>
+                        <td className="px-6 py-4 text-right font-medium text-emerald-600">₹{Number(group.order_amount_paid ?? 0).toLocaleString('en-IN')}</td>
+                        <td className="px-6 py-4 text-right font-medium text-destructive">₹{Number(group.order_balance_due ?? 0).toLocaleString('en-IN')}</td>
+                        <td className="px-6 py-4 text-center">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-transparent ${getStatusColor(group.status)}`}>
+                            {group.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-center text-muted-foreground">
+                          <span className="text-xs font-medium bg-muted px-2 py-1 rounded-full text-muted-foreground">
+                            {group.payments.length} txn
+                          </span>
+                        </td>
+                      </tr>
+                      {expandedOrders.has(group.order_id) && (
+                        <tr className="bg-muted/5">
+                          <td colSpan={9} className="px-6 py-4 p-0">
+                            <div className="bg-card w-[95%] ml-auto mr-auto my-2 rounded-xl border border-border/50 shadow-sm overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                              <div className="px-4 py-2 bg-muted/30 border-b border-border/50 flex justify-between items-center">
+                                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Transaction History</span>
+                                <span className="text-xs text-muted-foreground">Order #{group.order_id}</span>
+                              </div>
+                              <table className="w-full text-xs">
+                                <thead className="bg-muted/20">
+                                  <tr>
+                                    <th className="px-4 py-2 text-left w-10">
+                                      {/* Select */}
+                                    </th>
+                                    <th className="px-4 py-2 text-right">Amount</th>
+                                    <th className="px-4 py-2 text-left">Due Date</th>
+                                    <th className="px-4 py-2 text-left">Method</th>
+                                    <th className="px-4 py-2 text-center">Status</th>
+                                    <th className="px-4 py-2 text-right">Actions</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-border/20">
+                                  {group.payments.map(payment => (
+                                    <tr key={payment.id} className="hover:bg-muted/40 transition-colors">
+                                      <td className="px-4 py-3">
+                                        <input
+                                          type="checkbox"
+                                          checked={selectedPayments.includes(payment.id)}
+                                          onChange={() => handleSelectPayment(payment.id)}
+                                          className="rounded border-border text-primary focus:ring-primary/20 cursor-pointer"
+                                        />
+                                      </td>
+                                      <td className="px-4 py-3 text-right font-medium text-foreground">₹{Number(payment.amount_paid ?? 0).toLocaleString('en-IN')}</td>
+                                      <td className="px-4 py-3 text-muted-foreground">
+                                        <div className="flex items-center gap-1.5">
+                                          <Calendar className="w-3 h-3" />
+                                          {new Date(payment.due_date).toLocaleDateString()}
+                                        </div>
+                                      </td>
+                                      <td className="px-4 py-3 text-muted-foreground">
+                                        <div className="flex items-center gap-1.5">
+                                          <CreditCard className="w-3 h-3" />
+                                          {payment.payment_method || '-'}
+                                        </div>
+                                      </td>
+                                      <td className="px-4 py-3 text-center">
+                                        <span className={`text-[10px] px-2 py-0.5 rounded-full border border-black/5 dark:border-white/10 ${getStatusColor(payment.status)}`}>
+                                          {payment.status}
+                                        </span>
+                                      </td>
+                                      <td className="px-4 py-3 text-right">
+                                        <div className="flex justify-end gap-1">
+                                          <Button variant="ghost" size="sm" onClick={() => handleView(payment)} className="h-7 w-7 p-0 rounded-full hover:bg-background hover:text-primary hover:shadow-sm" title="View"><Eye size={12} /></Button>
+                                          <Button variant="ghost" size="sm" onClick={() => handleEdit(payment)} className="h-7 w-7 p-0 rounded-full hover:bg-background hover:text-blue-500 hover:shadow-sm" title="Edit"><Edit size={12} /></Button>
+                                          <Button variant="ghost" size="sm" onClick={() => handleDelete(payment)} className="h-7 w-7 p-0 rounded-full hover:bg-background text-destructive/70 hover:text-destructive hover:shadow-sm" title="Delete"><Trash2 size={12} /></Button>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </tbody>
+              </table>
 
-          {filteredAndSortedPayments.length === 0 && (
-            <div className="text-center py-24">
-              <div className="bg-muted/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <DollarSign className="w-8 h-8 text-muted-foreground/50" />
-              </div>
-              <h3 className="text-lg font-medium text-foreground">No payments found</h3>
-              <p className="text-muted-foreground text-sm mt-1">Try adjusting your filters or search terms.</p>
-              <Button
-                variant="outline"
-                className="mt-6"
-                onClick={() => {
-                  setSearchQuery('');
-                  setStatusFilter('');
-                  setDateFilter('');
-                  setAmountFilter({ min: '', max: '' });
-                }}
-              >
-                Clear Filters
-              </Button>
-            </div>
+              {filteredAndSortedPayments.length === 0 && (
+                <div className="text-center py-24">
+                  <div className="bg-muted/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <DollarSign className="w-8 h-8 text-muted-foreground/50" />
+                  </div>
+                  <h3 className="text-lg font-medium text-foreground">No payments found</h3>
+                  <p className="text-muted-foreground text-sm mt-1">Try adjusting your filters or search terms.</p>
+                  <Button
+                    variant="outline"
+                    className="mt-6"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setStatusFilter('');
+                      setDateFilter('');
+                      setAmountFilter({ min: '', max: '' });
+                    }}
+                  >
+                    Clear Filters
+                  </Button>
+                </div>
+              )}
+            </motion.div>
+          ) : (
+            <motion.div
+              key="grid"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4"
+            >
+              {paginatedPayments.map((group) => (
+                <PaymentGridCard
+                  key={group.order_id}
+                  group={group}
+                  onView={handleView}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              ))}
+              {paginatedPayments.length === 0 && (
+                <div className="col-span-full text-center py-20">
+                  <div className="flex flex-col items-center justify-center text-gray-400">
+                    <DollarSign className="w-16 h-16 mb-4 opacity-50" />
+                    <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300">No Payments Found</h3>
+                  </div>
+                </div>
+              )}
+            </motion.div>
           )}
-        </div>
+        </AnimatePresence>
 
         {/* Footer & Pagination */}
         {filteredAndSortedPayments.length > 0 && (
@@ -836,52 +901,47 @@ const PaymentManagementTable: React.FC = () => {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Select
-              id="status"
-              label="Status"
-              options={[
-                { value: 'Paid', label: 'Paid' },
-                { value: 'Partial', label: 'Partial' },
-                { value: 'Due', label: 'Due' },
-                { value: 'Overdue', label: 'Overdue' }
-              ]}
-              value={editForm.status}
-              onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
-            />
-            <Select
-              id="payment_method"
-              label="Payment Method"
-              options={[
-                { value: 'Cash', label: 'Cash' },
-                { value: 'UPI', label: 'UPI' },
-                { value: 'Bank Transfer', label: 'Bank Transfer' },
-                { value: 'Credit Card', label: 'Credit Card' },
-                { value: 'Check', label: 'Check' }
-              ]}
-              value={editForm.payment_method}
-              onChange={(e) => setEditForm({ ...editForm, payment_method: e.target.value })}
-            />
-          </div>
+          <Select
+            id="status"
+            label="Payment Status"
+            options={[
+              { value: 'Paid', label: 'Paid' },
+              { value: 'Partial', label: 'Partial' },
+              { value: 'Due', label: 'Due' },
+              { value: 'Overdue', label: 'Overdue' }
+            ]}
+            value={editForm.status}
+            onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+          />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
+          <Select
+            id="payment_method"
+            label="Payment Method"
+            options={[
+              { value: 'Cash', label: 'Cash' },
+              { value: 'UPI', label: 'UPI' },
+              { value: 'Bank Transfer', label: 'Bank Transfer' },
+              { value: 'Cheque', label: 'Cheque' },
+              { value: 'Card', label: 'Card' }
+            ]}
+            value={editForm.payment_method}
+            onChange={(e) => setEditForm({ ...editForm, payment_method: e.target.value })}
+          />
+
+          <div className="space-y-1">
+            <label htmlFor="notes" className="text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
             <textarea
+              id="notes"
+              className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              rows={3}
               value={editForm.notes}
               onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-              rows={3}
-              placeholder="Add any notes about this payment..."
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-4">
-            <Button variant="outline" onClick={() => setShowEditModal(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveEdit}>
-              Save Changes
-            </Button>
+          <div className="flex justify-end gap-3 mt-6">
+            <Button variant="outline" onClick={() => setShowEditModal(false)}>Cancel</Button>
+            <Button variant="primary" onClick={handleSaveEdit}>Save Changes</Button>
           </div>
         </div>
       </Modal>
@@ -891,96 +951,66 @@ const PaymentManagementTable: React.FC = () => {
         isOpen={showViewModal}
         onClose={() => setShowViewModal(false)}
         title={`Payment Details - ${viewingPayment?.customer_name}`}
-        size="2xl"
+        size="lg"
       >
         {viewingPayment && (
           <div className="space-y-6">
-            {/* Payment Details */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <h4 className="font-semibold text-gray-800 dark:text-white">Payment Information</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Payment ID:</span>
-                    <span className="font-medium">{viewingPayment.id}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Order ID:</span>
-                    <Link
-                      to={`/invoices/${viewingPayment.order_id}`}
-                      className="text-primary-600 hover:underline"
-                    >
-                      #{viewingPayment.order_id}
-                    </Link>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Order Total:</span>
-                    <span className="font-medium">₹{viewingPayment.order_total_amount.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Amount Paid:</span>
-                    <span className="font-medium text-green-600">₹{viewingPayment.amount_paid.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Balance Due:</span>
-                    <span className="font-medium text-red-600">₹{viewingPayment.order_balance_due.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Status:</span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(viewingPayment.status)}`}>
-                      {viewingPayment.status}
-                    </span>
-                  </div>
-                </div>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                <span className="block text-gray-500 text-xs uppercase tracking-wider mb-1">Order ID</span>
+                <span className="font-medium">#{viewingPayment.order_id}</span>
               </div>
-
-              <div className="space-y-4">
-                <h4 className="font-semibold text-gray-800 dark:text-white">Customer & Dates</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Customer:</span>
-                    <span className="font-medium">{viewingPayment.customer_name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Phone:</span>
-                    <span className="font-medium">{viewingPayment.customer_phone}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Due Date:</span>
-                    <span className="font-medium">{new Date(viewingPayment.due_date).toLocaleDateString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Created:</span>
-                    <span className="font-medium">{new Date(viewingPayment.created_at).toLocaleDateString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Payment Method:</span>
-                    <span className="font-medium">{viewingPayment.payment_method || '-'}</span>
-                  </div>
-                </div>
+              <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                <span className="block text-gray-500 text-xs uppercase tracking-wider mb-1">Customer</span>
+                <span className="font-medium">{viewingPayment.customer_name}</span>
+                <div className="text-xs text-gray-500">{viewingPayment.customer_phone}</div>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                <span className="block text-gray-500 text-xs uppercase tracking-wider mb-1">Total Amount</span>
+                <span className="font-medium">₹{viewingPayment.order_total_amount}</span>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                <span className="block text-gray-500 text-xs uppercase tracking-wider mb-1">Amount Paid</span>
+                <span className="font-medium text-green-600">₹{viewingPayment.amount_paid}</span>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                <span className="block text-gray-500 text-xs uppercase tracking-wider mb-1">Balance Due</span>
+                <span className="font-medium text-red-600">₹{viewingPayment.order_balance_due}</span>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                <span className="block text-gray-500 text-xs uppercase tracking-wider mb-1">Status</span>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(viewingPayment.status)}`}>
+                  {viewingPayment.status}
+                </span>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                <span className="block text-gray-500 text-xs uppercase tracking-wider mb-1">Payment Method</span>
+                <span className="font-medium">{viewingPayment.payment_method || '-'}</span>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                <span className="block text-gray-500 text-xs uppercase tracking-wider mb-1">Due Date</span>
+                <span className="font-medium">{new Date(viewingPayment.due_date).toLocaleDateString()}</span>
               </div>
             </div>
 
-            {/* Notes */}
             {viewingPayment.notes && (
-              <div>
-                <h4 className="font-semibold text-gray-800 dark:text-white mb-2">Notes</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                  {viewingPayment.notes}
-                </p>
+              <div className="bg-yellow-50 dark:bg-yellow-900/10 p-4 rounded-lg border border-yellow-100 dark:border-yellow-900/30">
+                <span className="block text-yellow-700 dark:text-yellow-500 text-xs uppercase tracking-wider mb-1 font-bold">Notes</span>
+                <p className="text-sm text-yellow-800 dark:text-yellow-400">{viewingPayment.notes}</p>
               </div>
             )}
 
-            {/* Payment History */}
-            <div>
-              <h4 className="font-semibold text-gray-800 dark:text-white mb-3">Payment History</h4>
+            <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+              <h4 className="font-medium mb-3 flex items-center gap-2">
+                <History size={16} className="text-gray-400" />
+                History
+              </h4>
               {loadingHistory ? (
-                <div className="flex items-center justify-center py-4">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span className="ml-2 text-sm">Loading history...</span>
+                <div className="flex justify-center py-4">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600"></div>
                 </div>
               ) : paymentHistory.length > 0 ? (
-                <div className="space-y-2 max-h-40 overflow-y-auto">
+                <div className="space-y-3 max-h-48 overflow-y-auto pr-2">
                   {paymentHistory.map((entry) => (
                     <div key={entry.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded text-sm">
                       <div>
@@ -1007,7 +1037,7 @@ const PaymentManagementTable: React.FC = () => {
         onClose={() => setShowDeleteModal(false)}
         onConfirm={confirmDelete}
         title="Delete Payment"
-        description={`Are you sure you want to delete this payment? This action cannot be undone.`}
+        description="Are you sure you want to delete this payment? This action cannot be undone."
         confirmText="Delete Payment"
       />
 

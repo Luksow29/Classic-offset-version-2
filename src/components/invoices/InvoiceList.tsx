@@ -4,6 +4,8 @@ import { Link } from 'react-router-dom';
 import Card from '../ui/Card';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
+import { useResponsiveViewMode } from '../../hooks/useResponsiveViewMode';
+
 import {
   Eye,
   Loader2,
@@ -13,8 +15,12 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
-  Download
+  Download,
+  LayoutGrid,
+  List
 } from 'lucide-react';
+import InvoiceGridCard from './InvoiceGridCard';
+import Pagination from '../ui/Pagination';
 
 interface InvoiceRow {
   order_id: number;
@@ -23,7 +29,7 @@ interface InvoiceRow {
   total_amount: number;
   amount_paid: number;
   balance_due: number;
-  order_date?: string; // Assuming the view has this or we might need to add it
+  order_date?: string;
 }
 
 const InvoiceList: React.FC = () => {
@@ -33,6 +39,11 @@ const InvoiceList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'All' | 'Paid' | 'Due' | 'Partial'>('All');
 
+  // View Mode & Pagination
+  const { viewMode, setViewMode } = useResponsiveViewMode();
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = viewMode === 'grid' ? 12 : 10;
+
   useEffect(() => {
     const fetchInvoices = async () => {
       setLoading(true);
@@ -40,7 +51,7 @@ const InvoiceList: React.FC = () => {
       try {
         const { data, error: viewError } = await supabase
           .from('all_order_summary')
-          .select('order_id, customer_name, customer_phone, total_amount, amount_paid, balance_due')
+          .select('order_id, customer_name, customer_phone, total_amount, amount_paid, balance_due, order_date')
           .order('order_id', { ascending: false });
 
         if (viewError) throw viewError;
@@ -87,6 +98,17 @@ const InvoiceList: React.FC = () => {
     return result;
   }, [invoices, searchTerm, filterStatus]);
 
+  // Pagination Logic
+  const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
+  const paginatedInvoices = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredInvoices.slice(start, start + itemsPerPage);
+  }, [filteredInvoices, currentPage, itemsPerPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus, viewMode]);
+
 
   if (loading) {
     return (
@@ -110,7 +132,7 @@ const InvoiceList: React.FC = () => {
   }
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-[1600px] mx-auto">
+    <div className="p-4 sm:p-6 space-y-6 max-w-[1600px] mx-auto pb-20">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -170,9 +192,9 @@ const InvoiceList: React.FC = () => {
         </Card>
       </div>
 
-      {/* Controls & Table */}
-      <Card className="overflow-hidden">
-        <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex flex-col md:flex-row justify-between gap-4">
+      {/* Controls */}
+      <Card className="overflow-visible">
+        <div className="p-4 flex flex-col md:flex-row justify-between gap-4">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input
@@ -182,82 +204,115 @@ const InvoiceList: React.FC = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
             {['All', 'Paid', 'Partial', 'Due'].map((status) => (
               <button
                 key={status}
                 onClick={() => setFilterStatus(status as any)}
                 className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${filterStatus === status
-                    ? 'bg-primary text-white shadow-sm'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                   }`}
               >
                 {status}
               </button>
             ))}
+            <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-2" />
+            <div className="flex p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-gray-700 shadow text-primary' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                title="List View"
+              >
+                <List size={18} />
+              </button>
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-gray-700 shadow text-primary' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                title="Grid View"
+              >
+                <LayoutGrid size={18} />
+              </button>
+            </div>
           </div>
         </div>
-
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-gray-50 dark:bg-gray-700/50">
-              <tr>
-                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Invoice #</th>
-                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Customer</th>
-                <th className="px-6 py-3 text-right font-medium text-gray-500 dark:text-gray-400">Total</th>
-                <th className="px-6 py-3 text-right font-medium text-gray-500 dark:text-gray-400">Paid</th>
-                <th className="px-6 py-3 text-right font-medium text-gray-500 dark:text-gray-400">Balance</th>
-                <th className="px-6 py-3 text-center font-medium text-gray-500 dark:text-gray-400">Status</th>
-                <th className="px-6 py-3 text-right font-medium text-gray-500 dark:text-gray-400">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {filteredInvoices.length > 0 ? (
-                filteredInvoices.map((inv) => (
-                  <tr key={inv.order_id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 group">
-                    <td className="px-6 py-4 font-medium text-primary"> #{inv.order_id} </td>
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-gray-900 dark:text-white">{inv.customer_name || 'Unknown'}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">{inv.customer_phone || '-'}</div>
-                    </td>
-                    <td className="px-6 py-4 text-right font-medium text-gray-900 dark:text-white">₹{inv.total_amount.toLocaleString()}</td>
-                    <td className="px-6 py-4 text-right text-green-600 dark:text-green-400">₹{inv.amount_paid.toLocaleString()}</td>
-                    <td className={`px-6 py-4 text-right font-bold ${inv.balance_due > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400'}`}>
-                      ₹{inv.balance_due.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border
-                            ${inv.balance_due <= 0
-                          ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800'
-                          : inv.amount_paid > 0
-                            ? 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-800'
-                            : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800'}`}>
-                        {inv.balance_due <= 0 ? 'Paid' : inv.amount_paid > 0 ? 'Partial' : 'Due'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <Link to={`/invoices/${inv.order_id}`}>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <Eye className="w-4 h-4 text-gray-500 hover:text-primary transition-colors" />
-                        </Button>
-                      </Link>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={7} className="text-center py-12 text-gray-500 dark:text-gray-400">
-                    <div className="flex flex-col items-center justify-center">
-                      <FileText className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3" />
-                      <p>No invoices found matching your criteria.</p>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
       </Card>
+
+      {/* Content */}
+      <div className="space-y-6">
+        {paginatedInvoices.length > 0 ? (
+          <>
+            {viewMode === 'list' ? (
+              <Card className="overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead className="bg-gray-50 dark:bg-gray-700/50">
+                      <tr>
+                        <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Invoice #</th>
+                        <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Customer</th>
+                        <th className="px-6 py-3 text-right font-medium text-gray-500 dark:text-gray-400">Total</th>
+                        <th className="px-6 py-3 text-right font-medium text-gray-500 dark:text-gray-400">Paid</th>
+                        <th className="px-6 py-3 text-right font-medium text-gray-500 dark:text-gray-400">Balance</th>
+                        <th className="px-6 py-3 text-center font-medium text-gray-500 dark:text-gray-400">Status</th>
+                        <th className="px-6 py-3 text-right font-medium text-gray-500 dark:text-gray-400">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                      {paginatedInvoices.map((inv) => (
+                        <tr key={inv.order_id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 group">
+                          <td className="px-6 py-4 font-medium text-primary"> #{inv.order_id} </td>
+                          <td className="px-6 py-4">
+                            <div className="font-medium text-gray-900 dark:text-white">{inv.customer_name || 'Unknown'}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">{inv.customer_phone || '-'}</div>
+                          </td>
+                          <td className="px-6 py-4 text-right font-medium text-gray-900 dark:text-white">₹{inv.total_amount.toLocaleString()}</td>
+                          <td className="px-6 py-4 text-right text-green-600 dark:text-green-400">₹{inv.amount_paid.toLocaleString()}</td>
+                          <td className={`px-6 py-4 text-right font-bold ${inv.balance_due > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400'}`}>
+                            ₹{inv.balance_due.toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border
+                                        ${inv.balance_due <= 0
+                                ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800'
+                                : inv.amount_paid > 0
+                                  ? 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-800'
+                                  : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800'}`}>
+                              {inv.balance_due <= 0 ? 'Paid' : inv.amount_paid > 0 ? 'Partial' : 'Due'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <Link to={`/invoices/${inv.order_id}`}>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <Eye className="w-4 h-4 text-gray-500 hover:text-primary transition-colors" />
+                              </Button>
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {paginatedInvoices.map((inv) => (
+                  <InvoiceGridCard key={inv.order_id} invoice={inv} />
+                ))}
+              </div>
+            )}
+
+            {totalPages > 1 && (
+              <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+            )}
+          </>
+        ) : (
+          <Card className="flex flex-col items-center justify-center p-12 text-center text-gray-500 dark:text-gray-400">
+            <FileText className="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">No Invoices Found</h3>
+            <p>Try adjusting your search or filters.</p>
+          </Card>
+        )}
+      </div>
     </div>
   );
 };

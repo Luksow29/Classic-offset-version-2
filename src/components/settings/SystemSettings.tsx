@@ -14,7 +14,7 @@ const SystemSettings: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [backupLoading, setBackupLoading] = useState(false);
   const [restoreLoading, setRestoreLoading] = useState(false);
-  
+
   const [localSettings, setLocalSettings] = useState({
     cacheSize: '100',
     autoBackup: true,
@@ -33,9 +33,9 @@ const SystemSettings: React.FC = () => {
       body: JSON.stringify({ event, data, timestamp: new Date().toISOString() })
     })
       .then(() => console.log('Analytics event sent:', event, data))
-      .catch(() => {});
+      .catch(() => { });
   }, [localSettings.analyticsEnabled]);
-  
+
   // Sync with Supabase settings
   useEffect(() => {
     if (settings) {
@@ -218,37 +218,32 @@ const SystemSettings: React.FC = () => {
 
   return (
     <Card>
-      <div className="p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <Database className="h-5 w-5 text-primary" />
-          <h2 className="text-xl font-semibold">System Settings</h2>
-        </div>
-        
+      <div className="p-4 sm:p-6">
         <div className="space-y-8">
           {/* Cache Settings */}
           <div>
             <h3 className="text-lg font-medium mb-4">Cache Settings</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <Input
                   id="cacheSize"
                   label="Cache Size (MB)"
                   type="number"
                   value={localSettings.cacheSize}
-                  onChange={(e) => setLocalSettings({...localSettings, cacheSize: e.target.value})}
+                  onChange={(e) => setLocalSettings({ ...localSettings, cacheSize: e.target.value })}
                   icon={<HardDrive className="h-4 w-4" />}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   Maximum size of local cache storage
                 </p>
               </div>
-              
+
               <div className="flex items-end">
-                <Button 
-                  variant="outline" 
-                  onClick={handleClearCache} 
+                <Button
+                  variant="outline"
+                  onClick={handleClearCache}
                   disabled={loading}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 w-full sm:w-auto justify-center"
                 >
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                   Clear Cache
@@ -256,33 +251,33 @@ const SystemSettings: React.FC = () => {
               </div>
             </div>
           </div>
-          
+
           {/* Backup & Restore */}
           <div>
             <h3 className="text-lg font-medium mb-4">Backup & Restore</h3>
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Automatic Backups</p>
-                  <p className="text-sm text-muted-foreground">Regularly backup your data</p>
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium truncate">Automatic Backups</p>
+                  <p className="text-sm text-muted-foreground truncate">Regularly backup your data</p>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    className="sr-only peer" 
+                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
                     checked={localSettings.autoBackup}
-                    onChange={() => setLocalSettings({...localSettings, autoBackup: !localSettings.autoBackup})}
+                    onChange={() => setLocalSettings({ ...localSettings, autoBackup: !localSettings.autoBackup })}
                   />
                   <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                 </label>
               </div>
-              
+
               {localSettings.autoBackup && (
                 <div className="ml-6">
                   <label className="block text-sm font-medium mb-1">Backup Frequency</label>
                   <select
                     value={localSettings.backupFrequency}
-                    onChange={(e) => setLocalSettings({...localSettings, backupFrequency: e.target.value})}
+                    onChange={(e) => setLocalSettings({ ...localSettings, backupFrequency: e.target.value })}
                     className="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     <option value="daily">Daily</option>
@@ -291,33 +286,33 @@ const SystemSettings: React.FC = () => {
                   </select>
                 </div>
               )}
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <Button 
-                  variant="outline" 
-                  onClick={handleBackup} 
+
+              <div className="flex flex-col sm:flex-row gap-4 mt-4">
+                <Button
+                  variant="outline"
+                  onClick={handleBackup}
                   disabled={backupLoading}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 justify-center w-full sm:w-auto"
                 >
                   {backupLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                   Create Backup
                 </Button>
-                
-                <div className="relative">
-                  <Button 
-                    variant="outline" 
+
+                <div className="relative w-full sm:w-auto">
+                  <Button
+                    variant="outline"
                     disabled={restoreLoading}
-                    className="flex items-center gap-2 w-full"
+                    className="flex items-center gap-2 w-full justify-center"
                     onClick={() => document.getElementById('restore-file')?.click()}
                   >
                     {restoreLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                     Restore from Backup
                   </Button>
-                  <input 
-                    id="restore-file" 
-                    type="file" 
-                    accept=".json" 
-                    className="hidden" 
+                  <input
+                    id="restore-file"
+                    type="file"
+                    accept=".json"
+                    className="hidden"
                     onChange={handleRestore}
                     disabled={restoreLoading}
                   />
@@ -325,7 +320,7 @@ const SystemSettings: React.FC = () => {
               </div>
             </div>
           </div>
-          
+
           {/* Logging & Analytics */}
           <div>
             <h3 className="text-lg font-medium mb-4">Logging & Analytics</h3>
@@ -334,7 +329,7 @@ const SystemSettings: React.FC = () => {
                 <label className="block text-sm font-medium mb-1">Log Level</label>
                 <select
                   value={localSettings.logLevel}
-                  onChange={(e) => setLocalSettings({...localSettings, logLevel: e.target.value})}
+                  onChange={(e) => setLocalSettings({ ...localSettings, logLevel: e.target.value })}
                   className="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="error">Error Only</option>
@@ -346,25 +341,25 @@ const SystemSettings: React.FC = () => {
                   Control the level of detail in application logs
                 </p>
               </div>
-              
+
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">Usage Analytics</p>
                   <p className="text-sm text-muted-foreground">Help us improve by sharing anonymous usage data</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    className="sr-only peer" 
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
                     checked={localSettings.analyticsEnabled}
-                    onChange={() => setLocalSettings({...localSettings, analyticsEnabled: !localSettings.analyticsEnabled})}
+                    onChange={() => setLocalSettings({ ...localSettings, analyticsEnabled: !localSettings.analyticsEnabled })}
                   />
                   <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                 </label>
               </div>
             </div>
           </div>
-          
+
           {/* Server Information */}
           <div>
             <h3 className="text-lg font-medium mb-4">System Information</h3>
@@ -387,7 +382,7 @@ const SystemSettings: React.FC = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="flex justify-end">
             <Button onClick={handleSaveSettings} disabled={loading}>
               {loading ? (

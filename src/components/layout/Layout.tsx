@@ -37,10 +37,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { theme } = useTheme();
 
   useAdminInAppNotifications();
-  
+
   // Command palette state
   const { isOpen: isCommandPaletteOpen, closePalette: closeCommandPalette } = useCommandPalette();
-  
+
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   // Save sidebar state to localStorage
@@ -63,20 +63,23 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
   }, [location.pathname]);
 
+  const isCommunicationRoute = location.pathname.startsWith('/communication');
+
+
   // Main layout bg: bg-background (white/dark). Sidebar/header bg fix பண்ணியாச்சு.
   return (
-    <div className={`min-h-screen flex bg-background ${theme === 'dark' ? 'dark' : ''}`}>
+    <div className={`h-screen overflow-hidden flex bg-background ${theme === 'dark' ? 'dark' : ''}`}>
       <ScrollToTop />
-      
+
       {/* --- Desktop Sidebar (Permanent) --- */}
       {/* Hidden on screens smaller than 1024px (lg) */}
       <div className="hidden lg:flex lg:flex-shrink-0">
-          <Sidebar 
-            isDocked={true}
-            isCollapsed={isDockCollapsed}
-            setIsCollapsed={setIsDockCollapsed}
-            onClose={() => {}} // Not needed for docked sidebar
-          />
+        <Sidebar
+          isDocked={true}
+          isCollapsed={isDockCollapsed}
+          setIsCollapsed={setIsDockCollapsed}
+          onClose={() => { }} // Not needed for docked sidebar
+        />
       </div>
 
       {/* --- Mobile Sidebar (Overlay with Backdrop) --- */}
@@ -93,7 +96,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               aria-hidden="true"
               onClick={() => setSidebarOpen(false)}
             />
-          
+
             {/* Sidebar */}
             <motion.div
               ref={sidebarRef}
@@ -104,7 +107,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
               className="fixed inset-y-0 left-0 z-40 lg:hidden"
             >
-              <Sidebar 
+              <Sidebar
                 isDocked={false}
                 isCollapsed={false}
                 onClose={() => setSidebarOpen(false)}
@@ -117,27 +120,42 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* --- Main Content Area --- */}
       <div className="flex-1 flex flex-col min-w-0">
         <TopHeader onMenuClick={() => setSidebarOpen(true)} />
-        
-        <main className="flex-1 overflow-y-auto custom-scrollbar main-content">
-          <div className="py-4 sm:py-6">
-            <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-              <motion.div
-                key={useLocation().pathname}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, ease: 'easeInOut' }}
-              >
-                {children}
-              </motion.div>
+
+        <main className={`flex-1 flex flex-col main-content ${isCommunicationRoute ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar'}`}>
+          {isCommunicationRoute ? (
+            // Full width/height layout for Communication Hub
+            <motion.div
+              key={isCommunicationRoute ? 'comm-layout' : location.pathname}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex-1 w-full"
+              style={{ height: 'calc(100vh - 4rem)' }}
+              transition={{ duration: 0.3 }}
+            >
+              {children}
+            </motion.div>
+          ) : (
+            // Standard layout for other pages
+            <div className="py-4 sm:py-6">
+              <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+                <motion.div
+                  key={location.pathname}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, ease: 'easeInOut' }}
+                >
+                  {children}
+                </motion.div>
+              </div>
             </div>
-          </div>
+          )}
         </main>
       </div>
 
       {/* Command Palette */}
-      <CommandPalette 
-        isOpen={isCommandPaletteOpen} 
-        onClose={closeCommandPalette} 
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={closeCommandPalette}
       />
 
       {/* Local Agent Widget - Available from any page */}

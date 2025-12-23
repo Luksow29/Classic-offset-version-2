@@ -66,7 +66,19 @@ export function usePWA() {
   // Listen for service worker updates
   useEffect(() => {
     if ('serviceWorker' in navigator) {
+      // Check for updates periodically
+      const updateInterval = setInterval(() => {
+        navigator.serviceWorker.ready.then((registration) => {
+          registration.update();
+        });
+      }, 60 * 60 * 1000); // Check every hour
+
       navigator.serviceWorker.ready.then((registration) => {
+        // Check if there's already a waiting worker on load
+        if (registration.waiting) {
+            setState(prev => ({ ...prev, needsUpdate: true }));
+        }
+
         registration.addEventListener('updatefound', () => {
           const newWorker = registration.installing;
           if (newWorker) {
@@ -78,6 +90,19 @@ export function usePWA() {
           }
         });
       });
+
+      // Handle controller change (reload when new SW takes over)
+      const handleControllerChange = () => {
+        // window.location.reload(); // Removed to prevent infinite loop in Chrome
+        console.log('Controller changed, new SW active');
+      };
+      
+      navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
+
+      return () => {
+        clearInterval(updateInterval);
+        navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
+      };
     }
   }, []);
 
@@ -100,16 +125,16 @@ export function usePWA() {
     }
   }, [deferredPrompt]);
 
+
   const updateApp = useCallback(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.ready.then((registration) => {
         if (registration.waiting) {
+          // Send skip waiting message
           registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-          
-          // Wait for the new service worker to take control
-          navigator.serviceWorker.addEventListener('controllerchange', () => {
-            window.location.reload();
-          });
+        } else {
+             // Fallback: simple reload if we think we need an update but no waiting worker
+             window.location.reload();
         }
       });
     }

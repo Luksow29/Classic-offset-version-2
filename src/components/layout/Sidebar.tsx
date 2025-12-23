@@ -143,20 +143,9 @@ const Sidebar: React.FC<SidebarProps> = ({
       name: 'Communication',
       icon: <MessageCircle size={20} />,
       items: [
-        { name: 'WhatsApp', path: '/whatsapp', icon: <MessageCircle size={18} /> },
-        { name: 'Team Chat', path: '/team-chat', icon: <MessageSquare size={18} /> },
-        { name: 'Customer Support', path: '/customer-support', icon: <MessageCircle size={18} /> },
-        { name: 'Order Chat Admin', path: '/order-chat-admin', icon: <Package size={18} /> },
+        { name: 'Communication Hub', path: '/communication', icon: <MessageCircle size={18} /> },
       ],
     },
-    {
-      name: 'AI Assistant',
-      icon: <Brain size={20} />,
-      items: [
-        { name: 'Classic Assistant', path: '/classic-assistant', icon: <Brain size={18} /> },
-        { name: 'Local AI Agent', path: '/local-agent', icon: <Sparkles size={18} /> },
-      ],
-    }, // Added Classic Assistant with Gemini & Perplexity integration
   ];
 
   const toggleGroup = (groupName: string) => {
@@ -190,7 +179,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   // Modern sidebar implementation (single, glassmorphism, animated, responsive)
   return (
     <motion.aside
-      className={`h-full ${isCollapsed ? 'w-16' : 'w-64'} flex flex-col glass-panel border-r-0 transition-all duration-300 z-50`}
+      className={`h-full ${isCollapsed ? 'w-16' : 'w-64'} flex flex-col bg-card border-r border-border transition-all duration-300 z-50`}
       onMouseEnter={handleSidebarMouseEnter}
       onMouseLeave={handleSidebarMouseLeave}
       initial={{ x: -20, opacity: 0 }}
@@ -238,7 +227,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+      <nav className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar min-h-0">
         {navGroups.map((group, groupIndex) => {
           // Filter items based on user role
           const filteredItems = group.items.filter((item) => {

@@ -5,9 +5,12 @@ import Input from '../ui/Input';
 import Select from '../ui/Select';
 import Button from '../ui/Button';
 import {
-    History, Calendar, Filter, Download, RefreshCw,
-    TrendingDown, TrendingUp, RotateCcw, Loader2, AlertTriangle, Search, Activity, DollarSign
+    TrendingDown, TrendingUp, RotateCcw, Loader2, AlertTriangle, Search, Activity, DollarSign,
+    List, LayoutGrid, History, Calendar, Filter, Download, RefreshCw
 } from 'lucide-react';
+import { useResponsiveViewMode } from '../../hooks/useResponsiveViewMode';
+import MaterialHistoryGridCard from './MaterialHistoryGridCard';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface MaterialTransaction {
     id: string;
@@ -44,6 +47,9 @@ const MaterialHistory: React.FC = () => {
         endDate: '',
         search: ''
     });
+    const { viewMode, setViewMode } = useResponsiveViewMode();
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     const fetchTransactionHistory = async () => {
         setLoading(true);
@@ -124,6 +130,22 @@ const MaterialHistory: React.FC = () => {
         });
     }, [transactions, filters]);
 
+    // Pagination
+    const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+    const paginatedTransactions = filteredTransactions.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+    };
+
+    // Reset page on filter change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filters]);
+
     // Calculate summary
     const summary = useMemo(() => {
         const totalTransactions = filteredTransactions.length;
@@ -202,6 +224,28 @@ const MaterialHistory: React.FC = () => {
                         <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Material Transaction History</h3>
                     </div>
                     <div className="flex items-center gap-2">
+                        <div className="flex items-center bg-muted p-1 rounded-lg border border-border/50 mr-2">
+                            <button
+                                onClick={() => setViewMode('list')}
+                                className={`p-1.5 rounded-md transition-all ${viewMode === 'list'
+                                    ? 'bg-background text-primary shadow-sm'
+                                    : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                                title="List View"
+                            >
+                                <List size={16} />
+                            </button>
+                            <button
+                                onClick={() => setViewMode('grid')}
+                                className={`p-1.5 rounded-md transition-all ${viewMode === 'grid'
+                                    ? 'bg-background text-primary shadow-sm'
+                                    : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                                title="Grid View"
+                            >
+                                <LayoutGrid size={16} />
+                            </button>
+                        </div>
                         <Button onClick={fetchTransactionHistory} variant="outline" size="sm">
                             <RefreshCw className="w-4 h-4 mr-1" /> Refresh
                         </Button>
@@ -308,62 +352,120 @@ const MaterialHistory: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Transaction Table */}
-                <div className="overflow-x-auto rounded-md border border-gray-100 dark:border-gray-700">
-                    <table className="min-w-full text-sm">
-                        <thead className="bg-gray-50 dark:bg-gray-700/50">
-                            <tr>
-                                <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Date</th>
-                                <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Material</th>
-                                <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Type</th>
-                                <th className="px-4 py-3 text-right font-medium text-gray-500 dark:text-gray-400">Quantity</th>
-                                <th className="px-4 py-3 text-right font-medium text-gray-500 dark:text-gray-400">Total Cost</th>
-                                <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Ref / Notes</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                            {filteredTransactions.length > 0 ? filteredTransactions.map((t) => (
-                                <tr key={t.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                                    <td className="px-4 py-3">
-                                        <div className="font-medium text-gray-900 dark:text-white">{new Date(t.transaction_date).toLocaleDateString()}</div>
-                                        <div className="text-xs text-gray-500">{new Date(t.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <div className="font-medium text-gray-900 dark:text-white">{t.material_name}</div>
-                                        <div className="text-xs text-gray-500">{t.category_name}</div>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getTransactionColor(t.transaction_type)}`}>
-                                            {getTransactionIcon(t.transaction_type)}
-                                            {t.transaction_type}
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-3 text-right">
-                                        <span className={`font-medium ${t.transaction_type === 'OUT' ? 'text-red-600' : 'text-green-600'}`}>
-                                            {t.transaction_type === 'OUT' ? '-' : '+'}{t.quantity} {t.unit_of_measurement}
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-3 text-right">
-                                        {t.total_cost ? `₹${t.total_cost.toLocaleString('en-IN')}` : '-'}
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <div className="text-sm text-gray-900 dark:text-white max-w-[200px] truncate">{t.reference_number || '-'}</div>
-                                        {t.notes && <div className="text-xs text-gray-500 max-w-[200px] truncate">{t.notes}</div>}
-                                    </td>
-                                </tr>
-                            )) : (
-                                <tr>
-                                    <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                {/* Transaction Table / Grid */}
+                <div>
+                    <AnimatePresence mode="wait">
+                        {viewMode === 'list' ? (
+                            <motion.div
+                                key="list"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="overflow-x-auto rounded-md border border-gray-100 dark:border-gray-700"
+                            >
+                                <table className="min-w-full text-sm">
+                                    <thead className="bg-gray-50 dark:bg-gray-700/50">
+                                        <tr>
+                                            <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Date</th>
+                                            <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Material</th>
+                                            <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Type</th>
+                                            <th className="px-4 py-3 text-right font-medium text-gray-500 dark:text-gray-400">Quantity</th>
+                                            <th className="px-4 py-3 text-right font-medium text-gray-500 dark:text-gray-400">Total Cost</th>
+                                            <th className="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-400">Ref / Notes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                                        {paginatedTransactions.length > 0 ? paginatedTransactions.map((t) => (
+                                            <tr key={t.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                                <td className="px-4 py-3">
+                                                    <div className="font-medium text-gray-900 dark:text-white">{new Date(t.transaction_date).toLocaleDateString()}</div>
+                                                    <div className="text-xs text-gray-500">{new Date(t.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="font-medium text-gray-900 dark:text-white">{t.material_name}</div>
+                                                    <div className="text-xs text-gray-500">{t.category_name}</div>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getTransactionColor(t.transaction_type)}`}>
+                                                        {getTransactionIcon(t.transaction_type)}
+                                                        {t.transaction_type}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-right">
+                                                    <span className={`font-medium ${t.transaction_type === 'OUT' ? 'text-red-600' : 'text-green-600'}`}>
+                                                        {t.transaction_type === 'OUT' ? '-' : '+'}{t.quantity} {t.unit_of_measurement}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-right">
+                                                    {t.total_cost ? `₹${t.total_cost.toLocaleString('en-IN')}` : '-'}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="text-sm text-gray-900 dark:text-white max-w-[200px] truncate">{t.reference_number || '-'}</div>
+                                                    {t.notes && <div className="text-xs text-gray-500 max-w-[200px] truncate">{t.notes}</div>}
+                                                </td>
+                                            </tr>
+                                        )) : (
+                                            <tr>
+                                                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                                                    <div className="flex flex-col items-center">
+                                                        <AlertTriangle className="w-8 h-8 opacity-50 mb-2" />
+                                                        <p>No transactions found matching your filters.</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="grid"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+                            >
+                                {paginatedTransactions.length > 0 ? paginatedTransactions.map((t) => (
+                                    <MaterialHistoryGridCard key={t.id} transaction={t} />
+                                )) : (
+                                    <div className="col-span-full py-8 text-center text-gray-500 bg-gray-50 dark:bg-gray-800/10 rounded-lg border border-dashed">
                                         <div className="flex flex-col items-center">
                                             <AlertTriangle className="w-8 h-8 opacity-50 mb-2" />
                                             <p>No transactions found matching your filters.</p>
                                         </div>
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+                                    </div>
+                                )}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700 mt-4">
+                        <div className="text-sm text-gray-500">
+                            Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredTransactions.length)} of {filteredTransactions.length} entries
+                        </div>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                                disabled={currentPage === 1}
+                            >
+                                Previous
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                                disabled={currentPage === totalPages}
+                            >
+                                Next
+                            </Button>
+                        </div>
+                    </div>
+                )}
             </div>
         </Card>
     );

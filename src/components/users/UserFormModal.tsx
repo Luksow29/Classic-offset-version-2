@@ -6,7 +6,7 @@ import Select from '../ui/Select';
 import Button from '../ui/Button';
 import { supabase } from '@/lib/supabaseClient';
 import { Loader2, AlertCircle } from 'lucide-react';
-import { User } from './UserManagement';
+import { User } from './types';
 import { normalizeStaffRole, STAFF_ROLE_LABEL, type StaffRole } from '@/lib/rbac';
 
 interface UserFormModalProps {
@@ -83,7 +83,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
 
         if (authError) throw authError;
         if (!authData.user) throw new Error("Could not create authentication user.");
-        
+
         console.log('Auth user created:', authData.user);
 
         // 2. Auth-லிருந்து பெற்ற அதே ID-ஐப் பயன்படுத்தி public.users-இல் சுயவிவரத்தை உருவாக்கவும்
@@ -130,10 +130,10 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
         )}
         <Input id="name" label="Full Name" value={name} onChange={(e) => setName(e.target.value)} required />
         <Input id="email" label="Email Address" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={!!editingUser} />
-        
+
         {/* புதிய பயனரைச் சேர்க்கும்போது மட்டும் கடவுச்சொல் புலத்தைக் காட்டவும் */}
         {!editingUser && (
-            <Input id="password" label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter a strong password" required />
+          <Input id="password" label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter a strong password" required />
         )}
 
         <Select

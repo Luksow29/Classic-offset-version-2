@@ -97,12 +97,11 @@ const UserProfileSettings: React.FC = () => {
   }
 
   return (
-    <Card>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold">User Profile</h2>
+    <Card className="p-6">
+      <div className="flex justify-end mb-6">
         {!editing && (
           <Button type="button" onClick={handleEdit} variant="outline">
-            Edit
+            Edit Profile
           </Button>
         )}
       </div>

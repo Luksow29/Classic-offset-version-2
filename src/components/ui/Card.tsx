@@ -37,7 +37,7 @@ const Card = forwardRef<HTMLDivElement, CardProps>(({
     }
   } : {};
 
-  const baseStyles = 'rounded-xl overflow-hidden transition-all duration-300';
+  const baseStyles = 'rounded-xl overflow-hidden transition-all duration-300 will-change-transform';
 
   const variantStyles = {
     default: 'bg-card text-card-foreground border border-border shadow-sm hover:shadow-md',

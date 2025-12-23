@@ -15,10 +15,10 @@ const BrandingCopy: React.FC = () => {
         const { data, error: fetchError } = await supabase
           .from('site_content')
           .select('content')
-          .eq('section_name', 'BrandingCopyMain') // 'BrandingCopyMain' என்ற section_name ஐப் பெறவும்
-          .single(); // ஒரே ஒரு பதிவுக்காக
+          .eq('section_name', 'BrandingCopyMain')
+          .maybeSingle();
 
-        if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 means "no rows found"
+        if (fetchError) {
           throw fetchError;
         }
 

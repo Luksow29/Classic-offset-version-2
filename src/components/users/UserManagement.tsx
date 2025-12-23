@@ -7,15 +7,7 @@ import Card from '../ui/Card';
 import Button from '../ui/Button';
 import { UserPlus } from 'lucide-react';
 
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  created_at: string;
-  user_status?: { status: 'active' | 'inactive' | 'suspended'; } | null;
-  [key: string]: any;
-}
+import { User } from './types';
 
 const UserManagement: React.FC = () => {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -43,7 +35,7 @@ const UserManagement: React.FC = () => {
   return (
     <div className="p-4 sm:p-6 space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">👥 User Management</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">User Management</h1>
         {currentUserRole === 'owner' && (
           <Button onClick={handleOpenAddModal} variant="primary" className="flex items-center w-full sm:w-auto">
             <UserPlus className="w-5 h-5 mr-2" />

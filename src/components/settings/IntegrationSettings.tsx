@@ -28,19 +28,19 @@ const IntegrationSettings: React.FC = () => {
   useEffect(() => {
     const fetchIntegrations = async () => {
       if (!user) return;
-      
+
       setLoading(true);
       try {
         const { data, error } = await supabase
           .from('user_integrations')
           .select('*')
           .eq('user_id', user.id);
-          
+
         if (error) throw error;
-        
+
         // Map database data to our integration format
         const dbIntegrations = data || [];
-        
+
         // Merge with our predefined integrations
         const mergedIntegrations = [
           {
@@ -103,7 +103,7 @@ const IntegrationSettings: React.FC = () => {
           }
           return integration;
         });
-        
+
         setIntegrations(mergedIntegrations);
       } catch (error) {
         console.error('Error fetching integrations:', error);
@@ -112,7 +112,7 @@ const IntegrationSettings: React.FC = () => {
         setLoading(false);
       }
     };
-    
+
     fetchIntegrations();
   }, [user]);
 
@@ -121,15 +121,15 @@ const IntegrationSettings: React.FC = () => {
       toast.error('You must be logged in to manage integrations');
       return;
     }
-    
+
     setLoadingIntegration(id);
-    
+
     try {
       const integration = integrations.find(i => i.id === id);
       if (!integration) throw new Error('Integration not found');
-      
+
       const newConnectionState = !integration.connected;
-      
+
       // Update in Supabase
       const { error } = await supabase
         .from('user_integrations')
@@ -142,22 +142,22 @@ const IntegrationSettings: React.FC = () => {
         }, {
           onConflict: 'user_id,integration_id'
         });
-        
+
       if (error) throw error;
-      
+
       // Update local state
-      setIntegrations(prev => 
-        prev.map(integration => 
-          integration.id === id 
-            ? { 
-                ...integration, 
-                connected: newConnectionState,
-                status: newConnectionState ? 'active' : undefined
-              } 
+      setIntegrations(prev =>
+        prev.map(integration =>
+          integration.id === id
+            ? {
+              ...integration,
+              connected: newConnectionState,
+              status: newConnectionState ? 'active' : undefined
+            }
             : integration
         )
       );
-      
+
       toast.success(`${integration.name} ${integration.connected ? 'disconnected' : 'connected'} successfully`);
     } catch (error: any) {
       console.error('Error toggling integration:', error);
@@ -169,16 +169,11 @@ const IntegrationSettings: React.FC = () => {
 
   return (
     <Card className="p-6">
-      <div className="flex items-center gap-2 mb-6">
-        <Plug className="h-5 w-5 text-primary" />
-        <h2 className="text-xl font-semibold">Integrations</h2>
-      </div>
-      
       <div className="space-y-6">
         <p className="text-muted-foreground">
           Connect your Classic Offset account with these services to enhance your workflow.
         </p>
-        
+
         {loading ? (
           <div className="flex justify-center items-center h-40">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -203,11 +198,11 @@ const IntegrationSettings: React.FC = () => {
                         )}
                       </h3>
                       <p className="text-sm text-muted-foreground mt-1">{integration.description}</p>
-                      
+
                       {integration.connected && (
                         <div className="mt-2">
-                          <a 
-                            href="#" 
+                          <a
+                            href="#"
                             className="text-xs text-primary hover:underline inline-flex items-center"
                             onClick={(e) => e.preventDefault()}
                           >
@@ -238,7 +233,7 @@ const IntegrationSettings: React.FC = () => {
             ))}
           </div>
         )}
-        
+
         <div className="mt-4 p-4 bg-muted/50 rounded-lg">
           <h3 className="font-medium mb-2">Need more integrations?</h3>
           <p className="text-sm text-muted-foreground mb-4">

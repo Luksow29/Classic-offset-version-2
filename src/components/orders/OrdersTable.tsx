@@ -7,6 +7,7 @@ import {
   MoreHorizontal, Download, RefreshCw, ArrowUpDown, Calendar, Clock, ChevronsLeft,
   ChevronLeft, ChevronRight, ChevronsRight
 } from 'lucide-react';
+import { useResponsiveViewMode } from '../../hooks/useResponsiveViewMode';
 
 import Button from '../ui/Button';
 import OrderStatusStepper from './OrderStatusStepper';
@@ -52,7 +53,8 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders, isLoading, onRefresh,
   const navigate = useNavigate();
 
   // View Mode
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const { viewMode, setViewMode } = useResponsiveViewMode();
+
 
   // Modal states
   const [selectedOrder, setSelectedOrder] = useState<OrdersTableOrder | null>(null);
@@ -382,8 +384,8 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders, isLoading, onRefresh,
                     key={p}
                     onClick={() => goToPage(p)}
                     className={`w-10 h-10 rounded-xl text-sm font-semibold transition-all ${currentPage === p
-                        ? 'bg-primary text-white shadow-lg shadow-primary/30'
-                        : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50'
+                      ? 'bg-primary text-white shadow-lg shadow-primary/30'
+                      : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50'
                       }`}
                   >
                     {p}

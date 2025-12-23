@@ -3,6 +3,7 @@ import Card from '../ui/Card';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 import Select from '../ui/Select';
+import { useResponsiveViewMode } from '../../hooks/useResponsiveViewMode';
 import {
     Search,
     Plus,
@@ -35,7 +36,7 @@ const ComprehensiveProductView: React.FC<ComprehensiveProductViewProps> = ({
     onEdit,
     onDelete
 }) => {
-    const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+    const { viewMode, setViewMode } = useResponsiveViewMode();
     const [searchTerm, setSearchTerm] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
 

@@ -108,17 +108,7 @@ const TopHeader: React.FC<TopHeaderProps> = ({ onMenuClick }) => {
               </Link>
             </motion.div>
 
-            {/* WhatsApp Quick Send - Mobile icon only */}
-            <motion.button
-              onClick={() => setShowWhatsAppModal(true)}
-              className="flex items-center gap-1 md:gap-2 px-2 md:px-3 py-2 text-xs md:text-sm font-display font-semibold text-emerald-700 dark:text-emerald-300 bg-white/50 dark:bg-gray-800/50 hover:bg-white/70 dark:hover:bg-gray-800/70 rounded-xl transition-all duration-200 backdrop-blur-sm shadow-sm border border-white/20 dark:border-white/10"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              title="WhatsApp"
-            >
-              <MessageCircle size={14} />
-              <span className="tracking-wide hidden sm:inline">WhatsApp</span>
-            </motion.button>
+
 
             {/* Admin Content Management Shortcut - Hide on small screens */}
             {isAdminOrOwner && (

@@ -62,6 +62,7 @@ const CustomerSupportPage = lazy(() => import('./components/admin/CustomerSuppor
 const OrderChatAdminPage = lazy(() => import('./components/admin/OrderChatAdminPage'));
 const JobCreationWizard = lazy(() => import('./components/jobs/JobCreationWizard'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
+const CommunicationPage = lazy(() => import('./pages/CommunicationPage'));
 
 // Helper function to wrap routes with Suspense and ErrorBoundary
 const Suspended = (element: React.ReactNode) => (
@@ -102,28 +103,22 @@ const router = createBrowserRouter(
         />
         <Route path="/stock" element={Suspended(<StockPage />)} />
         <Route path="/showcase" element={Suspended(<ShowcasePage />)} />
-        <Route path="/whatsapp" element={Suspended(<WhatsAppDashboard />)} />
-        <Route path="/settings" element={Suspended(<SettingsPage />)} />
-        <Route path="/help" element={Suspended(<HelpPage />)} />
-        <Route path="/team-chat" element={Suspended(<TeamChatPage />)} />
-        <Route path="/classic-assistant" element={Suspended(<AIAgentPage />)} />
-        <Route path="/local-agent" element={Suspended(<LocalAgentPage />)} />
-        <Route
-          path="/admin/content"
-          element={Suspended(
-            <RequireRoles allowed={['owner', 'manager']}>
-              <AdminContentManagement />
-            </RequireRoles>
-          )}
-        />
-        <Route path="/insights" element={Suspended(<InsightsPage />)} />
-        <Route path="/reports" element={Suspended(<ReportsPage />)} />
-        <Route path="/business-insights" element={Suspended(<BusinessInsights />)} />
-        <Route path="/enhancements" element={Suspended(<WeeklyProgress />)} />
 
-        <Route path="/loyalty-program" element={Suspended(<LoyaltyProgram />)} />
-        <Route path="/customer-support" element={Suspended(<CustomerSupportPage />)} />
-        <Route path="/order-chat-admin" element={Suspended(<OrderChatAdminPage />)} />
+        // Unified Communication Hub
+
+        <Route path="/showcase" element={Suspended(<ShowcasePage />)} />
+        {/* Unified Communication Hub */}
+        <Route path="/communication" element={Suspended(<CommunicationPage />)} />
+
+        {/* Legacy redirects can be handled by the new page or simple redirects, 
+            but for now we route them to the hub with the correct tab if needed, 
+            or just replace them. For simplicity, we point them to the new page. */}
+        <Route path="/whatsapp" element={Suspended(<CommunicationPage />)} />
+        <Route path="/team-chat" element={Suspended(<CommunicationPage />)} />
+        <Route path="/customer-support" element={Suspended(<CommunicationPage />)} />
+        <Route path="/order-chat-admin" element={Suspended(<CommunicationPage />)} />
+
+        <Route path="/settings" element={Suspended(<SettingsPage />)} />
         {/* Job Creation Wizard */}
         <Route
           path="/jobs/new"

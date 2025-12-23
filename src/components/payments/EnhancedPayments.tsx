@@ -44,16 +44,21 @@ const EnhancedPayments: React.FC = () => {
 
       {/* Tab Navigation */}
       <div className="border-b border-border">
-        <nav className="flex space-x-6 overflow-x-auto">
+        <nav className="flex space-x-6 overflow-x-auto pb-1 -mb-px scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          <style>{`
+                .scrollbar-hide::-webkit-scrollbar {
+                    display: none;
+                }
+            `}</style>
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-1 py-4 text-sm font-medium transition-all border-b-2 whitespace-nowrap ${activeTab === tab.id
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300 dark:hover:border-gray-700'
+                className={`flex items-center gap-2 px-1 py-4 text-sm font-medium transition-all border-b-2 whitespace-nowrap flex-shrink-0 ${activeTab === tab.id
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300 dark:hover:border-gray-700'
                   }`}
               >
                 <Icon size={18} />

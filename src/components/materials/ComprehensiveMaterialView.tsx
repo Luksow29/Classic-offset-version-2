@@ -35,6 +35,10 @@ import {
     CartesianGrid,
     Legend
 } from 'recharts';
+import { useResponsiveViewMode } from '../../hooks/useResponsiveViewMode';
+import MaterialGridCard from './MaterialGridCard';
+import { motion, AnimatePresence } from 'framer-motion';
+import { List, LayoutGrid } from 'lucide-react';
 
 interface ComprehensiveMaterialViewProps {
     materials: Material[];
@@ -66,6 +70,7 @@ const ComprehensiveMaterialView: React.FC<ComprehensiveMaterialViewProps> = ({
     onTransaction,
     onDelete,
 }) => {
+    const { viewMode, setViewMode } = useResponsiveViewMode();
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
     const [predictions, setPredictions] = useState<Record<string, MaterialPrediction>>({});
@@ -464,6 +469,28 @@ const ComprehensiveMaterialView: React.FC<ComprehensiveMaterialViewProps> = ({
                     </div>
 
                     <div className="flex items-center gap-2">
+                        <div className="flex items-center bg-muted p-1 rounded-lg border border-border/50 mr-2">
+                            <button
+                                onClick={() => setViewMode('list')}
+                                className={`p-1.5 rounded-md transition-all ${viewMode === 'list'
+                                    ? 'bg-background text-primary shadow-sm'
+                                    : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                                title="List View"
+                            >
+                                <List size={16} />
+                            </button>
+                            <button
+                                onClick={() => setViewMode('grid')}
+                                className={`p-1.5 rounded-md transition-all ${viewMode === 'grid'
+                                    ? 'bg-background text-primary shadow-sm'
+                                    : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                                title="Grid View"
+                            >
+                                <LayoutGrid size={16} />
+                            </button>
+                        </div>
                         <Button variant="outline" size="sm" onClick={onRefresh}>
                             <RefreshCw className="w-4 h-4 mr-2" /> Refresh
                         </Button>
@@ -517,78 +544,119 @@ const ComprehensiveMaterialView: React.FC<ComprehensiveMaterialViewProps> = ({
                     </Button>
                 </div>
 
-                {/* 5. Inventory Table */}
-                <div className="overflow-hidden rounded-lg border border-gray-100 dark:border-gray-700">
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full text-sm">
-                            <thead className="bg-gray-50 dark:bg-gray-700/50">
-                                <tr>
-                                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">Material Name</th>
-                                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Category</th>
-                                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Supplier</th>
-                                    <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-300">Quantity</th>
-                                    <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-300">Value (₹)</th>
-                                    <th className="px-4 py-3 text-center font-medium text-gray-600 dark:text-gray-300">Status</th>
-                                    <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-300">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                {paginatedMaterials.length > 0 ? paginatedMaterials.map((material) => (
-                                    <tr key={material.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                                        <td className="px-4 py-3 max-w-[200px]">
-                                            <div className="font-medium text-gray-900 dark:text-white truncate" title={material.material_name}>
-                                                {material.material_name}
-                                            </div>
-                                            {material.description && <div className="text-xs text-gray-500 truncate" title={material.description}>{material.description}</div>}
-                                        </td>
-                                        <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{material.category_name || '-'}</td>
-                                        <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{material.supplier_name || '-'}</td>
-                                        <td className="px-4 py-3 text-right">
-                                            <div className="font-medium text-gray-900 dark:text-white">{material.current_quantity} <span className="text-gray-500 text-xs">{material.unit_of_measurement}</span></div>
-                                            <div className="text-xs text-gray-500">Min: {material.minimum_stock_level}</div>
-                                        </td>
-                                        <td className="px-4 py-3 text-right font-medium text-gray-900 dark:text-white whitespace-nowrap">
-                                            ₹ {material.total_value.toLocaleString('en-IN')}
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
+                {/* 5. Inventory Table / Grid */}
+                <div className="min-h-[400px]">
+                    <AnimatePresence mode="wait">
+                        {viewMode === 'list' ? (
+                            <motion.div
+                                key="list"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="overflow-hidden rounded-lg border border-gray-100 dark:border-gray-700"
+                            >
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-full text-sm">
+                                        <thead className="bg-gray-50 dark:bg-gray-700/50">
+                                            <tr>
+                                                <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">Material Name</th>
+                                                <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Category</th>
+                                                <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Supplier</th>
+                                                <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-300">Quantity</th>
+                                                <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-300">Value (₹)</th>
+                                                <th className="px-4 py-3 text-center font-medium text-gray-600 dark:text-gray-300">Status</th>
+                                                <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-300">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                                            {paginatedMaterials.length > 0 ? paginatedMaterials.map((material) => (
+                                                <tr key={material.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                                    <td className="px-4 py-3 max-w-[200px]">
+                                                        <div className="font-medium text-gray-900 dark:text-white truncate" title={material.material_name}>
+                                                            {material.material_name}
+                                                        </div>
+                                                        {material.description && <div className="text-xs text-gray-500 truncate" title={material.description}>{material.description}</div>}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{material.category_name || '-'}</td>
+                                                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{material.supplier_name || '-'}</td>
+                                                    <td className="px-4 py-3 text-right">
+                                                        <div className="font-medium text-gray-900 dark:text-white">{material.current_quantity} <span className="text-gray-500 text-xs">{material.unit_of_measurement}</span></div>
+                                                        <div className="text-xs text-gray-500">Min: {material.minimum_stock_level}</div>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right font-medium text-gray-900 dark:text-white whitespace-nowrap">
+                                                        ₹ {material.total_value.toLocaleString('en-IN')}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center">
+                                                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
                                                 ${material.stock_status === 'IN_STOCK' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
-                                                    material.stock_status === 'LOW_STOCK' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                                                        'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                                                }`}>
-                                                {material.stock_status.replace(/_/g, ' ')}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 text-right whitespace-nowrap">
-                                            <div className="flex items-center justify-end gap-1">
-                                                <Button variant="ghost" size="sm" onClick={() => onView(material)} className="h-8 w-8 p-0 hover:text-blue-600 hover:bg-blue-50" title="View Details">
-                                                    <Search className="w-4 h-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="sm" onClick={() => onEdit(material)} className="h-8 w-8 p-0 hover:text-indigo-600 hover:bg-indigo-50" title="Edit Material">
-                                                    <Edit className="w-4 h-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="sm" onClick={() => onTransaction(material)} className="h-8 w-8 p-0 hover:text-green-600 hover:bg-green-50" title="Record Transaction">
-                                                    <DollarSign className="w-4 h-4" />
-                                                </Button>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                                                material.stock_status === 'LOW_STOCK' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                                                                    'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                                                            }`}>
+                                                            {material.stock_status.replace(/_/g, ' ')}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                                                        <div className="flex items-center justify-end gap-1">
+                                                            <Button variant="ghost" size="sm" onClick={() => onView(material)} className="h-8 w-8 p-0 hover:text-blue-600 hover:bg-blue-50" title="View Details">
+                                                                <Search className="w-4 h-4" />
+                                                            </Button>
+                                                            <Button variant="ghost" size="sm" onClick={() => onEdit(material)} className="h-8 w-8 p-0 hover:text-indigo-600 hover:bg-indigo-50" title="Edit Material">
+                                                                <Edit className="w-4 h-4" />
+                                                            </Button>
+                                                            <Button variant="ghost" size="sm" onClick={() => onTransaction(material)} className="h-8 w-8 p-0 hover:text-green-600 hover:bg-green-50" title="Record Transaction">
+                                                                <DollarSign className="w-4 h-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )) : (
+                                                <tr>
+                                                    <td colSpan={7} className="px-4 py-12 text-center text-gray-500">
+                                                        <div className="flex flex-col items-center justify-center">
+                                                            <Package className="w-12 h-12 text-gray-300 mb-3" />
+                                                            <p>No materials found matching your filters.</p>
+                                                            <Button variant="ghost" size="sm" onClick={clearFilters} className="mt-2 text-primary">
+                                                                Clear all filters
+                                                            </Button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="grid"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+                            >
+                                {paginatedMaterials.length > 0 ? paginatedMaterials.map(material => (
+                                    <MaterialGridCard
+                                        key={material.id}
+                                        material={material}
+                                        onView={onView}
+                                        onEdit={onEdit}
+                                        onTransaction={onTransaction}
+                                        onDelete={onDelete}
+                                    />
                                 )) : (
-                                    <tr>
-                                        <td colSpan={7} className="px-4 py-12 text-center text-gray-500">
-                                            <div className="flex flex-col items-center justify-center">
-                                                <Package className="w-12 h-12 text-gray-300 mb-3" />
-                                                <p>No materials found matching your filters.</p>
-                                                <Button variant="ghost" size="sm" onClick={clearFilters} className="mt-2 text-primary">
-                                                    Clear all filters
-                                                </Button>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                    <div className="col-span-full py-12 text-center text-gray-500 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-dashed border-gray-200 dark:border-gray-700">
+                                        <div className="flex flex-col items-center justify-center">
+                                            <Package className="w-12 h-12 text-gray-300 mb-3" />
+                                            <p>No materials found matching your filters.</p>
+                                            <Button variant="ghost" size="sm" onClick={clearFilters} className="mt-2 text-primary">
+                                                Clear all filters
+                                            </Button>
+                                        </div>
+                                    </div>
                                 )}
-                            </tbody>
-                        </table>
-                    </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
 
                 {/* 6. Pagination Controls */}

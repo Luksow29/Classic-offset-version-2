@@ -8,12 +8,15 @@ import Modal from '../ui/Modal';
 import {
   Search, Filter, Download, Printer, Eye, Edit, AlertTriangle,
   TrendingUp, TrendingDown, Package, BarChart3, Calendar,
-  MapPin, Hash, Loader2, RefreshCw, ShoppingCart, DollarSign
+  MapPin, Hash, Loader2, RefreshCw, ShoppingCart, DollarSign, List, LayoutGrid
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
 } from 'recharts';
+import { useResponsiveViewMode } from '../../hooks/useResponsiveViewMode';
+import StockGridCard from './StockGridCard';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface StockItem {
   id: string;
@@ -57,6 +60,13 @@ const ComprehensiveStockView: React.FC = () => {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [updateQuantity, setUpdateQuantity] = useState('');
   const [updateType, setUpdateType] = useState<'add' | 'subtract' | 'set'>('add');
+
+  // View Mode
+  const { viewMode, setViewMode } = useResponsiveViewMode();
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = viewMode === 'grid' ? 12 : 10;
 
   // Fetch unified stock data from both sources
   const fetchStockData = async () => {
@@ -179,6 +189,17 @@ const ComprehensiveStockView: React.FC = () => {
 
     return filtered;
   }, [stockItems, searchTerm, categoryFilter, statusFilter, locationFilter, sourceFilter, sortField, sortOrder]);
+
+  // Pagination Logic
+  const paginatedItems = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredAndSortedItems.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredAndSortedItems, currentPage, itemsPerPage]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, categoryFilter, statusFilter, locationFilter, sourceFilter]);
 
   // Calculate summary statistics
   const summary: StockSummary = useMemo(() => {
@@ -357,7 +378,7 @@ const ComprehensiveStockView: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Metrics Row */}
+      {/* Metrics Row - EXISTING CODE PRESERVED */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-4 border-l-4 border-l-blue-500 bg-gradient-to-br from-card to-blue-500/5">
           <div className="flex items-center justify-between">
@@ -408,7 +429,7 @@ const ComprehensiveStockView: React.FC = () => {
         </Card>
       </div>
 
-      {/* Charts Row */}
+      {/* Charts Row - EXISTING CODE PRESERVED */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="p-6 col-span-1 h-[300px]">
           <h3 className="text-sm font-semibold mb-4 text-muted-foreground uppercase tracking-wider">Stock Status</h3>
@@ -459,7 +480,7 @@ const ComprehensiveStockView: React.FC = () => {
       </div>
 
 
-      {/* Main Stock Table */}
+      {/* Main Stock Table/Grid */}
       <Card>
         <div className="p-4 border-b dark:border-gray-700">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
@@ -481,8 +502,8 @@ const ComprehensiveStockView: React.FC = () => {
           </div>
 
           {/* Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-            <div className="relative">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3 items-center">
+            <div className="lg:col-span-3 relative">
               <Search className="w-4 h-4 text-gray-400 absolute top-1/2 left-3 -translate-y-1/2" />
               <Input
                 id="search-stock"
@@ -493,176 +514,285 @@ const ComprehensiveStockView: React.FC = () => {
               />
             </div>
 
-            {/* Reduced height selects or simpler layout could improve density */}
-            <Select
-              id="source-filter"
-              label=""
-              options={[
-                { value: 'existing_stock', label: 'Existing Stock' },
-                { value: 'materials', label: 'Materials' }
-              ]}
-              value={sourceFilter}
-              onChange={(e) => setSourceFilter(e.target.value)}
-              placeholder="All Sources"
-            />
+            <div className="lg:col-span-2">
+              <Select
+                id="source-filter"
+                label=""
+                options={[
+                  { value: 'existing_stock', label: 'Existing Stock' },
+                  { value: 'materials', label: 'Materials' }
+                ]}
+                value={sourceFilter}
+                onChange={(e) => setSourceFilter(e.target.value)}
+                placeholder="All Sources"
+                className="h-9"
+              />
+            </div>
 
-            <Select
-              id="category-filter"
-              label=""
-              options={filterOptions.categories}
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              placeholder="All Categories"
-            />
+            <div className="lg:col-span-2">
+              <Select
+                id="category-filter"
+                label=""
+                options={filterOptions.categories}
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                placeholder="All Categories"
+                className="h-9"
+              />
+            </div>
 
-            <Select
-              id="status-filter"
-              label=""
-              options={[
-                { value: 'in_stock', label: 'In Stock' },
-                { value: 'low_stock', label: 'Low Stock' },
-                { value: 'out_of_stock', label: 'Out of Stock' }
-              ]}
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              placeholder="All Status"
-            />
+            <div className="lg:col-span-2">
+              <Select
+                id="status-filter"
+                label=""
+                options={[
+                  { value: 'in_stock', label: 'In Stock' },
+                  { value: 'low_stock', label: 'Low Stock' },
+                  { value: 'out_of_stock', label: 'Out of Stock' }
+                ]}
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                placeholder="All Status"
+                className="h-9"
+              />
+            </div>
 
-            <Select
-              id="location-filter"
-              label=""
-              options={filterOptions.locations}
-              value={locationFilter}
-              onChange={(e) => setLocationFilter(e.target.value)}
-              placeholder="All Locations"
-            />
+            <div className="lg:col-span-2">
+              <Select
+                id="location-filter"
+                label=""
+                options={filterOptions.locations}
+                value={locationFilter}
+                onChange={(e) => setLocationFilter(e.target.value)}
+                placeholder="All Locations"
+                className="h-9"
+              />
+            </div>
 
-            <Button
-              variant="outline"
-              onClick={() => {
-                setSearchTerm('');
-                setCategoryFilter('');
-                setStatusFilter('');
-                setLocationFilter('');
-                setSourceFilter('');
-              }}
-            >
-              Clear Filters
-            </Button>
+            <div className="lg:col-span-1 flex justify-end gap-2">
+              <div className="flex items-center bg-muted p-1 rounded-lg border border-border/50">
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-1.5 rounded-md transition-all ${viewMode === 'list'
+                    ? 'bg-background text-primary shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  title="List View"
+                >
+                  <List size={16} />
+                </button>
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-1.5 rounded-md transition-all ${viewMode === 'grid'
+                    ? 'bg-background text-primary shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  title="Grid View"
+                >
+                  <LayoutGrid size={16} />
+                </button>
+              </div>
+
+              {(searchTerm || categoryFilter || statusFilter || locationFilter || sourceFilter) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setCategoryFilter('');
+                    setStatusFilter('');
+                    setLocationFilter('');
+                    setSourceFilter('');
+                  }}
+                  className="h-9 w-9 p-0"
+                  title="Clear Filters"
+                >
+                  <RefreshCw className="w-4 h-4 rotate-45" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Stock Items Table */}
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-muted/50">
-              <tr>
-                <th
-                  className="px-4 py-3 text-left font-medium cursor-pointer hover:text-primary transition-colors"
-                  onClick={() => {
-                    setSortField('item_name');
-                    setSortOrder(sortField === 'item_name' && sortOrder === 'asc' ? 'desc' : 'asc');
-                  }}
-                >
-                  Item Name
-                </th>
-                <th className="px-4 py-3 text-left font-medium">Source</th>
-                <th className="px-4 py-3 text-left font-medium">Category</th>
-                <th
-                  className="px-4 py-3 text-right font-medium cursor-pointer hover:text-primary transition-colors"
-                  onClick={() => {
-                    setSortField('balance');
-                    setSortOrder(sortField === 'balance' && sortOrder === 'desc' ? 'asc' : 'desc');
-                  }}
-                >
-                  Current Stock
-                </th>
-                <th className="px-4 py-3 text-center font-medium">Level</th>
-                <th className="px-4 py-3 text-center font-medium">Status</th>
-                <th className="px-4 py-3 text-right font-medium">Value</th>
-                <th className="px-4 py-3 text-left font-medium">Last Updated</th>
-                <th className="px-4 py-3 text-center font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/50">
-              {filteredAndSortedItems.map((item) => {
-                const status = getStockStatusStyling(item.stock_status);
-                const percentage = getStockPercentage(item);
-
-                return (
-                  <tr key={item.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-3">
-                      <div>
-                        <div className="font-medium text-foreground">{item.item_name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {item.unit_of_measurement}
-                          {item.supplier_name && ` • ${item.supplier_name}`}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider ${item.source === 'existing_stock'
-                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
-                          : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300'
-                        }`}>
-                        {item.source === 'existing_stock' ? 'Existing' : 'Materials'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">{item.category}</td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="font-medium text-foreground">{item.balance}</div>
-                      {item.minimum_threshold > 0 && (
-                        <div className="text-xs text-muted-foreground">Min: {item.minimum_threshold}</div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="w-full bg-secondary rounded-full h-1.5 overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${percentage > 50 ? 'bg-green-500' :
-                              percentage > 20 ? 'bg-yellow-500' : 'bg-red-500'
-                            }`}
-                          style={{ width: `${Math.max(percentage, 5)}%` }}
-                        ></div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`px-2 py-1 rounded-md text-xs font-medium border ${status.bgColor.replace('bg-', 'border-').replace('/30', '/50')} ${status.color} bg-opacity-20`}>
-                        {item.stock_status.replace('_', ' ')}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right font-mono text-xs">
-                      ₹{item.total_value.toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {new Date(item.last_updated).toLocaleDateString()}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <Button
-                        variant="ghost"
-                        size="sm"
+        {/* Content */}
+        <div className="min-h-[400px]">
+          <AnimatePresence mode="wait">
+            {viewMode === 'list' ? (
+              <motion.div
+                key="list"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="overflow-x-auto"
+              >
+                <table className="min-w-full text-sm">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th
+                        className="px-4 py-3 text-left font-medium cursor-pointer hover:text-primary transition-colors"
                         onClick={() => {
-                          setSelectedItem(item);
-                          setShowUpdateModal(true);
+                          setSortField('item_name');
+                          setSortOrder(sortField === 'item_name' && sortOrder === 'asc' ? 'desc' : 'asc');
                         }}
-                        title="Update Quantity"
-                        className="h-8 w-8 p-0"
                       >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                        Item Name
+                      </th>
+                      <th className="px-4 py-3 text-left font-medium">Source</th>
+                      <th className="px-4 py-3 text-left font-medium">Category</th>
+                      <th
+                        className="px-4 py-3 text-right font-medium cursor-pointer hover:text-primary transition-colors"
+                        onClick={() => {
+                          setSortField('balance');
+                          setSortOrder(sortField === 'balance' && sortOrder === 'desc' ? 'asc' : 'desc');
+                        }}
+                      >
+                        Current Stock
+                      </th>
+                      <th className="px-4 py-3 text-center font-medium">Level</th>
+                      <th className="px-4 py-3 text-center font-medium">Status</th>
+                      <th className="px-4 py-3 text-right font-medium">Value</th>
+                      <th className="px-4 py-3 text-left font-medium">Last Updated</th>
+                      <th className="px-4 py-3 text-center font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/50">
+                    {paginatedItems.map((item) => {
+                      const status = getStockStatusStyling(item.stock_status);
+                      const percentage = getStockPercentage(item);
 
-          {filteredAndSortedItems.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground">
+                      return (
+                        <tr key={item.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-4 py-3">
+                            <div>
+                              <div className="font-medium text-foreground">{item.item_name}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {item.unit_of_measurement}
+                                {item.supplier_name && ` • ${item.supplier_name}`}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider ${item.source === 'existing_stock'
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+                              : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300'
+                              }`}>
+                              {item.source === 'existing_stock' ? 'Existing' : 'Materials'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground">{item.category}</td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="font-medium text-foreground">{item.balance}</div>
+                            {item.minimum_threshold > 0 && (
+                              <div className="text-xs text-muted-foreground">Min: {item.minimum_threshold}</div>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="w-full bg-secondary rounded-full h-1.5 overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${percentage > 50 ? 'bg-green-500' :
+                                  percentage > 20 ? 'bg-yellow-500' : 'bg-red-500'
+                                  }`}
+                                style={{ width: `${Math.max(percentage, 5)}%` }}
+                              ></div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className={`px-2 py-1 rounded-md text-xs font-medium border ${status.bgColor.replace('bg-', 'border-').replace('/30', '/50')} ${status.color} bg-opacity-20`}>
+                              {item.stock_status.replace('_', ' ')}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono text-xs">
+                            ₹{item.total_value.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-muted-foreground">
+                            {new Date(item.last_updated).toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedItem(item);
+                                setShowUpdateModal(true);
+                              }}
+                              title="Update Quantity"
+                              className="h-8 w-8 p-0"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="grid"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4"
+              >
+                {paginatedItems.map((item) => (
+                  <StockGridCard
+                    key={item.id}
+                    item={item}
+                    onUpdate={(item) => {
+                      setSelectedItem(item);
+                      setShowUpdateModal(true);
+                    }}
+                  />
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {paginatedItems.length === 0 && (
+            <div className="text-center py-16 text-muted-foreground">
               <Package className="w-12 h-12 mx-auto mb-4 opacity-20" />
               <p>No stock items found.</p>
             </div>
           )}
         </div>
+
+        {/* Pagination Controls */}
+        {filteredAndSortedItems.length > 0 && (
+          <div className="px-4 py-4 border-t border-border/50 bg-muted/10 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="text-sm text-muted-foreground">
+              Showing <span className="font-medium text-foreground">{((currentPage - 1) * itemsPerPage) + 1}</span> to <span className="font-medium text-foreground">{Math.min(currentPage * itemsPerPage, filteredAndSortedItems.length)}</span> of <span className="font-medium text-foreground">{filteredAndSortedItems.length}</span> results
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="h-8"
+              >
+                Previous
+              </Button>
+
+              <div className="flex items-center gap-1">
+                <span className="text-sm py-1 px-3 bg-background border border-border rounded-md font-medium text-foreground">
+                  Page {currentPage} of {Math.ceil(filteredAndSortedItems.length / itemsPerPage)}
+                </span>
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredAndSortedItems.length / itemsPerPage)))}
+                disabled={currentPage >= Math.ceil(filteredAndSortedItems.length / itemsPerPage)}
+                className="h-8"
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* Update Quantity Modal */}

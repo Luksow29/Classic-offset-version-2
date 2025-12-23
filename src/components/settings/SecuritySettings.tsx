@@ -25,7 +25,7 @@ const SecuritySettings: React.FC = () => {
     { id: 1, device: 'Chrome on Windows', location: 'Chennai, India', lastActive: '2 hours ago', current: true },
     { id: 2, device: 'Safari on iPhone', location: 'Chennai, India', lastActive: '2 days ago', current: false },
   ]);
-  
+
   // Sync with Supabase settings
   useEffect(() => {
     if (settings?.security_preferences) {
@@ -59,7 +59,7 @@ const SecuritySettings: React.FC = () => {
       });
 
       if (error) throw error;
-      
+
       toast.success('Password updated successfully');
       setFormData({
         currentPassword: '',
@@ -79,7 +79,7 @@ const SecuritySettings: React.FC = () => {
     try {
       const { error } = await supabase.auth.signOut({ scope: 'global' });
       if (error) throw error;
-      
+
       toast.success('Logged out of all devices');
       navigate('/login');
     } catch (error: any) {
@@ -95,7 +95,7 @@ const SecuritySettings: React.FC = () => {
     setSessionHistory(prev => prev.filter(session => session.id !== sessionId));
     toast.success('Session terminated');
   };
-  
+
   const handleToggleTwoFactor = async () => {
     try {
       await updateSettings({
@@ -122,11 +122,6 @@ const SecuritySettings: React.FC = () => {
 
   return (
     <Card className="p-6">
-      <div className="flex items-center gap-2 mb-6">
-        <Shield className="h-5 w-5 text-primary" />
-        <h2 className="text-xl font-semibold">Security Settings</h2>
-      </div>
-      
       <div className="space-y-8">
         {/* Password Change */}
         <div>
@@ -151,7 +146,7 @@ const SecuritySettings: React.FC = () => {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-              
+
               <div className="relative">
                 <Input
                   id="newPassword"
@@ -163,7 +158,7 @@ const SecuritySettings: React.FC = () => {
                   required
                 />
               </div>
-              
+
               <div className="relative md:col-span-2">
                 <Input
                   id="confirmPassword"
@@ -175,7 +170,7 @@ const SecuritySettings: React.FC = () => {
                 />
               </div>
             </div>
-            
+
             <div className="flex justify-end">
               <Button type="submit" disabled={loading}>
                 {loading ? (
@@ -190,7 +185,7 @@ const SecuritySettings: React.FC = () => {
             </div>
           </form>
         </div>
-        
+
         {/* Two-Factor Authentication */}
         <div>
           <h3 className="text-lg font-medium mb-4">Two-Factor Authentication</h3>
@@ -201,16 +196,16 @@ const SecuritySettings: React.FC = () => {
                 <p className="text-sm text-muted-foreground">Add an extra layer of security to your account</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
                   checked={twoFactorEnabled}
                   onChange={handleToggleTwoFactor}
                 />
                 <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
               </label>
             </div>
-            
+
             {twoFactorEnabled && (
               <div className="mt-4 p-4 bg-muted/50 rounded-lg">
                 <p className="text-sm mb-2">Two-factor authentication is enabled. You'll be asked for a verification code when you sign in on a new device.</p>
@@ -221,7 +216,7 @@ const SecuritySettings: React.FC = () => {
             )}
           </div>
         </div>
-        
+
         {/* Active Sessions */}
         <div>
           <h3 className="text-lg font-medium mb-4">Active Sessions</h3>
@@ -251,9 +246,9 @@ const SecuritySettings: React.FC = () => {
                       <td className="px-4 py-3 text-muted-foreground">{session.lastActive}</td>
                       <td className="px-4 py-3 text-right">
                         {!session.current && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => handleTerminateSession(session.id)}
                             className="text-destructive hover:text-destructive/80"
                           >
@@ -267,9 +262,9 @@ const SecuritySettings: React.FC = () => {
               </table>
             </div>
             <div className="p-4 border-t">
-              <Button 
-                variant="destructive" 
-                size="sm" 
+              <Button
+                variant="destructive"
+                size="sm"
                 onClick={handleLogoutAllSessions}
                 disabled={loading}
                 className="flex items-center gap-2"

@@ -121,10 +121,10 @@ const ReportsTable: React.FC<ReportsTableProps> = ({
                             {data.map((row, index) => (
                                 <motion.tr
                                     key={index}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, scale: 0.95 }}
-                                    transition={{ duration: 0.2, delay: index * 0.03 }}
+                                    layout
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ duration: 0.15 }}
                                     onClick={() => onRowClick && onRowClick(row)}
                                     className={`group hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
                                 >

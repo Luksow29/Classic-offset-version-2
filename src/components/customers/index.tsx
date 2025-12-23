@@ -6,6 +6,7 @@ import { useUser } from '@/context/UserContext';
 import { handleSupabaseError } from '@/lib/supabaseErrorHandler';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useResponsiveViewMode } from '../../hooks/useResponsiveViewMode';
 
 // Components
 import CustomerStatsWidgets from './CustomerStatsWidgets';
@@ -27,9 +28,10 @@ const CustomersPage: React.FC = () => {
   // Filter & Sort State
   const [searchQuery, setSearchQuery] = useState('');
   const [tagFilter, setTagFilter] = useState('');
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const { viewMode, setViewMode } = useResponsiveViewMode();
   const [sortField, setSortField] = useState<string>('joined_date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
 
   // Modal State
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
