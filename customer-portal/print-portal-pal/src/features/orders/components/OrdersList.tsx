@@ -25,6 +25,7 @@ import {
   ArrowUpDown,
   MessageCircle,
   RefreshCw,
+  Eye,
 } from "lucide-react";
 import { Skeleton } from "@/shared/components/ui/skeleton";
 import ServiceChargeDisplay from "@/features/invoices/components/ServiceChargeDisplay";
@@ -95,27 +96,91 @@ interface CustomerOrdersProps {
 }
 
 const OrderCardSkeleton = () => (
-  <Card className="overflow-hidden">
-    <CardContent className="p-0">
-      <div className="p-4 md:p-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-3 flex-1">
-            <div className="flex items-center gap-3">
-              <Skeleton className="h-7 w-32" />
-              <Skeleton className="h-6 w-20 rounded-full" />
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    transition={{ duration: 0.3 }}
+  >
+    <Card className="overflow-hidden border-border/50 bg-white dark:bg-gray-900">
+      <CardContent className="p-0">
+        <div className="p-5">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-3 flex-1">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-11 w-11 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700" />
+                <div className="space-y-2">
+                  <Skeleton className="h-5 w-36 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700" />
+                  <Skeleton className="h-3 w-24 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700" />
+                </div>
+                <Skeleton className="h-6 w-24 rounded-full bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700" />
+              </div>
+              <div className="flex flex-wrap gap-4 ml-14">
+                <div className="flex items-center gap-1.5">
+                  <Skeleton className="h-4 w-4 rounded bg-gray-100 dark:bg-gray-800" />
+                  <Skeleton className="h-4 w-24 bg-gray-100 dark:bg-gray-800" />
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Skeleton className="h-4 w-4 rounded bg-gray-100 dark:bg-gray-800" />
+                  <Skeleton className="h-4 w-28 bg-gray-100 dark:bg-gray-800" />
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Skeleton className="h-4 w-4 rounded bg-gray-100 dark:bg-gray-800" />
+                  <Skeleton className="h-4 w-20 bg-gray-100 dark:bg-gray-800" />
+                </div>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-4">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-4 w-28" />
+            <div className="flex gap-2">
+              <Skeleton className="h-9 w-9 rounded-lg bg-gray-100 dark:bg-gray-800" />
+              <Skeleton className="h-9 w-28 rounded-lg bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700" />
             </div>
-          </div>
-          <div className="flex gap-2">
-            <Skeleton className="h-10 w-28" />
           </div>
         </div>
+      </CardContent>
+    </Card>
+  </motion.div>
+);
+
+// Full page skeleton for initial load
+const OrdersListSkeleton = () => (
+  <div className="space-y-5">
+    {/* Filter Bar Skeleton */}
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white dark:bg-slate-900/50 rounded-xl p-4 border border-border/50 shadow-sm"
+    >
+      <div className="flex flex-wrap items-center gap-3">
+        <Skeleton className="h-9 w-[140px] rounded-lg" />
+        <Skeleton className="h-9 w-[140px] rounded-lg" />
+        <Skeleton className="h-9 w-[100px] rounded-lg ml-auto" />
       </div>
-    </CardContent>
-  </Card>
+    </motion.div>
+
+    {/* Order Cards Skeleton */}
+    <div className="space-y-4">
+      {[...Array(4)].map((_, i) => (
+        <motion.div
+          key={i}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: i * 0.1 }}
+        >
+          <OrderCardSkeleton />
+        </motion.div>
+      ))}
+    </div>
+
+    {/* Pagination Skeleton */}
+    <div className="flex justify-center py-4">
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-9 w-24 rounded-lg" />
+        <Skeleton className="h-9 w-9 rounded-lg" />
+        <Skeleton className="h-9 w-9 rounded-lg" />
+        <Skeleton className="h-9 w-9 rounded-lg" />
+        <Skeleton className="h-9 w-24 rounded-lg" />
+      </div>
+    </div>
+  </div>
 );
 
 
@@ -175,7 +240,7 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
         .from("order_requests")
         .select("id, created_at, request_data, status, service_charges, admin_total_amount, pricing_status, quote_sent_at, quote_response_at")
         .eq("customer_id", customerId)
-        .in("status", ["pending", "pending_approval", "quoted", "accepted", "approved"]);
+        .in("status", ["pending", "pending_approval", "quoted", "accepted"]);
       if (pendingError) throw pendingError;
 
       const mappedRejected = rejectedRequests.map(req => {
@@ -431,94 +496,86 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
     setExpandedOrderId(prev => prev === orderId ? null : orderId);
   };
 
-  if (isLoading) return (
-    <div className="space-y-4">
-      <OrderCardSkeleton />
-      <OrderCardSkeleton />
-      <OrderCardSkeleton />
-    </div>
-  );
+  if (isLoading) return <OrdersListSkeleton />;
 
   if (orders.length === 0) return (
-    <Card><CardContent className="py-8 text-center">
-      <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-      <h3 className="text-lg font-semibold mb-2">{t('orders.none_found')}</h3>
-      <p className="text-muted-foreground">{t('orders.none_desc')}</p>
-    </CardContent></Card>
+    <Card className="border-dashed border-2">
+      <CardContent className="py-12 text-center">
+        <div className="h-16 w-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
+          <Package className="h-8 w-8 text-slate-400" />
+        </div>
+        <h3 className="text-lg font-semibold mb-2">No orders found</h3>
+        <p className="text-muted-foreground text-sm max-w-sm mx-auto">
+          You haven't placed any orders yet. Start by submitting a new order request.
+        </p>
+      </CardContent>
+    </Card>
   );
 
   return (
     <TooltipProvider>
       <div className="space-y-5">
-        {/* Header Section with Filters */}
+        {/* Filter Controls Bar */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-primary/5 via-primary/3 to-transparent dark:from-primary/10 dark:via-primary/5 dark:to-transparent rounded-xl p-4 md:p-6 border border-border/40"
+          className="bg-white dark:bg-slate-900/50 rounded-xl p-4 border border-border/50 shadow-sm"
         >
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div>
-                <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
-                  {t('orders.title')}
-                </h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {t('orders.count', { count: orders.length })}
-                </p>
-              </div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Package className="h-4 w-4" />
+              <span>{orders.length} {orders.length === 1 ? 'order' : 'orders'} found</span>
             </div>
 
             {/* Filter Controls */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex items-center gap-2 flex-1">
-                <div className="flex items-center gap-2 bg-background/80 backdrop-blur-sm rounded-lg px-3 py-2 border border-border/50 flex-1 sm:flex-none">
-                  <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
-                  <Select
-                    value={sortKey}
-                    onValueChange={(value: 'date' | 'total_amount' | 'status') => setSortKey(value)}
-                  >
-                    <SelectTrigger className="border-0 bg-transparent h-auto p-0 w-auto min-w-[100px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="date">{t('orders.sort_date')}</SelectItem>
-                      <SelectItem value="total_amount">{t('orders.sort_amount')}</SelectItem>
-                      <SelectItem value="status">{t('orders.sort_status')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 px-2 text-xs"
-                    onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}
-                  >
-                    {sortDir === 'asc' ? '↑ Asc' : '↓ Desc'}
-                  </Button>
-                </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg px-3 py-2 border border-border/30">
+                <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+                <Select
+                  value={sortKey}
+                  onValueChange={(value: 'date' | 'total_amount' | 'status') => setSortKey(value)}
+                >
+                  <SelectTrigger className="border-0 bg-transparent h-auto p-0 w-auto min-w-[80px] text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="date">Date</SelectItem>
+                    <SelectItem value="total_amount">Amount</SelectItem>
+                    <SelectItem value="status">Status</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-xs hover:bg-slate-200 dark:hover:bg-slate-700"
+                  onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}
+                >
+                  {sortDir === 'asc' ? 'Asc' : 'Desc'}
+                </Button>
+              </div>
 
-                <div className="flex items-center gap-2 bg-background/80 backdrop-blur-sm rounded-lg px-3 py-2 border border-border/50 flex-1 sm:flex-none">
-                  <Filter className="h-4 w-4 text-muted-foreground" />
-                  <Select value={statusFilter || 'all'} onValueChange={(value) => setStatusFilter(value === 'all' ? '' : value)}>
-                    <SelectTrigger className="border-0 bg-transparent h-auto p-0 w-auto min-w-[80px]">
-                      <SelectValue placeholder="All" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('orders.status_all')}</SelectItem>
-                      <SelectItem value="Pending">{t('orders.status_pending')}</SelectItem>
-                      <SelectItem value="In Progress">{t('orders.status_inprogress')}</SelectItem>
-                      <SelectItem value="Completed">{t('orders.status_completed')}</SelectItem>
-                      <SelectItem value="Delivered">{t('orders.status_delivered')}</SelectItem>
-                      <SelectItem value="Rejected">{t('orders.status_rejected')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg px-3 py-2 border border-border/30">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <Select value={statusFilter || 'all'} onValueChange={(value) => setStatusFilter(value === 'all' ? '' : value)}>
+                  <SelectTrigger className="border-0 bg-transparent h-auto p-0 w-auto min-w-[70px] text-sm">
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="Pending">Pending</SelectItem>
+                    <SelectItem value="In Progress">In Progress</SelectItem>
+                    <SelectItem value="Completed">Completed</SelectItem>
+                    <SelectItem value="Delivered">Delivered</SelectItem>
+                    <SelectItem value="Rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
         </motion.div>
 
         {/* Orders List */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           <AnimatePresence mode="popLayout">
             {pagedOrders.map((order, index) => {
               const orderKey = `${order.is_request}-${order.id}`;
@@ -534,12 +591,11 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
                   transition={{ delay: index * 0.05 }}
                 >
                   <Card className={`
-                    overflow-hidden transition-all duration-300
+                    overflow-hidden transition-all duration-200
                     ${isExpanded
-                      ? 'ring-2 ring-primary/30 shadow-lg shadow-primary/5'
-                      : 'hover:shadow-md hover:border-border/60'}
-                    bg-gradient-to-br from-card via-card to-card/95
-                    dark:from-card dark:via-card/98 dark:to-card/90
+                      ? 'ring-2 ring-blue-500/30 shadow-lg'
+                      : 'hover:shadow-md hover:border-border/80'}
+                    border-border/50
                   `}>
                     {/* Order Header */}
                     <div className="p-4 md:p-5">
@@ -548,19 +604,23 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                             <div className="flex items-center gap-3">
-                              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 dark:from-primary/30 dark:to-primary/10 flex items-center justify-center">
+                              <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${
+                                order.is_request 
+                                  ? 'bg-amber-100 dark:bg-amber-900/30' 
+                                  : 'bg-blue-100 dark:bg-blue-900/30'
+                              }`}>
                                 {order.is_request
-                                  ? <FileText className="h-5 w-5 text-primary" />
-                                  : <Package className="h-5 w-5 text-primary" />
+                                  ? <FileText className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                                  : <Package className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                                 }
                               </div>
                               <div>
-                                <h3 className="font-bold text-base md:text-lg">
+                                <h3 className="font-semibold text-base">
                                   {order.is_request
-                                    ? t('orders.request_number', { id: order.id })
-                                    : t('orders.order_number', { id: order.id })}
+                                    ? `Request #${order.id}`
+                                    : `Order #${order.id}`}
                                 </h3>
-                                <p className="text-xs text-muted-foreground">{order.order_type || 'Order'}</p>
+                                <p className="text-xs text-muted-foreground">{order.order_type || 'Print Order'}</p>
                               </div>
                             </div>
                             <Tooltip>
@@ -568,13 +628,13 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
                                 <span>{getStatusBadge(order.status)}</span>
                               </TooltipTrigger>
                               <TooltipContent>
-                                {t('orders.status')}: {order.status}
+                                Current Status: {order.status}
                               </TooltipContent>
                             </Tooltip>
                           </div>
 
                           {/* Amount Display (Mobile: visible in header) */}
-                          <div className="flex items-center gap-2 sm:hidden">
+                          <div className="flex items-center gap-1.5 sm:hidden">
                             <IndianRupee className="h-4 w-4 text-muted-foreground" />
                             <span className="font-bold text-lg">
                               {formatCurrency(order.total_amount)}
@@ -584,7 +644,7 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
 
                         {/* Bottom Row: Meta Info & Action */}
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                          <div className="flex flex-wrap items-center gap-3 md:gap-4 text-sm text-muted-foreground">
+                          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                             <div className="flex items-center gap-1.5">
                               <Calendar className="h-4 w-4" />
                               <span>{formatDate(order.date)}</span>
@@ -606,17 +666,18 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
                             <Button
                               variant={isExpanded ? "default" : "outline"}
                               size="sm"
-                              className="flex-1 sm:flex-none"
+                              className="flex-1 sm:flex-none gap-2"
                               onClick={() => toggleOrderExpansion(orderKey)}
                             >
-                              {t('orders.view_details')}
-                              {isExpanded ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
+                              <Eye className="h-4 w-4" />
+                              {isExpanded ? 'Hide Details' : 'View Details'}
+                              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                             </Button>
                             {(order.status === 'Completed' || order.status === 'Delivered') && !order.is_request && typeof onQuickReorder === 'function' && (
                               <Button
                                 variant="secondary"
                                 size="sm"
-                                className="flex-1 sm:flex-none"
+                                className="flex-1 sm:flex-none gap-2"
                                 onClick={() => {
                                   let productInfo = null;
                                   if (order.order_type) {
@@ -630,7 +691,8 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
                                   onQuickReorder(reorderData);
                                 }}
                               >
-                                <RefreshCw className="h-4 w-4 mr-1" /> {t('orders.quick_reorder')}
+                                <RefreshCw className="h-4 w-4" />
+                                Reorder
                               </Button>
                             )}
                           </div>
@@ -648,41 +710,41 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
                           transition={{ duration: 0.3, ease: 'easeInOut' }}
                           className="overflow-hidden"
                         >
-                          <div className="border-t border-border/50 bg-muted/20 dark:bg-muted/10">
-                            <div className="p-4 md:p-6 space-y-6">
+                          <div className="border-t border-border/50 bg-slate-50/50 dark:bg-slate-900/30">
+                            <div className="p-4 md:p-6 space-y-5">
                               {/* Rejection Reason Alert */}
                               {order.rejection_reason && (
                                 <motion.div
                                   initial={{ opacity: 0, scale: 0.95 }}
                                   animate={{ opacity: 1, scale: 1 }}
-                                  className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive flex items-start gap-3"
+                                  className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 text-red-700 dark:text-red-300 flex items-start gap-3"
                                 >
                                   <AlertTriangle className="h-5 w-5 mt-0.5 flex-shrink-0" />
                                   <div>
-                                    <h4 className="font-semibold">{t('orders.rejection_reason')}</h4>
+                                    <h4 className="font-semibold">Rejection Reason</h4>
                                     <p className="text-sm mt-1 opacity-90">{order.rejection_reason}</p>
                                   </div>
                                 </motion.div>
                               )}
 
                               {/* Main Content Grid */}
-                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                                 {/* Left Column: Timeline/Status */}
                                 {!order.is_request ? (
-                                  <div className="bg-background/60 dark:bg-background/40 rounded-xl p-4 border border-border/30">
-                                    <h4 className="font-semibold mb-4 flex items-center gap-2">
-                                      <Clock className="h-4 w-4 text-primary" />
-                                      {t('orders.history')}
+                                  <div className="bg-white dark:bg-slate-900/50 rounded-xl p-4 border border-border/30 shadow-sm">
+                                    <h4 className="font-semibold mb-4 flex items-center gap-2 text-sm">
+                                      <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                      Order Activity
                                     </h4>
                                     <div className="max-h-[280px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
                                       <OrderActivityTimeline orderId={order.id} />
                                     </div>
                                   </div>
                                 ) : (
-                                  <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-4 border border-yellow-200 dark:border-yellow-800/30">
-                                    <p className="text-sm text-yellow-700 dark:text-yellow-300 flex items-center gap-2">
+                                  <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 border border-amber-200 dark:border-amber-800/30">
+                                    <p className="text-sm text-amber-700 dark:text-amber-300 flex items-center gap-2">
                                       <Clock className="h-4 w-4" />
-                                      {t('orders.request_pending')}
+                                      This request is awaiting review by our team.
                                     </p>
                                   </div>
                                 )}
@@ -690,48 +752,48 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
                                 {/* Right Column: Payment & Details */}
                                 <div className="space-y-4">
                                   {/* Payment Card */}
-                                  <div className="bg-gradient-to-br from-green-50 to-emerald-50/50 dark:from-green-900/20 dark:to-emerald-900/10 rounded-xl p-4 border border-green-200/50 dark:border-green-800/30">
-                                    <h4 className="font-semibold mb-3 flex items-center gap-2 text-green-800 dark:text-green-300">
-                                      <IndianRupee className="h-4 w-4" />
-                                      {t('orders.payment_details')}
+                                  <div className="bg-white dark:bg-slate-900/50 rounded-xl p-4 border border-border/30 shadow-sm">
+                                    <h4 className="font-semibold mb-3 flex items-center gap-2 text-sm">
+                                      <IndianRupee className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                      Payment Details
                                     </h4>
                                     <div className="space-y-2.5">
                                       <div className="flex justify-between items-center">
-                                        <span className="text-sm text-muted-foreground">{t('orders.total')}</span>
-                                        <span className="font-bold text-lg">₹{formatCurrency(order.total_amount)}</span>
+                                        <span className="text-sm text-muted-foreground">Total Amount</span>
+                                        <span className="font-bold text-lg">{formatCurrency(order.total_amount)}</span>
                                       </div>
                                       <div className="flex justify-between items-center">
-                                        <span className="text-sm text-muted-foreground">{t('orders.paid')}</span>
-                                        <span className="font-medium text-green-600 dark:text-green-400">₹{formatCurrency(order.amount_received)}</span>
+                                        <span className="text-sm text-muted-foreground">Amount Paid</span>
+                                        <span className="font-medium text-green-600 dark:text-green-400">{formatCurrency(order.amount_received)}</span>
                                       </div>
                                       <div className="h-px bg-border/50 my-2" />
                                       <div className="flex justify-between items-center">
-                                        <span className="text-sm font-medium">{t('orders.balance')}</span>
+                                        <span className="text-sm font-medium">Balance Due</span>
                                         <span className={`font-bold text-lg ${order.balance_amount > 0 ? "text-orange-600 dark:text-orange-400" : "text-green-600 dark:text-green-400"}`}>
-                                          ₹{formatCurrency(order.balance_amount)}
+                                          {formatCurrency(order.balance_amount)}
                                         </span>
                                       </div>
                                     </div>
                                   </div>
 
                                   {/* Order Details Card */}
-                                  <div className="bg-background/60 dark:bg-background/40 rounded-xl p-4 border border-border/30">
-                                    <h4 className="font-semibold mb-3 flex items-center gap-2">
-                                      <FileText className="h-4 w-4 text-primary" />
-                                      {t('orders.details')}
+                                  <div className="bg-white dark:bg-slate-900/50 rounded-xl p-4 border border-border/30 shadow-sm">
+                                    <h4 className="font-semibold mb-3 flex items-center gap-2 text-sm">
+                                      <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                      Order Details
                                     </h4>
                                     <div className="space-y-2 text-sm">
                                       <div className="flex justify-between">
-                                        <span className="text-muted-foreground">{t('orders.type')}</span>
+                                        <span className="text-muted-foreground">Type</span>
                                         <span className="font-medium">{order.order_type || '-'}</span>
                                       </div>
                                       <div className="flex justify-between">
-                                        <span className="text-muted-foreground">{t('orders.quantity')}</span>
+                                        <span className="text-muted-foreground">Quantity</span>
                                         <span className="font-medium">{order.quantity}</span>
                                       </div>
                                       {order.notes && (
                                         <div className="pt-2 border-t border-border/30">
-                                          <span className="text-muted-foreground block mb-1">{t('orders.notes')}</span>
+                                          <span className="text-muted-foreground block mb-1">Notes</span>
                                           <p className="text-foreground/80">{order.notes}</p>
                                         </div>
                                       )}
@@ -742,7 +804,7 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
 
                               {/* Service Charge Display for requests */}
                               {order.is_request && (
-                                <div className="bg-background/60 dark:bg-background/40 rounded-xl p-4 border border-border/30">
+                                <div className="bg-white dark:bg-slate-900/50 rounded-xl p-4 border border-border/30 shadow-sm">
                                   <ServiceChargeDisplay
                                     order={order}
                                     customerId={customerId}
@@ -755,15 +817,15 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
                               )}
 
                               {/* Order Chat Section */}
-                              <div className="bg-gradient-to-r from-blue-50 to-indigo-50/50 dark:from-blue-900/20 dark:to-indigo-900/10 rounded-xl p-4 border border-blue-200/50 dark:border-blue-800/30">
+                              <div className="bg-white dark:bg-slate-900/50 rounded-xl p-4 border border-border/30 shadow-sm">
                                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                                   <div className="flex items-center gap-3">
-                                    <div className="h-10 w-10 rounded-xl bg-blue-100 dark:bg-blue-800/30 flex items-center justify-center">
+                                    <div className="h-10 w-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                                       <MessageCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                                     </div>
                                     <div>
-                                      <h4 className="font-semibold text-sm text-blue-800 dark:text-blue-200">Need help with this order?</h4>
-                                      <p className="text-xs text-blue-600/70 dark:text-blue-300/70">Chat with our support team</p>
+                                      <h4 className="font-semibold text-sm">Need help with this order?</h4>
+                                      <p className="text-xs text-muted-foreground">Chat with our support team</p>
                                     </div>
                                   </div>
                                   <OrderChat
@@ -792,12 +854,12 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
             className="flex justify-center pt-4"
           >
             <Pagination>
-              <PaginationContent className="bg-background/80 backdrop-blur-sm rounded-xl p-2 border border-border/50">
+              <PaginationContent className="bg-white dark:bg-slate-900/50 rounded-xl p-2 border border-border/50 shadow-sm">
                 <PaginationItem>
                   <PaginationPrevious
                     href="#"
                     onClick={e => { e.preventDefault(); setPage(p => Math.max(1, p - 1)); }}
-                    className={page === 1 ? 'pointer-events-none opacity-50' : ''}
+                    className={page === 1 ? 'pointer-events-none opacity-50' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}
                   />
                 </PaginationItem>
                 {[...Array(totalPages)].map((_, i) => (
@@ -806,7 +868,7 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
                       href="#"
                       isActive={page === i + 1}
                       onClick={e => { e.preventDefault(); setPage(i + 1); }}
-                      className={page === i + 1 ? 'bg-primary text-primary-foreground' : ''}
+                      className={page === i + 1 ? 'bg-blue-600 text-white hover:bg-blue-700' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}
                     >
                       {i + 1}
                     </PaginationLink>
@@ -816,7 +878,7 @@ export default function CustomerOrders({ customerId, onQuickReorder }: CustomerO
                   <PaginationNext
                     href="#"
                     onClick={e => { e.preventDefault(); setPage(p => Math.min(totalPages, p + 1)); }}
-                    className={page === totalPages ? 'pointer-events-none opacity-50' : ''}
+                    className={page === totalPages ? 'pointer-events-none opacity-50' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}
                   />
                 </PaginationItem>
               </PaginationContent>

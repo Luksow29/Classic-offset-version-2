@@ -1,39 +1,26 @@
-// @ts-nocheck
-// src/components/products/ProductMaster.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import ProductForm from './ProductForm';
-import ProductTable from './ProductTable';
+import ComprehensiveProductView from './ComprehensiveProductView';
 import ProductViewModal from './ProductViewModal';
 import ConfirmationModal from '../ui/ConfirmationModal';
+import Modal from '../ui/Modal';
 import { supabase } from '@/lib/supabaseClient';
 import toast from 'react-hot-toast';
+import { Package } from 'lucide-react';
 
-export interface Product {
-  id: number;
-  name: string;
-  unit_price: number;
-  description?: string;
-  category?: string;
-  created_at: string;
-  image_url?: string;
-}
-
-export interface ProductFormData {
-  name: string;
-  unit_price: number;
-  description?: string;
-  category?: string;
-  image_url?: string;
-}
+import { Product } from './types';
 
 const ProductMaster: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [formLoading, setFormLoading] = useState(false);
-  
+
+  // Modal States
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+
+  const [formLoading, setFormLoading] = useState(false);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -54,112 +41,116 @@ const ProductMaster: React.FC = () => {
 
   const handleSave = async (productData: Omit<Product, 'id' | 'created_at'>) => {
     setFormLoading(true);
-    const promise = editingProduct
-      ? supabase.from('products').update(productData).eq('id', editingProduct.id)
-      : supabase.from('products').insert(productData);
+    try {
+      const performSave = async () => {
+        const { error } = await (editingProduct
+          ? supabase.from('products').update(productData).eq('id', editingProduct.id)
+          : supabase.from('products').insert(productData));
+        if (error) throw error;
+      };
 
-    toast.promise(
-      promise,
-      {
-        loading: editingProduct ? 'Updating product...' : 'Adding product...',
-        success: (result) => {
-          if (result.error) {
-            throw result.error;
-          }
-          setEditingProduct(null);
-          fetchProducts();
-          setFormLoading(false);
-          return `Product "${productData.name}" ${editingProduct ? 'updated' : 'added'}!`;
-        },
-        error: (err) => {
-          setFormLoading(false);
-          return err.message || 'Failed to save product.';
-        },
-      }
-    );
+      await toast.promise(
+        performSave(),
+        {
+          loading: editingProduct ? 'Updating product...' : 'Adding product...',
+          success: `Product ${editingProduct ? 'updated' : 'added'} successfully!`,
+          error: (err) => err.message || 'Failed to save product.'
+        }
+      );
+
+      fetchProducts();
+      setIsAddModalOpen(false);
+      setEditingProduct(null);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setFormLoading(false);
+    }
   };
 
-  const handleEdit = (product: Product) => {
-    setEditingProduct(product);
-    document.getElementById('product-form-card')?.scrollIntoView({ behavior: 'smooth' });
-  };
-  
-  const handleDeleteRequest = (product: Product) => {
-    setProductToDelete(product);
-  };
-  
   const confirmDelete = async () => {
     if (!productToDelete) return;
-    
-    const productToDeleteName = productToDelete.name;
-    const productToDeleteId = productToDelete.id;
 
     setFormLoading(true);
-    
-    const promise = supabase.from('products').delete().eq('id', productToDeleteId);
-    
-    toast.promise(promise, {
-        loading: 'Deleting product...',
-        success: (result) => {
-            if (result.error) throw result.error;
-            fetchProducts();
-            setFormLoading(false);
-            setProductToDelete(null);
-            return `Product "${productToDeleteName}" deleted.`;
-        },
-        error: (err) => {
-            setFormLoading(false);
-            setProductToDelete(null);
-            return err.message || 'Failed to delete product.'
-        }
-    });
-  };
+    try {
+      const { error } = await supabase.from('products').delete().eq('id', productToDelete.id);
+      if (error) throw error;
 
-  const handleView = (product: Product) => {
-    setViewingProduct(product);
+      toast.success(`Product "${productToDelete.name}" deleted.`);
+      fetchProducts();
+      setProductToDelete(null);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete product.');
+    } finally {
+      setFormLoading(false);
+    }
   };
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
+      {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">📦 Products & Services</h1>
-        <p className="text-gray-500 dark:text-gray-400 text-sm">Manage all items you offer to customers.</p>
-      </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        <div className="lg:col-span-2">
-           <ProductTable 
-                products={products}
-                loading={loading}
-                onView={handleView}
-                onEdit={handleEdit} 
-                onDelete={handleDeleteRequest}
-            />
-        </div>
-        <div className="lg:col-span-1" id="product-form-card">
-            <ProductForm
-                editingProduct={editingProduct}
-                onSave={handleSave}
-                onCancel={() => setEditingProduct(null)}
-                isLoading={formLoading}
-            />
-        </div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white mb-2 flex items-center gap-3">
+          <Package className="w-8 h-8 text-primary" />
+          Products & Services
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">
+          Manage your catalog of items and services offered to customers.
+        </p>
       </div>
 
+      {/* Main Content */}
+      <ComprehensiveProductView
+        products={products}
+        loading={loading}
+        onAdd={() => setIsAddModalOpen(true)}
+        onView={setViewingProduct}
+        onEdit={(product) => {
+          setEditingProduct(product);
+          setIsAddModalOpen(true);
+        }}
+        onDelete={setProductToDelete}
+      />
+
+      {/* Add/Edit Modal */}
+      <Modal
+        isOpen={isAddModalOpen}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setEditingProduct(null);
+        }}
+        title={editingProduct ? "Edit Product" : "Add New Product"}
+        size="lg"
+      >
+        <div className="pt-4">
+          <ProductForm
+            editingProduct={editingProduct}
+            onSave={handleSave}
+            onCancel={() => {
+              setIsAddModalOpen(false);
+              setEditingProduct(null);
+            }}
+            isLoading={formLoading}
+          />
+        </div>
+      </Modal>
+
+      {/* View Modal */}
+      <ProductViewModal
+        isOpen={!!viewingProduct}
+        onClose={() => setViewingProduct(null)}
+        product={viewingProduct}
+      />
+
+      {/* Delete Confirmation */}
       <ConfirmationModal
         isOpen={!!productToDelete}
         onClose={() => setProductToDelete(null)}
         onConfirm={confirmDelete}
         title="Confirm Deletion"
         description={`Are you sure you want to delete "${productToDelete?.name}"? This action cannot be undone.`}
-        confirmText="Delete"
+        confirmText="Delete Product"
         isLoading={formLoading}
-      />
-
-      <ProductViewModal
-        isOpen={!!viewingProduct}
-        onClose={() => setViewingProduct(null)}
-        product={viewingProduct}
       />
     </div>
   );

@@ -17,7 +17,7 @@ interface LoyaltyReward {
   reward_type: 'discount' | 'product' | 'service' | 'cashback';
   reward_value: number;
   min_tier_required: number;
-  is_active: boolean;
+  active: boolean;
   stock_quantity?: number;
   terms_conditions: string;
   valid_from: string;
@@ -87,7 +87,7 @@ const RewardsManagement: React.FC<RewardsManagementProps> = ({ onUpdate }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.reward_name || !formData.points_required || !formData.reward_value) {
       toast.error('Please fill in all required fields');
       return;
@@ -104,7 +104,7 @@ const RewardsManagement: React.FC<RewardsManagementProps> = ({ onUpdate }) => {
         stock_quantity: formData.stock_quantity ? parseInt(formData.stock_quantity) : null,
         terms_conditions: formData.terms_conditions,
         valid_until: formData.valid_until || null,
-        is_active: true
+        active: true
       };
 
       if (editingReward) {
@@ -112,14 +112,14 @@ const RewardsManagement: React.FC<RewardsManagementProps> = ({ onUpdate }) => {
           .from('loyalty_rewards')
           .update(payload)
           .eq('id', editingReward.id);
-        
+
         if (error) throw error;
         toast.success('Reward updated successfully!');
       } else {
         const { error } = await supabase
           .from('loyalty_rewards')
           .insert([payload]);
-        
+
         if (error) throw error;
         toast.success('Reward created successfully!');
       }
@@ -173,11 +173,11 @@ const RewardsManagement: React.FC<RewardsManagementProps> = ({ onUpdate }) => {
     try {
       const { error } = await supabase
         .from('loyalty_rewards')
-        .update({ is_active: !reward.is_active })
+        .update({ active: !reward.active })
         .eq('id', reward.id);
 
       if (error) throw error;
-      toast.success(`Reward ${reward.is_active ? 'deactivated' : 'activated'} successfully!`);
+      toast.success(`Reward ${reward.active ? 'deactivated' : 'activated'} successfully!`);
       fetchRewards();
       onUpdate();
     } catch (error) {
@@ -206,8 +206,8 @@ const RewardsManagement: React.FC<RewardsManagementProps> = ({ onUpdate }) => {
     }
   };
 
-  const filteredRewards = filter === 'all' 
-    ? rewards 
+  const filteredRewards = filter === 'all'
+    ? rewards
     : rewards.filter(reward => reward.reward_type === filter);
 
   if (loading) {
@@ -223,12 +223,12 @@ const RewardsManagement: React.FC<RewardsManagementProps> = ({ onUpdate }) => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-white">Rewards Catalog</h2>
-          <p className="text-gray-400 text-sm">Manage loyalty program rewards and offers</p>
+          <h2 className="text-xl font-semibold text-foreground">Rewards Catalog</h2>
+          <p className="text-muted-foreground text-sm">Manage loyalty program rewards and offers</p>
         </div>
         <Button
           onClick={() => setShowModal(true)}
-          className="bg-pink-600 hover:bg-pink-700"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Reward
@@ -241,11 +241,10 @@ const RewardsManagement: React.FC<RewardsManagementProps> = ({ onUpdate }) => {
           <button
             key={filterType}
             onClick={() => setFilter(filterType as typeof filter)}
-            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-              filter === filterType
-                ? 'bg-pink-600 text-white'
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-            }`}
+            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${filter === filterType
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}
           >
             {filterType.charAt(0).toUpperCase() + filterType.slice(1)}
           </button>
@@ -253,7 +252,7 @@ const RewardsManagement: React.FC<RewardsManagementProps> = ({ onUpdate }) => {
       </div>
 
       {/* Rewards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredRewards.map((reward, index) => (
           <motion.div
             key={reward.id}
@@ -261,70 +260,70 @@ const RewardsManagement: React.FC<RewardsManagementProps> = ({ onUpdate }) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
           >
-            <Card className={`bg-gray-800 border-gray-700 ${!reward.is_active ? 'opacity-60' : ''}`}>
+            <Card className={`bg-card border-border ${!reward.active ? 'opacity-60' : ''}`}>
               <div className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2">
                     {getRewardIcon(reward.reward_type)}
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRewardTypeColor(reward.reward_type)}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${reward.reward_type === 'discount' ? 'bg-green-100 text-green-800' :
+                      reward.reward_type === 'product' ? 'bg-blue-100 text-blue-800' :
+                        reward.reward_type === 'service' ? 'bg-purple-100 text-purple-800' :
+                          'bg-yellow-100 text-yellow-800'
+                      }`}>
                       {reward.reward_type}
                     </span>
                   </div>
                   <div className="flex gap-1">
                     <button
                       onClick={() => handleEdit(reward)}
-                      className="text-gray-400 hover:text-blue-400 transition-colors"
+                      className="text-muted-foreground hover:text-primary transition-colors"
                     >
                       <Edit className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDelete(reward.id)}
-                      className="text-gray-400 hover:text-red-400 transition-colors"
+                      className="text-muted-foreground hover:text-destructive transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
-                
-                <h3 className="text-white font-semibold mb-2">{reward.reward_name}</h3>
-                <p className="text-gray-400 text-sm mb-3 line-clamp-2">{reward.description}</p>
-                
+
+                <h3 className="text-card-foreground font-semibold mb-2">{reward.reward_name}</h3>
+                <p className="text-foreground/80 text-sm mb-3 line-clamp-2">{reward.description}</p>
+
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-gray-400 text-sm">Points Required:</span>
-                    <span className="text-pink-400 font-semibold">{reward.points_required}</span>
+                    <span className="text-foreground/70 text-sm">Points Required:</span>
+                    <span className="text-primary font-semibold">{reward.points_required}</span>
                   </div>
-                  
+
                   <div className="flex justify-between">
-                    <span className="text-gray-400 text-sm">Value:</span>
-                    <span className="text-green-400 font-semibold">
-                      {reward.reward_type === 'discount' || reward.reward_type === 'cashback' 
-                        ? `₹${reward.reward_value}` 
-                        : `₹${reward.reward_value}`}
-                    </span>
+                    <span className="text-foreground/70 text-sm">Value:</span>
+                    <span className="text-primary font-semibold">₹{reward.reward_value}</span>
                   </div>
-                  
+
                   <div className="flex justify-between">
-                    <span className="text-gray-400 text-sm">Min Tier:</span>
-                    <span className="text-blue-400 text-sm">Level {reward.min_tier_required}</span>
+                    <span className="text-foreground/70 text-sm">Min Tier:</span>
+                    <span className="text-blue-500 text-sm">Level {reward.min_tier_required}</span>
                   </div>
-                  
+
                   {reward.stock_quantity && (
                     <div className="flex justify-between">
-                      <span className="text-gray-400 text-sm">Stock:</span>
-                      <span className="text-yellow-400 text-sm">{reward.stock_quantity} left</span>
+                      <span className="text-foreground/70 text-sm">Stock:</span>
+                      <span className="text-warning-foreground text-sm">{reward.stock_quantity} left</span>
                     </div>
                   )}
                 </div>
-                
-                <div className="mt-4 pt-3 border-t border-gray-700">
+
+                <div className="mt-4 pt-3 border-t border-border">
                   <Button
                     onClick={() => toggleActive(reward)}
-                    variant={reward.is_active ? 'outline' : 'primary'}
+                    variant={reward.active ? 'outline' : 'primary'}
                     size="sm"
                     className="w-full"
                   >
-                    {reward.is_active ? 'Deactivate' : 'Activate'}
+                    {reward.active ? 'Deactivate' : 'Activate'}
                   </Button>
                 </div>
               </div>
@@ -342,59 +341,58 @@ const RewardsManagement: React.FC<RewardsManagementProps> = ({ onUpdate }) => {
 
       {/* Add/Edit Reward Modal */}
       <Modal isOpen={showModal} onClose={() => { setShowModal(false); resetForm(); }}>
-        <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md">
-          <h3 className="text-lg font-semibold text-white mb-4">
+        <div className="bg-card rounded-lg p-6 w-full max-w-md border border-border">
+          <h3 className="text-lg font-semibold text-card-foreground mb-4">
             {editingReward ? 'Edit Reward' : 'Add New Reward'}
           </h3>
-          
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
               label="Reward Name *"
               value={formData.reward_name}
               onChange={(e) => setFormData({ ...formData, reward_name: e.target.value })}
-              className="bg-gray-700 border-gray-600 text-white"
+              className="bg-background border-input text-foreground"
               required
             />
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Description</label>
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-pink-500"
+                className="w-full px-3 py-2 bg-background border border-input rounded-lg text-foreground focus:ring-2 focus:ring-primary"
                 rows={3}
                 placeholder="Reward description..."
               />
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <Input
                 label="Points Required *"
                 type="number"
                 value={formData.points_required}
                 onChange={(e) => setFormData({ ...formData, points_required: e.target.value })}
-                className="bg-gray-700 border-gray-600 text-white"
+                className="bg-background border-input text-foreground"
                 required
               />
-              
+
               <Input
-                label="Reward Value *"
                 type="number"
                 step="0.01"
                 value={formData.reward_value}
                 onChange={(e) => setFormData({ ...formData, reward_value: e.target.value })}
-                className="bg-gray-700 border-gray-600 text-white"
+                className="bg-background border-input text-foreground"
                 required
               />
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Reward Type</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1">Reward Type</label>
                 <select
                   value={formData.reward_type}
                   onChange={(e) => setFormData({ ...formData, reward_type: e.target.value as LoyaltyReward['reward_type'] })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-pink-500"
+                  className="w-full px-3 py-2 bg-background border border-input rounded-lg text-foreground focus:ring-2 focus:ring-primary"
                 >
                   <option value="discount">Discount</option>
                   <option value="product">Product</option>
@@ -402,7 +400,7 @@ const RewardsManagement: React.FC<RewardsManagementProps> = ({ onUpdate }) => {
                   <option value="cashback">Cashback</option>
                 </select>
               </div>
-              
+
               <Input
                 label="Min Tier Required"
                 type="number"
@@ -410,40 +408,39 @@ const RewardsManagement: React.FC<RewardsManagementProps> = ({ onUpdate }) => {
                 max="5"
                 value={formData.min_tier_required}
                 onChange={(e) => setFormData({ ...formData, min_tier_required: e.target.value })}
-                className="bg-gray-700 border-gray-600 text-white"
+                className="bg-background border-input text-foreground"
               />
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <Input
-                label="Stock Quantity"
                 type="number"
                 value={formData.stock_quantity}
                 onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value })}
-                className="bg-gray-700 border-gray-600 text-white"
+                className="bg-background border-input text-foreground"
                 placeholder="Leave empty for unlimited"
               />
-              
+
               <Input
                 label="Valid Until"
                 type="date"
                 value={formData.valid_until}
                 onChange={(e) => setFormData({ ...formData, valid_until: e.target.value })}
-                className="bg-gray-700 border-gray-600 text-white"
+                className="bg-background border-input text-foreground"
               />
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Terms & Conditions</label>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Terms & Conditions</label>
               <textarea
                 value={formData.terms_conditions}
                 onChange={(e) => setFormData({ ...formData, terms_conditions: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-pink-500"
+                className="w-full px-3 py-2 bg-background border border-input rounded-lg text-foreground focus:ring-2 focus:ring-primary"
                 rows={2}
                 placeholder="Terms and conditions..."
               />
             </div>
-            
+
             <div className="flex justify-end gap-3 mt-6">
               <Button
                 type="button"
@@ -452,7 +449,7 @@ const RewardsManagement: React.FC<RewardsManagementProps> = ({ onUpdate }) => {
               >
                 Cancel
               </Button>
-              <Button type="submit" className="bg-pink-600 hover:bg-pink-700">
+              <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground">
                 {editingReward ? 'Update' : 'Create'} Reward
               </Button>
             </div>

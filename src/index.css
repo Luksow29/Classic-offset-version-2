@@ -1,24 +1,45 @@
 /* Ensure form containers have padding and spacing from card/tab borders */
-.form-container, .profile-form, .settings-form, .card form, .dashboard-card form, .dashboard__card form {
+.form-container,
+.profile-form,
+.settings-form,
+.card form,
+.dashboard-card form,
+.dashboard__card form {
   padding: 2rem 1.5rem 1.5rem 1.5rem;
   margin-top: 1rem;
   box-sizing: border-box;
 }
+
 /* Add spacing between tab and card/form */
-.settings-tabs, .settings-tab-bar, .settings-header-tabs {
+.settings-tabs,
+.settings-tab-bar,
+.settings-header-tabs {
   margin-bottom: 1.25rem;
 }
+
 /* Professional form spacing and alignment */
-.form-label, label {
+.form-label,
+label {
   display: block;
   margin-bottom: 0.375rem;
   font-weight: 500;
   color: hsl(var(--foreground));
 }
-.form-group, .form-row, .form-field, .form-control, .form-section {
+
+.form-group,
+.form-row,
+.form-field,
+.form-control,
+.form-section {
   margin-bottom: 1.25rem;
 }
-input, select, textarea, .form-input, .form-select, .form-textarea {
+
+input,
+select,
+textarea,
+.form-input,
+.form-select,
+.form-textarea {
   padding: 0.625rem 0.75rem;
   font-size: 1rem;
   border-radius: 0.5rem;
@@ -27,33 +48,43 @@ input, select, textarea, .form-input, .form-select, .form-textarea {
 
 /* Mobile-specific enhancements */
 @media (max-width: 640px) {
+
   /* Larger touch targets for mobile */
-  button, .btn, input[type="button"], input[type="submit"] {
+  button,
+  .btn,
+  input[type="button"],
+  input[type="submit"] {
     min-height: 44px;
     min-width: 44px;
   }
-  
+
   /* Better spacing for mobile forms */
-  input, select, textarea, .form-input, .form-select, .form-textarea {
+  input,
+  select,
+  textarea,
+  .form-input,
+  .form-select,
+  .form-textarea {
     padding: 0.75rem;
-    font-size: 16px; /* Prevents zoom on iOS */
+    font-size: 16px;
+    /* Prevents zoom on iOS */
   }
-  
+
   /* Mobile-friendly tables */
   .table-mobile-stack {
     display: block;
   }
-  
+
   .table-mobile-stack thead {
     display: none;
   }
-  
-  .table-mobile-stack tbody, 
-  .table-mobile-stack tr, 
+
+  .table-mobile-stack tbody,
+  .table-mobile-stack tr,
   .table-mobile-stack td {
     display: block;
   }
-  
+
   .table-mobile-stack tr {
     padding: 1rem;
     margin-bottom: 1rem;
@@ -63,12 +94,16 @@ input, select, textarea, .form-input, .form-select, .form-textarea {
   }
 }
 
-.form-heading, .form-title, .form-section-title, .form-header {
+.form-heading,
+.form-title,
+.form-section-title,
+.form-header {
   margin-bottom: 1.5rem;
   margin-top: 0.5rem;
   font-size: 1.25rem;
   font-weight: 600;
 }
+
 /* Fix dropdown/select/popover background in dark mode */
 .dark select,
 .dark .dropdown-menu,
@@ -84,15 +119,28 @@ input, select, textarea, .form-input, .form-select, .form-textarea {
   color: hsl(var(--popover-foreground)) !important;
   border-color: hsl(var(--border)) !important;
 }
+
 /* Force all form fields to always use visible border color in all states */
-input, select, textarea, .form-input, .form-select, .form-textarea {
+input,
+select,
+textarea,
+.form-input,
+.form-select,
+.form-textarea {
   border-color: hsl(var(--border)) !important;
   box-shadow: none;
 }
-input:focus, select:focus, textarea:focus, .form-input:focus, .form-select:focus, .form-textarea:focus {
+
+input:focus,
+select:focus,
+textarea:focus,
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
   border-color: hsl(var(--border)) !important;
   box-shadow: 0 0 0 2px hsl(var(--border) / 0.2);
 }
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -101,52 +149,66 @@ input:focus, select:focus, textarea:focus, .form-input:focus, .form-select:focus
   * {
     border-color: hsl(var(--border));
   }
-  
+
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
     font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
-  
+
   /* Typography Hierarchy */
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif;
     font-weight: 600;
     line-height: 1.2;
     letter-spacing: -0.025em;
   }
-  
+
   /* Mobile-specific improvements */
   @media (max-width: 640px) {
+
     /* Ensure minimum touch target sizes for mobile */
-    button, input[type="button"], input[type="submit"], .btn, .button {
+    button,
+    input[type="button"],
+    input[type="submit"],
+    .btn,
+    .button {
       min-height: 44px;
     }
-    
+
     /* Better scrolling on mobile */
     .main-content {
       -webkit-overflow-scrolling: touch;
     }
-    
+
     /* Reduce font sizes slightly on very small screens */
-    .dashboard-card h3, .card-title {
+    .dashboard-card h3,
+    .card-title {
       font-size: 1rem;
     }
-    
+
     /* Increase touch targets for mobile dashboard interactions */
-    .metric-card, .dashboard-metric {
+    .metric-card,
+    .dashboard-metric {
       min-height: 80px;
     }
   }
-  
+
   /* Extra small breakpoint for very narrow screens */
   @media (max-width: 480px) {
-    .container, .max-w-7xl {
+
+    .container,
+    .max-w-7xl {
       padding-left: 1rem;
       padding-right: 1rem;
     }
-    
+
     /* Stack chart elements vertically on very small screens */
     .chart-stats {
       flex-direction: column;
@@ -154,25 +216,28 @@ input:focus, select:focus, textarea:focus, .form-input:focus, .form-select:focus
       gap: 0.5rem;
     }
   }
-  
-	  :root {
-	    --background: 210 20% 98%; /* Subtle off-white for main bg */
-	    --foreground: 222.2 84% 4.9%;
-	    --card: 0 0% 100%; /* Card: pure white for contrast */
-	    --card-foreground: 222.2 84% 4.9%;
-	    --popover: 0 0% 100%;
-	    --popover-foreground: 222.2 84% 4.9%;
-	    --primary: 221.2 83.2% 53.3%;
-	    --primary-foreground: 210 40% 98%;
-	    --secondary: 210 40% 96.1%;
-	    --secondary-foreground: 222.2 47.4% 11.2%;
+
+  :root {
+    --background: 210 20% 98%;
+    /* Subtle off-white for main bg */
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    /* Card: pure white for contrast */
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 220 8% 70%; /* More visible, blended gray for light mode borders */
+    --border: 220 8% 70%;
+    /* More visible, blended gray for light mode borders */
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
     --radius: 0.5rem;
@@ -181,73 +246,153 @@ input:focus, select:focus, textarea:focus, .form-input:focus, .form-select:focus
     --success-foreground: 355.7 100% 97.3%;
     --warning: 38 92% 50%;
     --warning-foreground: 48 96% 89%;
-	    --info: 221.2 83.2% 53.3%;
-	    --info-foreground: 210 40% 98%;
-	  }
-	
-	  /* Card shadow for modern light mode look */
-	  .card, .Card, .dashboard-card, .dashboard__card, .dashboard-card-container {
-	    box-shadow: 0 4px 24px 0 rgba(0,0,0,0.10), 0 2px 8px 0 rgba(0,0,0,0.06);
-	    border-radius: 0.75rem;
-	    background: hsl(var(--card));
-	  }
-
-	  /* Color Schemes */
-	  [data-color-scheme="blue"] {
-	    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --accent: var(--primary);
-    --accent-foreground: var(--primary-foreground);
-    --border: 220 8% 70%; /* Blended gray for light mode borders */
+    --info: 221.2 83.2% 53.3%;
+    --info-foreground: 210 40% 98%;
   }
+
+  /* Card shadow for modern light mode look */
+  .card,
+  .Card,
+  .dashboard-card,
+  .dashboard__card,
+  .dashboard-card-container {
+    box-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.10), 0 2px 8px 0 rgba(0, 0, 0, 0.06);
+    border-radius: 0.75rem;
+    background: hsl(var(--card));
+  }
+
+  /* Dark Mode Base Defaults */
+  .dark {
+    --background: 220 8% 10%;
+    --foreground: 210 40% 98%;
+    --sidebar: 220 8% 14%;
+    --card: 220 8% 14%;
+    --card-foreground: 210 40% 98%;
+    --popover: 220 8% 12%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --border: 220 8% 24%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    /* Custom colors for dark mode */
+    --success: 142.1 70.6% 45.3%;
+    --success-foreground: 144.9 80.4% 10%;
+    --warning: 48 96% 89%;
+    --warning-foreground: 38 92% 50%;
+    --info: 217.2 91.2% 59.8%;
+    --info-foreground: 210 40% 98%;
+  }
+
+  /* Sidebar background for dark mode */
+  .dark .sidebar,
+  .dark .Sidebar,
+  .dark .side-bar {
+    background-color: hsl(var(--sidebar)) !important;
+  }
+
+  /* Color Schemes - Light & Dark Overrides */
+  /* Blue (Default) */
+  [data-color-scheme="blue"] {
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+  }
+
+  .dark[data-color-scheme="blue"] {
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+  }
+
+  /* Green */
   [data-color-scheme="green"] {
     --primary: 142.1 76.2% 36.3%;
     --primary-foreground: 355.7 100% 97.3%;
-    --accent: var(--primary);
-    --accent-foreground: var(--primary-foreground);
-    --border: 220 8% 70%; /* Blended gray for light mode borders */
   }
+
+  .dark[data-color-scheme="green"] {
+    --primary: 142.1 70.6% 45.3%;
+    --primary-foreground: 144.9 80.4% 10%;
+  }
+
+  /* Purple */
   [data-color-scheme="purple"] {
     --primary: 262.1 83.2% 53.3%;
     --primary-foreground: 210 40% 98%;
-    --accent: var(--primary);
-    --accent-foreground: var(--primary-foreground);
-    --border: 220 8% 70%; /* Blended gray for light mode borders */
   }
+
+  .dark[data-color-scheme="purple"] {
+    --primary: 263.4 70% 50.4%;
+    --primary-foreground: 210 40% 98%;
+  }
+
+  /* Orange */
   [data-color-scheme="orange"] {
-    --primary: 38 92% 50%;
-    --primary-foreground: 48 96% 89%;
-    --accent: var(--primary);
-    --accent-foreground: var(--primary-foreground);
-    --border: 220 8% 70%; /* Blended gray for light mode borders */
+    --primary: 24.6 95% 53.1%;
+    --primary-foreground: 60 9.1% 97.8%;
   }
+
+  .dark[data-color-scheme="orange"] {
+    --primary: 20.5 90.2% 48.2%;
+    --primary-foreground: 60 9.1% 97.8%;
+  }
+
+  /* Pink */
   [data-color-scheme="pink"] {
     --primary: 322 90% 60%;
     --primary-foreground: 355.7 100% 97.3%;
-    --accent: var(--primary);
-    --accent-foreground: var(--primary-foreground);
-    --border: 220 8% 70%; /* Blended gray for light mode borders */
   }
+
+  .dark[data-color-scheme="pink"] {
+    --primary: 322 80% 55%;
+    --primary-foreground: 355.7 100% 97.3%;
+  }
+
+  /* Teal */
   [data-color-scheme="teal"] {
     --primary: 174 62% 47%;
     --primary-foreground: 210 40% 98%;
-    --accent: var(--primary);
-    --accent-foreground: var(--primary-foreground);
-    --border: 220 8% 70%; /* Blended gray for light mode borders */
   }
+
+  .dark[data-color-scheme="teal"] {
+    --primary: 174 55% 40%;
+    --primary-foreground: 210 40% 98%;
+  }
+
+  /* Red */
   [data-color-scheme="red"] {
     --primary: 0 84.2% 60.2%;
     --primary-foreground: 210 40% 98%;
-    --accent: var(--primary);
-    --accent-foreground: var(--primary-foreground);
-    --border: 220 8% 70%; /* Blended gray for light mode borders */
   }
+
+  .dark[data-color-scheme="red"] {
+    --primary: 0 72.2% 50.6%;
+    --primary-foreground: 210 40% 98%;
+  }
+
+  /* Gray */
   [data-color-scheme="gray"] {
+    --primary: 220 8.9% 46.1%;
+    --primary-foreground: 210 40% 98%;
+  }
+
+  .dark[data-color-scheme="gray"] {
     --primary: 210 10% 60%;
     --primary-foreground: 210 40% 98%;
+  }
+
+  /* Shared Scheme Utilities */
+  [data-color-scheme] {
     --accent: var(--primary);
     --accent-foreground: var(--primary-foreground);
-    --border: 220 8% 70%; /* Blended gray for light mode borders */
+    --ring: var(--primary);
   }
 
   /* High Contrast Mode */
@@ -265,53 +410,22 @@ input:focus, select:focus, textarea:focus, .form-input:focus, .form-select:focus
     --accent: 60 100% 50%;
     --accent-foreground: 0 0% 0%;
   }
-
-  .dark {
-    /* The .dark class will now inherit background/card from the color scheme if set */
-    --background: 220 8% 10%; /* Deep neutral dark for main bg */
-    --foreground: 210 40% 98%;
-    --sidebar: 220 8% 14%; /* Sidebar: slightly lighter than bg */
-    --card: 220 8% 14%; /* Cards: same as sidebar for unity */
-    --card-foreground: 210 40% 98%;
-    --popover: 220 8% 12%; /* Popover: between bg and card */
-    --popover-foreground: 210 40% 98%;
-/* Sidebar background for dark mode */
-.dark .sidebar, .dark .Sidebar, .dark .side-bar {
-  background-color: hsl(var(--sidebar)) !important;
-}
-    --primary: var(--primary, 217.2 91.2% 59.8%);
-    --border: 220 8% 24%; /* Soft gray for dark mode borders */
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: var(--accent, 217.2 32.6% 17.5%);
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    /* Custom colors for dark mode */
-    --success: 142.1 70.6% 45.3%;
-    --success-foreground: 144.9 80.4% 10%;
-    --warning: 48 96% 89%;
-    --warning-foreground: 38 92% 50%;
-    --info: 217.2 91.2% 59.8%;
-    --info-foreground: 210 40% 98%;
-  }
 }
 
 @layer base {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
-  
+
   /* Add transition for smooth color changes */
-  *, ::before, ::after {
+  *,
+  ::before,
+  ::after {
     transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     transition-duration: 150ms;
@@ -392,8 +506,10 @@ input:focus, select:focus, textarea:focus, .form-input:focus, .form-select:focus
 }
 
 .scrollbar-hide {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
 
 /* Enhanced chat scrollbar - always visible */
@@ -441,11 +557,11 @@ input:focus, select:focus, textarea:focus, .form-input:focus, .form-select:focus
   .animate-slide-up {
     animation: slide-up 0.4s ease-out forwards;
   }
-  
+
   .animate-slide-down {
     animation: slide-down 0.4s ease-out forwards;
   }
-  
+
   .animate-fade-in {
     animation: fade-in 0.4s ease-out forwards;
   }
@@ -453,36 +569,34 @@ input:focus, select:focus, textarea:focus, .form-input:focus, .form-select:focus
   .animate-fade-in-up {
     animation: fade-in-up 0.5s ease-out forwards;
   }
-  
+
   .animate-shimmer {
     animation: shimmer 2s infinite linear;
-    background: linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.2) 20%,
-      rgba(255, 255, 255, 0.5) 60%,
-      rgba(255, 255, 255, 0) 100%
-    );
+    background: linear-gradient(90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.2) 20%,
+        rgba(255, 255, 255, 0.5) 60%,
+        rgba(255, 255, 255, 0) 100%);
     background-size: 200% 100%;
     background-position-x: 180%;
   }
-  
+
   .animate-float {
     animation: float 3s ease-in-out infinite;
   }
-  
+
   .animate-glow {
     animation: glow 2s ease-in-out infinite alternate;
   }
-  
+
   .animate-scale-102 {
     transform: scale(1.02);
   }
-  
+
   .hover\:scale-102:hover {
     transform: scale(1.02);
   }
-  
+
   /* Glassmorphism Utilities */
   .glass-panel {
     @apply bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-xl;
@@ -498,6 +612,7 @@ input:focus, select:focus, textarea:focus, .form-input:focus, .form-select:focus
 
   /* Mobile: simplify glass effects for performance */
   @media (max-width: 640px) {
+
     .glass-panel,
     .glass-card,
     .glass-button {
@@ -505,14 +620,14 @@ input:focus, select:focus, textarea:focus, .form-input:focus, .form-select:focus
       -webkit-backdrop-filter: none;
     }
   }
-  
+
   .glass-effect {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     background: rgba(255, 255, 255, 0.7);
     border: 1px solid rgba(255, 255, 255, 0.3);
   }
-  
+
   .dark .glass-effect {
     background: rgba(17, 24, 39, 0.7);
     border: 1px solid rgba(75, 85, 99, 0.3);
@@ -529,6 +644,7 @@ input:focus, select:focus, textarea:focus, .form-input:focus, .form-select:focus
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -540,6 +656,7 @@ input:focus, select:focus, textarea:focus, .form-input:focus, .form-select:focus
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -550,6 +667,7 @@ input:focus, select:focus, textarea:focus, .form-input:focus, .form-select:focus
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -560,6 +678,7 @@ input:focus, select:focus, textarea:focus, .form-input:focus, .form-select:focus
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -573,9 +692,12 @@ input:focus, select:focus, textarea:focus, .form-input:focus, .form-select:focus
 }
 
 @keyframes float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px);
   }
+
   50% {
     transform: translateY(-10px);
   }
@@ -585,6 +707,7 @@ input:focus, select:focus, textarea:focus, .form-input:focus, .form-select:focus
   from {
     box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
   }
+
   to {
     box-shadow: 0 0 30px rgba(59, 130, 246, 0.8);
   }

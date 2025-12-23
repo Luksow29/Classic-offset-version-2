@@ -1,11 +1,12 @@
 // src/components/crm/CustomerDetailModal.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { formatCurrency, formatDate } from '@classic-offset/shared';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
 import { 
-  X, Phone, Mail, MapPin, Calendar, TrendingUp, 
+  X, Phone, Mail, Calendar, TrendingUp, 
   MessageSquare, FileText, Clock, Plus, Star
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -59,10 +60,12 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
   isOpen,
   onClose,
   customer,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onUpdate
 }) => {
   const [interactions, setInteractions] = useState<CustomerInteraction[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'interactions' | 'orders'>('overview');
   const [showAddInteraction, setShowAddInteraction] = useState(false);
@@ -74,13 +77,7 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
     next_action: ''
   });
 
-  useEffect(() => {
-    if (isOpen && customer) {
-      fetchCustomerData();
-    }
-  }, [isOpen, customer]);
-
-  const fetchCustomerData = async () => {
+  const fetchCustomerData = useCallback(async () => {
     if (!customer) return;
     
     setLoading(true);
@@ -116,7 +113,13 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [customer]);
+
+  useEffect(() => {
+    if (isOpen && customer) {
+      fetchCustomerData();
+    }
+  }, [isOpen, customer, fetchCustomerData]);
 
   const addInteraction = async () => {
     if (!customer || !newInteraction.subject || !newInteraction.description) {
@@ -151,22 +154,7 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
+  // formatCurrency and formatDate are now imported from @classic-offset/shared
 
   const getInteractionIcon = (type: CustomerInteraction['type']) => {
     switch (type) {
@@ -219,14 +207,14 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
 
         {/* Tabs */}
         <div className="flex border-b border-gray-700">
-          {[
+          {([
             { id: 'overview', label: 'Overview' },
             { id: 'interactions', label: 'Interactions' },
             { id: 'orders', label: 'Orders' }
-          ].map((tab) => (
+          ] as const).map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id)}
               className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab.id
                   ? 'border-blue-500 text-blue-400'

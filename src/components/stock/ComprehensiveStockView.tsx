@@ -5,11 +5,15 @@ import Input from '../ui/Input';
 import Select from '../ui/Select';
 import Button from '../ui/Button';
 import Modal from '../ui/Modal';
-import { 
-  Search, Filter, Download, Printer, Eye, Edit, AlertTriangle, 
+import {
+  Search, Filter, Download, Printer, Eye, Edit, AlertTriangle,
   TrendingUp, TrendingDown, Package, BarChart3, Calendar,
-  MapPin, Hash, Loader2, RefreshCw, Plus, Minus, ShoppingCart
+  MapPin, Hash, Loader2, RefreshCw, ShoppingCart, DollarSign
 } from 'lucide-react';
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend
+} from 'recharts';
 
 interface StockItem {
   id: string;
@@ -89,7 +93,7 @@ const ComprehensiveStockView: React.FC = () => {
         cost_per_unit: 0,
         source: 'existing_stock' as const,
         stock_status: ((item.quantity_in || 0) - (item.quantity_used || 0)) <= 0 ? 'OUT_OF_STOCK' :
-                     ((item.quantity_in || 0) - (item.quantity_used || 0)) <= 100 ? 'LOW_STOCK' : 'IN_STOCK',
+          ((item.quantity_in || 0) - (item.quantity_used || 0)) <= 100 ? 'LOW_STOCK' : 'IN_STOCK',
         total_value: ((item.quantity_in || 0) - (item.quantity_used || 0)) * 10 // Estimated value
       }));
 
@@ -129,7 +133,7 @@ const ComprehensiveStockView: React.FC = () => {
   const filterOptions = useMemo(() => {
     const categories = [...new Set(stockItems.map(item => item.category))].filter(Boolean);
     const locations = [...new Set(stockItems.map(item => item.storage_location))].filter(Boolean);
-    
+
     return {
       categories: categories.map(cat => ({ value: cat, label: cat })),
       locations: locations.map(loc => ({ value: loc, label: loc }))
@@ -143,7 +147,7 @@ const ComprehensiveStockView: React.FC = () => {
       const matchesCategory = !categoryFilter || item.category === categoryFilter;
       const matchesLocation = !locationFilter || item.storage_location === locationFilter;
       const matchesSource = !sourceFilter || item.source === sourceFilter;
-      
+
       let matchesStatus = true;
       if (statusFilter === 'low_stock') {
         matchesStatus = item.stock_status === 'LOW_STOCK';
@@ -202,6 +206,28 @@ const ComprehensiveStockView: React.FC = () => {
     };
   }, [stockItems]);
 
+  const chartData = useMemo(() => {
+    const statusData = [
+      { name: 'In Stock', value: summary.totalItems - summary.lowStockItems - summary.outOfStockItems, color: '#22c55e' },
+      { name: 'Low Stock', value: summary.lowStockItems, color: '#eab308' },
+      { name: 'Out of Stock', value: summary.outOfStockItems, color: '#ef4444' }
+    ];
+
+    const categoryMap = stockItems.reduce((acc, item) => {
+      acc[item.category] = (acc[item.category] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const categoryData = Object.entries(categoryMap)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5); // Start with top 5
+
+    return { statusData, categoryData };
+  }, [summary, stockItems]);
+
+  const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#14b8a6'];
+
   // Get stock status styling
   const getStockStatusStyling = (status: string) => {
     switch (status) {
@@ -233,10 +259,9 @@ const ComprehensiveStockView: React.FC = () => {
     if (!selectedItem || !updateQuantity) return;
 
     const quantity = parseInt(updateQuantity);
-    
+
     try {
       if (selectedItem.source === 'existing_stock') {
-        // Update existing stock table
         const stockId = selectedItem.id.replace('existing_', '');
         let newQuantityUsed = selectedItem.quantity_used || 0;
 
@@ -255,7 +280,6 @@ const ComprehensiveStockView: React.FC = () => {
 
         if (error) throw error;
       } else {
-        // Update materials table via transaction
         const materialId = selectedItem.id.replace('material_', '');
         let transactionType: 'IN' | 'OUT' | 'ADJUSTMENT' = 'ADJUSTMENT';
         let transactionQuantity = quantity;
@@ -324,7 +348,7 @@ const ComprehensiveStockView: React.FC = () => {
     return (
       <Card>
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
           <span className="ml-2">Loading unified stock inventory...</span>
         </div>
       </Card>
@@ -333,86 +357,116 @@ const ComprehensiveStockView: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <Package className="w-8 h-8 text-blue-500" />
+      {/* Metrics Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-4 border-l-4 border-l-blue-500 bg-gradient-to-br from-card to-blue-500/5">
+          <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Total Items</p>
-              <p className="text-2xl font-bold text-gray-800 dark:text-white">{summary.totalItems}</p>
+              <p className="text-sm font-medium text-muted-foreground">Total Items</p>
+              <h3 className="text-2xl font-bold text-foreground mt-1">{summary.totalItems}</h3>
             </div>
-          </div>
-        </Card>
-        
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="w-8 h-8 text-yellow-500" />
-            <div>
-              <p className="text-sm text-gray-500">Low Stock</p>
-              <p className="text-2xl font-bold text-yellow-600">{summary.lowStockItems}</p>
-            </div>
-          </div>
-        </Card>
-        
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <TrendingDown className="w-8 h-8 text-red-500" />
-            <div>
-              <p className="text-sm text-gray-500">Out of Stock</p>
-              <p className="text-2xl font-bold text-red-600">{summary.outOfStockItems}</p>
-            </div>
-          </div>
-        </Card>
-        
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <BarChart3 className="w-8 h-8 text-green-500" />
-            <div>
-              <p className="text-sm text-gray-500">Total Value</p>
-              <p className="text-2xl font-bold text-green-600">₹{summary.totalValue.toLocaleString()}</p>
-            </div>
-          </div>
-        </Card>
-        
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <TrendingUp className="w-8 h-8 text-purple-500" />
-            <div>
-              <p className="text-sm text-gray-500">Recent Activity</p>
-              <p className="text-2xl font-bold text-purple-600">{summary.recentMovements}</p>
+            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600">
+              <Package size={24} />
             </div>
           </div>
         </Card>
 
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <Package className="w-8 h-8 text-indigo-500" />
+        <Card className="p-4 border-l-4 border-l-green-500 bg-gradient-to-br from-card to-green-500/5">
+          <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Existing Stock</p>
-              <p className="text-2xl font-bold text-indigo-600">{summary.existingStockItems}</p>
+              <p className="text-sm font-medium text-muted-foreground">Total Value</p>
+              <h3 className="text-2xl font-bold text-foreground mt-1">₹{summary.totalValue.toLocaleString()}</h3>
+            </div>
+            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg text-green-600">
+              <DollarSign size={24} />
             </div>
           </div>
         </Card>
 
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <ShoppingCart className="w-8 h-8 text-cyan-500" />
+        <Card className="p-4 border-l-4 border-l-yellow-500 bg-gradient-to-br from-card to-yellow-500/5">
+          <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Materials</p>
-              <p className="text-2xl font-bold text-cyan-600">{summary.materialsItems}</p>
+              <p className="text-sm font-medium text-muted-foreground">Low Stock</p>
+              <h3 className="text-2xl font-bold text-foreground mt-1">{summary.lowStockItems}</h3>
+            </div>
+            <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg text-yellow-600">
+              <AlertTriangle size={24} />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-4 border-l-4 border-l-purple-500 bg-gradient-to-br from-card to-purple-500/5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Movements (7d)</p>
+              <h3 className="text-2xl font-bold text-foreground mt-1">{summary.recentMovements}</h3>
+            </div>
+            <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-purple-600">
+              <TrendingUp size={24} />
             </div>
           </div>
         </Card>
       </div>
 
-      {/* Main Stock View */}
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="p-6 col-span-1 h-[300px]">
+          <h3 className="text-sm font-semibold mb-4 text-muted-foreground uppercase tracking-wider">Stock Status</h3>
+          <div className="w-full h-[220px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={chartData.statusData}
+                  cx="50%" cy="50%"
+                  innerRadius={60} outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {chartData.statusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{ backgroundColor: 'var(--popover)', borderRadius: '8px', border: '1px solid var(--border)' }}
+                />
+                <Legend verticalAlign="bottom" height={36} iconType="circle" />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+
+        <Card className="p-6 lg:col-span-2 h-[300px]">
+          <h3 className="text-sm font-semibold mb-4 text-muted-foreground uppercase tracking-wider">Top 5 Categories (Count)</h3>
+          <div className="w-full h-[220px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData.categoryData} layout="vertical" margin={{ left: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} opacity={0.3} />
+                <XAxis type="number" hide />
+                <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12 }} />
+                <Tooltip
+                  cursor={{ fill: 'transparent' }}
+                  contentStyle={{ backgroundColor: 'var(--popover)', borderRadius: '8px', border: '1px solid var(--border)' }}
+                />
+                <Bar dataKey="value" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={24}>
+                  {chartData.categoryData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      </div>
+
+
+      {/* Main Stock Table */}
       <Card>
         <div className="p-4 border-b dark:border-gray-700">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
             <div>
-              <h3 className="text-lg font-semibold">📋 Unified Stock Inventory</h3>
-              <p className="text-sm text-gray-500">Combined view of existing stock and materials inventory</p>
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                Unified Stock Inventory
+              </h3>
             </div>
             <div className="flex items-center gap-2">
               <Button onClick={fetchStockData} variant="outline" size="sm">
@@ -423,26 +477,23 @@ const ComprehensiveStockView: React.FC = () => {
                 <Download className="w-4 h-4 mr-1" />
                 Export CSV
               </Button>
-              <Button variant="outline" size="sm">
-                <Printer className="w-4 h-4 mr-1" />
-                Print Labels
-              </Button>
             </div>
           </div>
 
           {/* Filters */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
             <div className="relative">
-              <Search className="w-5 h-5 text-gray-400 absolute top-1/2 left-3 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-gray-400 absolute top-1/2 left-3 -translate-y-1/2" />
               <Input
                 id="search-stock"
                 placeholder="Search items..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-9 h-9 text-sm"
               />
             </div>
-            
+
+            {/* Reduced height selects or simpler layout could improve density */}
             <Select
               id="source-filter"
               label=""
@@ -454,7 +505,7 @@ const ComprehensiveStockView: React.FC = () => {
               onChange={(e) => setSourceFilter(e.target.value)}
               placeholder="All Sources"
             />
-            
+
             <Select
               id="category-filter"
               label=""
@@ -463,7 +514,7 @@ const ComprehensiveStockView: React.FC = () => {
               onChange={(e) => setCategoryFilter(e.target.value)}
               placeholder="All Categories"
             />
-            
+
             <Select
               id="status-filter"
               label=""
@@ -476,7 +527,7 @@ const ComprehensiveStockView: React.FC = () => {
               onChange={(e) => setStatusFilter(e.target.value)}
               placeholder="All Status"
             />
-            
+
             <Select
               id="location-filter"
               label=""
@@ -485,9 +536,9 @@ const ComprehensiveStockView: React.FC = () => {
               onChange={(e) => setLocationFilter(e.target.value)}
               placeholder="All Locations"
             />
-            
-            <Button 
-              variant="outline" 
+
+            <Button
+              variant="outline"
               onClick={() => {
                 setSearchTerm('');
                 setCategoryFilter('');
@@ -504,10 +555,10 @@ const ComprehensiveStockView: React.FC = () => {
         {/* Stock Items Table */}
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-gray-50 dark:bg-gray-700">
+            <thead className="bg-muted/50">
               <tr>
-                <th 
-                  className="px-4 py-3 text-left font-medium cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                <th
+                  className="px-4 py-3 text-left font-medium cursor-pointer hover:text-primary transition-colors"
                   onClick={() => {
                     setSortField('item_name');
                     setSortOrder(sortField === 'item_name' && sortOrder === 'asc' ? 'desc' : 'asc');
@@ -517,8 +568,8 @@ const ComprehensiveStockView: React.FC = () => {
                 </th>
                 <th className="px-4 py-3 text-left font-medium">Source</th>
                 <th className="px-4 py-3 text-left font-medium">Category</th>
-                <th 
-                  className="px-4 py-3 text-right font-medium cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                <th
+                  className="px-4 py-3 text-right font-medium cursor-pointer hover:text-primary transition-colors"
                   onClick={() => {
                     setSortField('balance');
                     setSortOrder(sortField === 'balance' && sortOrder === 'desc' ? 'asc' : 'desc');
@@ -526,119 +577,89 @@ const ComprehensiveStockView: React.FC = () => {
                 >
                   Current Stock
                 </th>
-                <th className="px-4 py-3 text-center font-medium">Stock Level</th>
+                <th className="px-4 py-3 text-center font-medium">Level</th>
                 <th className="px-4 py-3 text-center font-medium">Status</th>
-                <th className="px-4 py-3 text-left font-medium">Location</th>
                 <th className="px-4 py-3 text-right font-medium">Value</th>
                 <th className="px-4 py-3 text-left font-medium">Last Updated</th>
                 <th className="px-4 py-3 text-center font-medium">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="divide-y divide-border/50">
               {filteredAndSortedItems.map((item) => {
                 const status = getStockStatusStyling(item.stock_status);
                 const percentage = getStockPercentage(item);
-                
+
                 return (
-                  <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                  <tr key={item.id} className="hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-3">
                       <div>
-                        <div className="font-medium text-gray-900 dark:text-white">{item.item_name}</div>
-                        <div className="text-xs text-gray-500">
+                        <div className="font-medium text-foreground">{item.item_name}</div>
+                        <div className="text-xs text-muted-foreground">
                           {item.unit_of_measurement}
                           {item.supplier_name && ` • ${item.supplier_name}`}
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        item.source === 'existing_stock' 
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider ${item.source === 'existing_stock'
                           ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
-                          : 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
-                      }`}>
+                          : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300'
+                        }`}>
                         {item.source === 'existing_stock' ? 'Existing' : 'Materials'}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{item.category}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{item.category}</td>
                     <td className="px-4 py-3 text-right">
-                      <div className="font-medium text-gray-900 dark:text-white">{item.balance}</div>
+                      <div className="font-medium text-foreground">{item.balance}</div>
                       {item.minimum_threshold > 0 && (
-                        <div className="text-xs text-gray-500">Min: {item.minimum_threshold}</div>
+                        <div className="text-xs text-muted-foreground">Min: {item.minimum_threshold}</div>
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className={`h-2 rounded-full ${
-                            percentage > 50 ? 'bg-green-500' : 
-                            percentage > 20 ? 'bg-yellow-500' : 'bg-red-500'
-                          }`}
+                      <div className="w-full bg-secondary rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${percentage > 50 ? 'bg-green-500' :
+                              percentage > 20 ? 'bg-yellow-500' : 'bg-red-500'
+                            }`}
                           style={{ width: `${Math.max(percentage, 5)}%` }}
                         ></div>
                       </div>
-                      <div className="text-xs text-center mt-1">{percentage.toFixed(0)}%</div>
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${status.bgColor} ${status.color}`}>
+                      <span className={`px-2 py-1 rounded-md text-xs font-medium border ${status.bgColor.replace('bg-', 'border-').replace('/30', '/50')} ${status.color} bg-opacity-20`}>
                         {item.stock_status.replace('_', ' ')}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3 text-gray-400" />
-                        <span className="text-gray-700 dark:text-gray-300">{item.storage_location}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-right font-medium text-green-600">
+                    <td className="px-4 py-3 text-right font-mono text-xs">
                       ₹{item.total_value.toLocaleString()}
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3 text-gray-400" />
-                        <span className="text-gray-700 dark:text-gray-300">
-                          {new Date(item.last_updated).toLocaleDateString()}
-                        </span>
-                      </div>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                      {new Date(item.last_updated).toLocaleDateString()}
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedItem(item);
-                            setShowUpdateModal(true);
-                          }}
-                          title="Update Quantity"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          title="View History"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          title="Mark for Reorder"
-                        >
-                          <Hash className="w-4 h-4" />
-                        </Button>
-                      </div>
+                    <td className="px-4 py-3 text-center">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedItem(item);
+                          setShowUpdateModal(true);
+                        }}
+                        title="Update Quantity"
+                        className="h-8 w-8 p-0"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
                     </td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
-          
+
           {filteredAndSortedItems.length === 0 && (
-            <div className="text-center py-12 text-gray-500">
-              <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>No stock items found matching your filters.</p>
+            <div className="text-center py-12 text-muted-foreground">
+              <Package className="w-12 h-12 mx-auto mb-4 opacity-20" />
+              <p>No stock items found.</p>
             </div>
           )}
         </div>
@@ -650,33 +671,25 @@ const ComprehensiveStockView: React.FC = () => {
         onClose={() => setShowUpdateModal(false)}
         title={`Update Stock - ${selectedItem?.item_name}`}
       >
-        <div className="space-y-4">
-          <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-            <p className="text-sm text-blue-800 dark:text-blue-200">
-              <strong>Current Stock:</strong> {selectedItem?.balance} {selectedItem?.unit_of_measurement}
+        <div className="space-y-4 pt-2">
+          <div className="p-3 bg-secondary rounded-lg border border-border/50">
+            <p className="text-sm font-medium">
+              Current Stock: <span className="text-primary">{selectedItem?.balance} {selectedItem?.unit_of_measurement}</span>
             </p>
-            <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-              <strong>Source:</strong> {selectedItem?.source === 'existing_stock' ? 'Existing Stock' : 'Materials Inventory'}
-            </p>
-            {selectedItem?.minimum_threshold && selectedItem.minimum_threshold > 0 && (
-              <p className="text-sm text-blue-700 dark:text-blue-300">
-                <strong>Minimum Threshold:</strong> {selectedItem.minimum_threshold} {selectedItem.unit_of_measurement}
-              </p>
-            )}
           </div>
-          
+
           <Select
             id="update-type"
-            label="Update Type"
+            label="Update Action"
             value={updateType}
             onChange={(e) => setUpdateType(e.target.value as 'add' | 'subtract' | 'set')}
             options={[
-              { value: 'add', label: 'Add to Stock' },
-              { value: 'subtract', label: 'Remove from Stock' },
-              { value: 'set', label: 'Set Exact Amount' }
+              { value: 'add', label: 'Add to Stock (+)' },
+              { value: 'subtract', label: 'Remove from Stock (-)' },
+              { value: 'set', label: 'Set Exact Amount (=)' }
             ]}
           />
-          
+
           <Input
             id="update-quantity"
             label="Quantity"
@@ -684,14 +697,15 @@ const ComprehensiveStockView: React.FC = () => {
             value={updateQuantity}
             onChange={(e) => setUpdateQuantity(e.target.value)}
             placeholder="Enter quantity"
+            autoFocus
           />
-          
-          <div className="flex justify-end gap-3 pt-4">
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-border/50">
             <Button variant="outline" onClick={() => setShowUpdateModal(false)}>
               Cancel
             </Button>
             <Button onClick={handleUpdateQuantity} disabled={!updateQuantity}>
-              Update Stock
+              Confirm Update
             </Button>
           </div>
         </div>

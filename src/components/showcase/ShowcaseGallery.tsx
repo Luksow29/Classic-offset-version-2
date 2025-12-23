@@ -121,15 +121,15 @@ const ShowcaseGallery: React.FC<ShowcaseGalleryProps> = ({ refreshKey }) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
-        <span className="ml-2 text-gray-500 dark:text-gray-400">Loading gallery...</span>
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <span className="ml-2 text-muted-foreground">Loading gallery...</span>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-4 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-md flex items-center gap-2">
+      <div className="p-4 bg-destructive/10 text-destructive rounded-md flex items-center gap-2">
         <AlertTriangle className="w-5 h-5" />
         <span>{error}</span>
       </div>
@@ -211,7 +211,7 @@ const ShowcaseGallery: React.FC<ShowcaseGalleryProps> = ({ refreshKey }) => {
           <Button onClick={handlePrevPage} disabled={currentPage === 1} variant="outline" size="sm">
             <ChevronLeft size={16} /> Previous
           </Button>
-          <span className="text-sm text-gray-700 dark:text-gray-300">
+          <span className="text-sm text-muted-foreground">
             Page {currentPage} of {totalPages}
           </span>
           <Button onClick={handleNextPage} disabled={currentPage === totalPages} variant="outline" size="sm">
@@ -232,11 +232,11 @@ const ShowcaseGallery: React.FC<ShowcaseGalleryProps> = ({ refreshKey }) => {
           <div className="flex flex-col items-center space-y-4">
             <img src={selectedImage.publicUrl} alt={selectedImage.title || 'Gallery Image'} className="max-w-full h-auto rounded-lg" />
             {selectedImage.description && (
-              <p className="text-sm text-gray-700 dark:text-gray-300 text-center">
+              <p className="text-sm text-foreground text-center">
                 {selectedImage.description}
               </p>
             )}
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-xs text-muted-foreground">
               Category: {selectedImage.category} | Uploaded on: {new Date(selectedImage.uploaded_at).toLocaleDateString()}
             </p>
           </div>

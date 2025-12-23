@@ -229,19 +229,19 @@ const CustomerLoyalty: React.FC<CustomerLoyaltyProps> = ({ onUpdate }) => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-white">Customer Loyalty Management</h2>
-          <p className="text-gray-400 text-sm">View and manage customer loyalty points and tiers</p>
+          <h2 className="text-xl font-semibold text-foreground">Customer Loyalty Management</h2>
+          <p className="text-muted-foreground text-sm">View and manage customer loyalty points and tiers</p>
         </div>
       </div>
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
         <Input
           placeholder="Search customers by name, email, or phone..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 bg-gray-800 border-gray-700 text-white"
+          className="pl-10 bg-background border-input text-foreground"
         />
       </div>
 
@@ -255,7 +255,7 @@ const CustomerLoyalty: React.FC<CustomerLoyaltyProps> = ({ onUpdate }) => {
             transition={{ delay: index * 0.1 }}
           >
             <Card
-              className="bg-gray-800 border-gray-700 cursor-pointer hover:bg-gray-750 transition-colors"
+              className="bg-card border-border cursor-pointer hover:bg-muted/50 transition-colors"
               onClick={() => handleCustomerClick(customer)}
             >
               <div className="p-4">
@@ -268,8 +268,9 @@ const CustomerLoyalty: React.FC<CustomerLoyaltyProps> = ({ onUpdate }) => {
                       {customer.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <h3 className="text-white font-medium text-sm">{customer.name}</h3>
-                      <p className="text-gray-400 text-xs">{customer.email}</p>
+                      <h3 className="text-card-foreground font-medium text-sm">{customer.name}</h3>
+                      <p className="text-muted-foreground text-xs">{customer.email}</p>
+                      <p className="text-foreground/70 text-xs">{customer.email}</p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -288,23 +289,23 @@ const CustomerLoyalty: React.FC<CustomerLoyaltyProps> = ({ onUpdate }) => {
 
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-400 text-sm">Current Points:</span>
-                    <span className="text-pink-400 font-semibold">{customer.loyalty_points.toLocaleString()}</span>
+                    <span className="text-foreground/70 text-sm">Current Points:</span>
+                    <span className="text-primary font-semibold">{customer.loyalty_points.toLocaleString()}</span>
                   </div>
 
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-400 text-sm">Total Earned:</span>
-                    <span className="text-green-400 text-sm">{customer.total_points_earned.toLocaleString()}</span>
+                    <span className="text-foreground/70 text-sm">Total Earned:</span>
+                    <span className="text-success text-sm">{customer.total_points_earned.toLocaleString()}</span>
                   </div>
 
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-400 text-sm">Discount:</span>
-                    <span className="text-blue-400 text-sm">{customer.discount_percentage}%</span>
+                    <span className="text-foreground/70 text-sm">Discount:</span>
+                    <span className="text-blue-500 text-sm">{customer.discount_percentage}%</span>
                   </div>
 
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-400 text-sm">Referral Code:</span>
-                    <span className="text-yellow-400 text-sm font-mono">{customer.referral_code}</span>
+                    <span className="text-foreground/70 text-sm">Referral Code:</span>
+                    <span className="text-warning text-sm font-mono">{customer.referral_code}</span>
                   </div>
                 </div>
               </div>
@@ -315,8 +316,8 @@ const CustomerLoyalty: React.FC<CustomerLoyaltyProps> = ({ onUpdate }) => {
 
       {filteredCustomers.length === 0 && (
         <div className="text-center py-12">
-          <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-400">No customers found</p>
+          <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+          <p className="text-muted-foreground">No customers found</p>
         </div>
       )}
 
@@ -325,7 +326,7 @@ const CustomerLoyalty: React.FC<CustomerLoyaltyProps> = ({ onUpdate }) => {
         isOpen={showDetailModal}
         onClose={() => setShowDetailModal(false)}
       >
-        <div className="bg-gray-800 rounded-lg p-6 w-full max-w-2xl">
+        <div className="bg-card rounded-lg p-6 w-full max-w-2xl border border-border">
           {selectedCustomer && (
             <>
               <div className="flex items-center justify-between mb-6">
@@ -337,13 +338,13 @@ const CustomerLoyalty: React.FC<CustomerLoyaltyProps> = ({ onUpdate }) => {
                     {selectedCustomer.name.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold text-white">{selectedCustomer.name}</h3>
-                    <p className="text-gray-400">{selectedCustomer.email}</p>
+                    <h3 className="text-xl font-semibold text-card-foreground">{selectedCustomer.name}</h3>
+                    <p className="text-muted-foreground">{selectedCustomer.email}</p>
                   </div>
                 </div>
                 <Button
                   onClick={() => setShowAdjustModal(true)}
-                  className="bg-pink-600 hover:bg-pink-700"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
                   size="sm"
                 >
                   Adjust Points
@@ -351,44 +352,44 @@ const CustomerLoyalty: React.FC<CustomerLoyaltyProps> = ({ onUpdate }) => {
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-gray-700 rounded-lg p-3 text-center">
-                  <p className="text-gray-400 text-sm">Current Points</p>
-                  <p className="text-2xl font-bold text-pink-400">{selectedCustomer.loyalty_points.toLocaleString()}</p>
+                <div className="bg-muted/50 rounded-lg p-3 text-center border border-border">
+                  <p className="text-foreground/70 text-sm">Current Points</p>
+                  <p className="text-2xl font-bold text-primary">{selectedCustomer.loyalty_points.toLocaleString()}</p>
                 </div>
-                <div className="bg-gray-700 rounded-lg p-3 text-center">
-                  <p className="text-gray-400 text-sm">Total Earned</p>
-                  <p className="text-2xl font-bold text-green-400">{selectedCustomer.total_points_earned.toLocaleString()}</p>
+                <div className="bg-muted/50 rounded-lg p-3 text-center border border-border">
+                  <p className="text-foreground/70 text-sm">Total Earned</p>
+                  <p className="text-2xl font-bold text-success">{selectedCustomer.total_points_earned.toLocaleString()}</p>
                 </div>
-                <div className="bg-gray-700 rounded-lg p-3 text-center">
-                  <p className="text-gray-400 text-sm">Total Spent</p>
-                  <p className="text-2xl font-bold text-red-400">{selectedCustomer.total_points_spent.toLocaleString()}</p>
+                <div className="bg-muted/50 rounded-lg p-3 text-center border border-border">
+                  <p className="text-foreground/70 text-sm">Total Spent</p>
+                  <p className="text-2xl font-bold text-destructive">{selectedCustomer.total_points_spent.toLocaleString()}</p>
                 </div>
-                <div className="bg-gray-700 rounded-lg p-3 text-center">
-                  <p className="text-gray-400 text-sm">Tier Discount</p>
-                  <p className="text-2xl font-bold text-blue-400">{selectedCustomer.discount_percentage}%</p>
+                <div className="bg-muted/50 rounded-lg p-3 text-center border border-border">
+                  <p className="text-foreground/70 text-sm">Tier Discount</p>
+                  <p className="text-2xl font-bold text-blue-500">{selectedCustomer.discount_percentage}%</p>
                 </div>
               </div>
 
               <div>
-                <h4 className="text-lg font-semibold text-white mb-4">Recent Transactions</h4>
+                <h4 className="text-lg font-semibold text-card-foreground mb-4">Recent Transactions</h4>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {transactions.map((transaction) => (
-                    <div key={transaction.id} className="bg-gray-700 rounded-lg p-3">
+                    <div key={transaction.id} className="bg-muted/30 rounded-lg p-3 border border-border">
                       <div className="flex justify-between items-start">
                         <div>
-                          <p className="text-white text-sm font-medium">{transaction.description}</p>
-                          <p className="text-gray-400 text-xs mt-1">
+                          <p className="text-card-foreground text-sm font-medium">{transaction.description}</p>
+                          <p className="text-foreground/70 text-xs mt-1">
                             {transaction.reference_type} • {formatDate(transaction.created_at)}
                           </p>
                         </div>
                         <div className="text-right">
                           {transaction.points_earned > 0 && (
-                            <span className="text-green-400 font-semibold">
+                            <span className="text-success font-semibold">
                               +{transaction.points_earned}
                             </span>
                           )}
                           {transaction.points_spent > 0 && (
-                            <span className="text-red-400 font-semibold">
+                            <span className="text-destructive font-semibold">
                               -{transaction.points_spent}
                             </span>
                           )}
@@ -397,7 +398,7 @@ const CustomerLoyalty: React.FC<CustomerLoyaltyProps> = ({ onUpdate }) => {
                     </div>
                   ))}
                   {transactions.length === 0 && (
-                    <p className="text-gray-400 text-center py-4">No transactions found</p>
+                    <p className="text-muted-foreground text-center py-4">No transactions found</p>
                   )}
                 </div>
               </div>
@@ -411,19 +412,19 @@ const CustomerLoyalty: React.FC<CustomerLoyaltyProps> = ({ onUpdate }) => {
         isOpen={showAdjustModal}
         onClose={() => setShowAdjustModal(false)}
       >
-        <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md">
-          <h3 className="text-lg font-semibold text-white mb-4">Adjust Customer Points</h3>
+        <div className="bg-card rounded-lg p-6 w-full max-w-md border border-border">
+          <h3 className="text-lg font-semibold text-card-foreground mb-4">Adjust Customer Points</h3>
 
           <form onSubmit={handlePointAdjustment} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Adjustment Type</label>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Adjustment Type</label>
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => setAdjustmentType('add')}
                   className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-medium transition-colors ${adjustmentType === 'add'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    ? 'bg-success text-success-foreground'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
                     }`}
                 >
                   <Plus className="w-4 h-4" />
@@ -433,8 +434,8 @@ const CustomerLoyalty: React.FC<CustomerLoyaltyProps> = ({ onUpdate }) => {
                   type="button"
                   onClick={() => setAdjustmentType('subtract')}
                   className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-medium transition-colors ${adjustmentType === 'subtract'
-                    ? 'bg-red-600 text-white'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    ? 'bg-destructive text-destructive-foreground'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
                     }`}
                 >
                   <Minus className="w-4 h-4" />
@@ -449,16 +450,16 @@ const CustomerLoyalty: React.FC<CustomerLoyaltyProps> = ({ onUpdate }) => {
               min="1"
               value={adjustmentPoints}
               onChange={(e) => setAdjustmentPoints(e.target.value)}
-              className="bg-gray-700 border-gray-600 text-white"
+              className="bg-background border-input text-foreground"
               required
             />
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Reason *</label>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Reason *</label>
               <textarea
                 value={adjustmentReason}
                 onChange={(e) => setAdjustmentReason(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-pink-500"
+                className="w-full px-3 py-2 bg-background border border-input rounded-lg text-foreground focus:ring-2 focus:ring-primary"
                 rows={3}
                 placeholder="Reason for adjustment..."
                 required
@@ -475,7 +476,7 @@ const CustomerLoyalty: React.FC<CustomerLoyaltyProps> = ({ onUpdate }) => {
               </Button>
               <Button
                 type="submit"
-                className={adjustmentType === 'add' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+                className={adjustmentType === 'add' ? 'bg-success hover:bg-success/90 text-success-foreground' : 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'}
               >
                 {adjustmentType === 'add' ? 'Add' : 'Subtract'} Points
               </Button>

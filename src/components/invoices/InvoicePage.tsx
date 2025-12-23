@@ -18,12 +18,20 @@ interface OrderDetails {
   paid: number;
   balance: number;
   customer_id: string;
+  order_type?: string;
+  quantity?: number;
   customer: {
     name: string;
     phone: string;
     address: string | null;
     code?: string | null;
   } | null;
+  payments?: {
+    date: string;
+    amount: number;
+    method: string;
+    id: string;
+  }[];
 }
 
 const InvoicePage: React.FC = () => {
@@ -36,10 +44,16 @@ const InvoicePage: React.FC = () => {
   const printableContentRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = useReactToPrint({
-    content: () => printableContentRef.current,
-    documentTitle: `Invoice #${order?.id || id}`,
+    contentRef: printableContentRef,
+    documentTitle: `Invoice-${order?.id || id}`,
     onBeforeGetContent: () => new Promise<void>((resolve) => setTimeout(resolve, 250)),
-    pageStyle: `@media print { body { -webkit-print-color-adjust: exact; } @page { size: A4; margin: 20mm; } }`,
+    pageStyle: `
+      @media print { 
+        body { -webkit-print-color-adjust: exact; } 
+        @page { size: A4; margin: 20mm; }
+        .no-print { display: none !important; }
+      }
+    `,
   });
 
   // WhatsApp Dashboard-க்கு அனுப்பும் ஃபங்ஷன்
@@ -65,47 +79,69 @@ const InvoicePage: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const { data, error: viewError } = await supabase
-          .from('all_order_summary')
-          .select('order_id, order_date, total_amount, amount_paid, balance_due, customer_id, customer_name, customer_phone')
+        // Query the 'orders' table directly to ensure we get all fields like quantity and order_type
+        const { data, error: fetchError } = await supabase
+          .from('orders')
+          .select(`
+            id,
+            date,
+            total_amount,
+            amount_received,
+            balance_amount,
+            order_type,
+            quantity,
+            customer_id,
+            customers (
+              name,
+              phone,
+              address,
+              customer_code
+            )
+          `)
+          .eq('id', id)
+          .single();
+
+        if (fetchError) throw fetchError;
+        if (!data) throw new Error(`Invoice #${id} not found.`);
+
+        // Type assertion for the joined customer data
+        const customerData = data.customers as any;
+
+        // Fetch payments for this order
+        const { data: paymentsData } = await supabase
+          .from('payments')
+          .select('id, payment_date, amount_paid, payment_method, notes')
           .eq('order_id', id)
-          .single();
+          .order('payment_date', { ascending: false });
 
-        if (viewError) throw viewError;
-        if (!data) throw new Error(`இன்வாய்ஸ் #${id} கிடைக்கவில்லை.`);
-
-        setOrder({
-          id: data.order_id,
-          date: data.order_date,
+        const orderDetails: OrderDetails = {
+          id: data.id,
+          date: data.date,
           total_amount: data.total_amount,
-          paid: data.amount_paid,
-          balance: data.balance_due,
+          paid: data.amount_received, // key is amount_received in orders table
+          balance: data.balance_amount,
           customer_id: data.customer_id,
+          order_type: data.order_type,
+          quantity: data.quantity,
           customer: {
-            phone: data.customer_phone || '',
-            address: null,
-          },
-        });
-
-        // Use a second query to get the customer_code from the customers table
-        const { data: customerData } = await supabase
-          .from('customers')
-          .select('customer_code, address')
-          .eq('id', data.customer_id)
-          .single();
-
-        setOrder(prev => prev ? ({
-          ...prev,
-          customer: {
-            ...prev.customer!,
-            address: customerData?.address || null, // Also fetch address if available
+            name: customerData?.name || 'Walk-in Customer',
+            phone: customerData?.phone || '',
+            address: customerData?.address || null,
             code: customerData?.customer_code || null,
-          }
-        }) : null);
+          },
+          payments: paymentsData ? paymentsData.map(p => ({
+            date: p.payment_date,
+            amount: p.amount_paid,
+            method: p.payment_method,
+            id: p.id
+          })) : []
+        };
+
+        setOrder(orderDetails);
 
       } catch (err: any) {
-        console.error("இன்வாய்ஸ் தரவைப் பெறுவதில் பிழை:", err);
-        setError(err.message || 'இன்வாய்ஸ் தரவை ஏற்ற முடியவில்லை. மீண்டும் முயற்சிக்கவும்.');
+        console.error("Error fetching invoice data:", err);
+        setError(err.message || 'Failed to load invoice data.');
       } finally {
         setLoading(false);
       }
@@ -140,34 +176,51 @@ const InvoicePage: React.FC = () => {
   }
 
   return (
-    <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-        <div>
-          <Link to="/invoices" className="text-sm text-primary-600 hover:underline flex items-center mb-1">
-            <ArrowLeft className="w-4 h-4 mr-1" />
-            அனைத்து இன்வாய்ஸ்களுக்கும் திரும்புக
-          </Link>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">🧾 இன்வாய்ஸ் #{order.id}</h1>
-        </div>
-        <div className="flex items-center space-x-2 w-full sm:w-auto">
-          <Button onClick={handlePrint} variant="secondary" className="w-1/2 sm:w-auto flex-1 sm:flex-none">
-            <Printer className="w-4 h-4 mr-2" />
-            அச்சிடு / பதிவிறக்கு
-          </Button>
-          <Button
-            variant="success"
-            className="w-1/2 sm:w-auto flex-1 sm:flex-none"
-            onClick={handleGoToWhatsAppDashboard}
-            disabled={!order.customer?.phone}
-          >
-            <MessageCircle className="w-4 h-4 mr-2" />
-            WhatsApp
-          </Button>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-      <div ref={printableContentRef} className="bg-white rounded-lg shadow-md p-2 sm:p-4">
-        <InvoiceView order={order} />
+        {/* Navigation & Toolbar */}
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8 no-print">
+          <div className="flex items-center gap-4">
+            <Link to="/invoices">
+              <Button variant="ghost" size="sm" className="gap-2">
+                <ArrowLeft size={16} /> Back
+              </Button>
+            </Link>
+            <h1 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Invoice #{order.id}</h1>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={handlePrint}
+              variant="primary"
+              className="shadow-md"
+            >
+              <Printer className="w-4 h-4 mr-2" />
+              Print / Download PDF
+            </Button>
+
+            {/* Hide WhatsApp if no phone */}
+            {order.customer?.phone && (
+              <Button
+                variant="success"
+                onClick={handleGoToWhatsAppDashboard}
+                className="shadow-md bg-[#25D366] hover:bg-[#128C7E] text-white border-none"
+              >
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Share via WhatsApp
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Invoice Paper Container */}
+        <div className="shadow-2xl rounded-lg overflow-hidden ring-1 ring-black/5">
+          <div ref={printableContentRef}>
+            <InvoiceView order={order} />
+          </div>
+        </div>
+
       </div>
     </div>
   );

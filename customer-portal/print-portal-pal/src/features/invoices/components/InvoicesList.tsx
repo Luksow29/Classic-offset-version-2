@@ -199,41 +199,46 @@ export default function CustomerInvoices({ customerId }: CustomerInvoicesProps) 
         </Card>
       ) : (
         groupedInvoices.map((invoice) => (
-          <Collapsible key={invoice.order_id} className="border rounded-lg">
-            <CollapsibleTrigger className="w-full p-6 text-left">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="text-lg font-semibold">
-                    {t("invoices.invoice_number", { id: invoice.order_id })}
-                  </h3>
-                  <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
-                    <Calendar className="h-4 w-4" />
-                    {formatDate(invoice.order_date)}
+          <Collapsible key={invoice.order_id} className="border rounded-lg bg-white dark:bg-gray-900">
+            <div className="flex items-center justify-between p-6">
+              <CollapsibleTrigger asChild>
+                <button className="flex-1 text-left flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 -m-2 p-2 rounded-lg transition-colors">
+                  <div>
+                    <h3 className="text-lg font-semibold">
+                      {t("invoices.invoice_number", { id: invoice.order_id })}
+                    </h3>
+                    <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
+                      <Calendar className="h-4 w-4" />
+                      {formatDate(invoice.order_date)}
+                    </div>
                   </div>
-                </div>
-                <div className="text-right">
-                  <div className="font-semibold text-xl">
-                    ₹{invoice.total_amount.toLocaleString()}
+                  <div className="text-right mr-4">
+                    <div className="font-semibold text-xl">
+                      ₹{invoice.total_amount.toLocaleString()}
+                    </div>
+                    {getStatusBadge(invoice.status)}
                   </div>
-                  {getStatusBadge(invoice.status)}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSelectedInvoice(invoice)}
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        {t("invoices.view")}
-                      </Button>
-                    </DialogTrigger>
-                  </Dialog>
                   <ChevronsUpDown className="h-5 w-5 text-muted-foreground" />
-                </div>
+                </button>
+              </CollapsibleTrigger>
+              <div className="flex items-center gap-2 ml-4">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedInvoice(invoice);
+                      }}
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      {t("invoices.view")}
+                    </Button>
+                  </DialogTrigger>
+                </Dialog>
               </div>
-            </CollapsibleTrigger>
+            </div>
             <CollapsibleContent className="p-6 border-t">
               <div className="mb-4">
                 <h4 className="font-semibold mb-2">{t("invoices.summary")}</h4>

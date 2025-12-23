@@ -27,6 +27,12 @@
       ],
       "@shared/*": [
         "./shared/*"
+      ],
+      "@classic-offset/shared": [
+        "./shared/index.ts"
+      ],
+      "@classic-offset/shared/*": [
+        "./shared/*"
       ]
     },
     "allowImportingTsExtensions": true

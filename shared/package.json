@@ -1,0 +1,34 @@
+{
+  "name": "@classic-offset/shared",
+  "version": "1.0.0",
+  "description": "Shared code between Classic Offset main app and customer portal",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "private": true,
+  "exports": {
+    ".": "./index.ts",
+    "./types": "./types/index.ts",
+    "./api": "./api/index.ts",
+    "./hooks": "./hooks/index.ts",
+    "./utils": "./utils/index.ts",
+    "./components": "./components/index.ts"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "@supabase/supabase-js": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "typescript": "^5.0.0"
+  },
+  "keywords": [
+    "classic-offset",
+    "shared",
+    "supabase",
+    "react"
+  ],
+  "author": "Classic Offset",
+  "license": "UNLICENSED"
+}

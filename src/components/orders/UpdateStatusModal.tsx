@@ -7,7 +7,7 @@ import { logActivity } from '@/lib/activityLogger';
 import { useUser } from '@/context/UserContext';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
-import { Loader2, CheckCircle, Pencil, Printer, Truck } from 'lucide-react';
+import { Loader2, CheckCircle, Pencil, Printer, Truck, FileWarning, Package } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { OrdersTableOrder } from '@/types';
 import { sendOrderUpdateNotification } from '@/lib/customerNotifications';
@@ -20,11 +20,12 @@ interface Props {
   onStatusUpdated: () => void;
 }
 
-const statusOptions: { name: 'Pending' | 'Design' | 'Printing' | 'Delivered', icon: React.ElementType }[] = [
-    { name: 'Pending', icon: Pencil },
-    { name: 'Design', icon: Printer },
-    { name: 'Printing', icon: Truck },
-    { name: 'Delivered', icon: CheckCircle },
+const statusOptions: { name: 'Pending' | 'Design' | 'Correction' | 'Printing' | 'Delivered', icon: React.ElementType, description: string }[] = [
+  { name: 'Pending', icon: Pencil, description: 'Order received, waiting for action' },
+  { name: 'Design', icon: Printer, description: 'Currently in design phase' },
+  { name: 'Correction', icon: FileWarning, description: 'Changes requested/Draft in review' },
+  { name: 'Printing', icon: Truck, description: 'Sent to production/printing' },
+  { name: 'Delivered', icon: CheckCircle, description: 'Order completed and delivered' },
 ];
 
 const UpdateStatusModal: React.FC<Props> = ({ order, isOpen, onClose, onStatusUpdated }) => {
@@ -40,7 +41,7 @@ const UpdateStatusModal: React.FC<Props> = ({ order, isOpen, onClose, onStatusUp
     }
     setLoading(true);
     const userName = userProfile?.name || 'Admin';
-    
+
     const { error: supabaseError } = await supabase.from('order_status_log').insert({
       order_id: order.order_id,
       status: newStatus,
@@ -57,49 +58,30 @@ const UpdateStatusModal: React.FC<Props> = ({ order, isOpen, onClose, onStatusUp
 
     // Send notification to customer portal (Supabase)
     try {
-      console.log('[UpdateStatusModal] Attempting to send notification for order:', order.order_id);
-      
-      // Get customer's Supabase user_id through orders -> customers
-      const { data: orderData, error: orderError } = await supabase
+      const { data: orderData } = await supabase
         .from('orders')
         .select('customer_id')
         .eq('id', order.order_id)
         .single();
-      
-      console.log('[UpdateStatusModal] Order data:', orderData, 'Error:', orderError);
-      
-      if (orderError || !orderData?.customer_id) {
-        console.error('[UpdateStatusModal] Error fetching order customer_id:', orderError);
-      } else {
-        // Now get user_id from customers table
-        const { data: customerData, error: customerError } = await supabase
+
+      if (orderData?.customer_id) {
+        const { data: customerData } = await supabase
           .from('customers')
           .select('user_id')
           .eq('id', orderData.customer_id)
           .single();
-        
-        console.log('[UpdateStatusModal] Customer data:', customerData, 'Error:', customerError);
-        
-        if (customerError) {
-          console.error('[UpdateStatusModal] Error fetching customer:', customerError);
-        }
-        
+
         if (customerData?.user_id) {
-          console.log('[UpdateStatusModal] Sending notification to user_id:', customerData.user_id);
-          const result = await sendOrderUpdateNotification(
+          await sendOrderUpdateNotification(
             customerData.user_id,
             order.order_id,
             newStatus,
             `Your order #${order.order_id} status has been updated to "${newStatus}".`
           );
-          console.log('[UpdateStatusModal] Notification result:', result);
-        } else {
-          console.warn('[UpdateStatusModal] No user_id found for customer');
         }
       }
     } catch (notifError) {
       console.error('[UpdateStatusModal] Error sending customer notification:', notifError);
-      // Don't fail the entire operation if notification fails
     }
 
     // Send notification to admin panel (Firebase)
@@ -115,9 +97,8 @@ const UpdateStatusModal: React.FC<Props> = ({ order, isOpen, onClose, onStatusUp
       });
     } catch (firestoreError) {
       console.error("Error adding notification to Firestore:", firestoreError);
-      toast.error("Failed to create live notification.");
     }
-    
+
     const activityMessage = `Updated status of Order #${order.order_id} to "${newStatus}"`;
     await logActivity(activityMessage, userName);
 
@@ -129,36 +110,47 @@ const UpdateStatusModal: React.FC<Props> = ({ order, isOpen, onClose, onStatusUp
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Update Status for Order #${order.order_id}`}>
       <div className="space-y-4 pt-2">
-        <p className="text-sm text-gray-600 dark:text-gray-400">Select the new status for this order. This will notify relevant parties.</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Select the new status for this order. This will notify relevant parties.</p>
         {!canUpdateStatus && (
           <div className="p-3 text-sm text-red-700 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
             Permission denied: you don’t have access to update order status.
           </div>
         )}
-        <div className="grid grid-cols-2 gap-4">
-            {statusOptions.map(({name, icon: Icon}) => (
-                <button 
-                    key={name} 
-                    onClick={() => setNewStatus(name)}
-                    disabled={!canUpdateStatus || loading}
-                    className={`relative p-4 text-left rounded-lg border-2 transition-all transform hover:scale-105 ${
-                        newStatus === name ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/50 shadow-lg' : 'border-gray-200 dark:border-gray-600 hover:border-primary-400'
-                    }`}
-                >
-                    {newStatus === name && <CheckCircle className="w-5 h-5 text-primary-500 absolute top-2 right-2"/>}
-                    <div className="flex items-center gap-3">
-                        <Icon className={`w-6 h-6 ${newStatus === name ? 'text-primary-600' : 'text-gray-500'}`} />
-                        <p className={`font-semibold ${newStatus === name ? 'text-primary-700 dark:text-primary-200' : 'text-gray-800 dark:text-gray-100'}`}>{name}</p>
-                    </div>
-                </button>
-            ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {statusOptions.map(({ name, icon: Icon, description }) => (
+            <button
+              key={name}
+              onClick={() => setNewStatus(name)}
+              disabled={!canUpdateStatus || loading}
+              className={`relative p-4 text-left rounded-xl border-2 transition-all duration-200 ${newStatus === name
+                  ? 'border-primary bg-primary/5 dark:bg-primary/10 ring-1 ring-primary'
+                  : 'border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-primary/50 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                }`}
+            >
+              {newStatus === name && (
+                <div className="absolute top-3 right-3 text-primary animate-in fade-in zoom-in duration-300">
+                  <CheckCircle size={18} fill="currentColor" className="text-white dark:text-gray-900" />
+                </div>
+              )}
+
+              <div className="flex items-start gap-3">
+                <div className={`p-2 rounded-lg ${newStatus === name ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
+                  <Icon size={20} />
+                </div>
+                <div>
+                  <p className={`font-bold text-sm ${newStatus === name ? 'text-primary' : 'text-gray-900 dark:text-white'}`}>{name}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight mt-0.5">{description}</p>
+                </div>
+              </div>
+            </button>
+          ))}
         </div>
-        <div className="flex justify-end gap-3 pt-4">
-            <Button variant="outline" onClick={onClose} disabled={loading}>Cancel</Button>
-            <Button onClick={handleUpdate} disabled={loading || !canUpdateStatus || newStatus === order.status}>
-                {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin"/>}
-                Update Status
-            </Button>
+        <div className="flex justify-end gap-3 pt-6 border-t border-gray-100 dark:border-gray-800 mt-6">
+          <Button variant="outline" onClick={onClose} disabled={loading}>Cancel</Button>
+          <Button onClick={handleUpdate} disabled={loading || !canUpdateStatus || newStatus === order.status}>
+            {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            Update Status
+          </Button>
         </div>
       </div>
     </Modal>

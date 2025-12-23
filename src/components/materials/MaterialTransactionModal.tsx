@@ -4,7 +4,7 @@ import Input from '../ui/Input';
 import Select from '../ui/Select';
 import TextArea from '../ui/TextArea';
 import Button from '../ui/Button';
-import { Loader2, AlertCircle, Plus, Minus, RotateCcw } from 'lucide-react';
+import { Loader2, AlertCircle, Plus, Minus, RotateCcw, ArrowRightLeft } from 'lucide-react';
 import { Material } from './MaterialsPage';
 import { supabase } from '@/lib/supabaseClient';
 import toast from 'react-hot-toast';
@@ -55,7 +55,7 @@ const MaterialTransactionModal: React.FC<MaterialTransactionModalProps> = ({
     const quantity = parseFloat(formData.quantity) || 0;
     const unitCost = parseFloat(formData.unit_cost) || 0;
     const totalCost = quantity * unitCost;
-    
+
     if (quantity > 0 && unitCost > 0) {
       setFormData(prev => ({ ...prev, total_cost: totalCost.toFixed(2) }));
     } else {
@@ -131,14 +131,10 @@ const MaterialTransactionModal: React.FC<MaterialTransactionModalProps> = ({
 
   const getTransactionIcon = (type: string) => {
     switch (type) {
-      case 'IN':
-        return <Plus className="w-4 h-4 text-green-500" />;
-      case 'OUT':
-        return <Minus className="w-4 h-4 text-red-500" />;
-      case 'ADJUSTMENT':
-        return <RotateCcw className="w-4 h-4 text-blue-500" />;
-      default:
-        return null;
+      case 'IN': return <Plus className="w-4 h-4 text-green-500" />;
+      case 'OUT': return <Minus className="w-4 h-4 text-red-500" />;
+      case 'ADJUSTMENT': return <RotateCcw className="w-4 h-4 text-blue-500" />;
+      default: return null;
     }
   };
 
@@ -150,10 +146,22 @@ const MaterialTransactionModal: React.FC<MaterialTransactionModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Add Transaction - ${material.material_name}`}
+      title={null}
       size="lg"
     >
-      <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+      <div className="flex items-center gap-3 mb-6 p-1">
+        <div className="p-2 rounded-lg bg-indigo-100 text-indigo-600">
+          <ArrowRightLeft className="w-6 h-6" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Record Transaction</h2>
+          <p className="text-sm text-gray-500">
+            Update stock for "{material.material_name}"
+          </p>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-5">
         {error && (
           <div className="flex items-center gap-2 p-3 bg-red-50 text-red-700 border border-red-200 rounded-md text-sm">
             <AlertCircle size={18} />
@@ -162,16 +170,9 @@ const MaterialTransactionModal: React.FC<MaterialTransactionModalProps> = ({
         )}
 
         {/* Current Stock Info */}
-        <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-          <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-1">Current Stock Information</h4>
-          <p className="text-sm text-blue-600 dark:text-blue-300">
-            Available: <span className="font-semibold">{material.current_quantity} {material.unit_of_measurement}</span>
-            {material.minimum_stock_level > 0 && (
-              <span className="ml-4">
-                Minimum: <span className="font-semibold">{material.minimum_stock_level} {material.unit_of_measurement}</span>
-              </span>
-            )}
-          </p>
+        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-900/50 flex flex-col sm:flex-row justify-between items-center gap-2">
+          <span className="text-sm text-blue-700 dark:text-blue-300">Currently Available</span>
+          <span className="text-lg font-bold text-blue-900 dark:text-blue-100">{material.current_quantity} {material.unit_of_measurement}</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -186,7 +187,7 @@ const MaterialTransactionModal: React.FC<MaterialTransactionModalProps> = ({
                 onChange={handleChange}
                 required
                 disabled={loading}
-                className="w-full px-3 py-2 pl-10 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                className="w-full px-3 py-2 pl-10 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white transition-all appearance-none"
               >
                 {transactionTypeOptions.map(option => (
                   <option key={option.value} value={option.value}>
@@ -222,7 +223,7 @@ const MaterialTransactionModal: React.FC<MaterialTransactionModalProps> = ({
             onChange={handleChange}
             required
             disabled={loading}
-            placeholder="Enter quantity"
+            placeholder="0.00"
           />
 
           <Input
@@ -234,7 +235,7 @@ const MaterialTransactionModal: React.FC<MaterialTransactionModalProps> = ({
             value={formData.unit_cost}
             onChange={handleChange}
             disabled={loading}
-            placeholder="Cost per unit"
+            placeholder="0.00"
           />
 
           <Input
@@ -270,32 +271,27 @@ const MaterialTransactionModal: React.FC<MaterialTransactionModalProps> = ({
         />
 
         {/* Transaction Preview */}
-        {formData.quantity && (
-          <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-            <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Transaction Preview</h4>
-            <div className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
-              <p>
-                <span className="font-medium">Action:</span> {formData.transaction_type === 'IN' ? 'Add' : formData.transaction_type === 'OUT' ? 'Remove' : 'Adjust'} {formData.quantity} {material.unit_of_measurement}
-              </p>
-              <p>
-                <span className="font-medium">New Quantity:</span> {
-                  formData.transaction_type === 'IN' 
-                    ? material.current_quantity + parseFloat(formData.quantity || '0')
-                    : formData.transaction_type === 'OUT'
-                    ? material.current_quantity - parseFloat(formData.quantity || '0')
-                    : parseFloat(formData.quantity || '0')
-                } {material.unit_of_measurement}
-              </p>
-              {formData.total_cost && (
-                <p>
-                  <span className="font-medium">Total Cost:</span> ₹{parseFloat(formData.total_cost).toLocaleString('en-IN')}
-                </p>
-              )}
+        {formData.quantity && !isNaN(parseFloat(formData.quantity)) && (
+          <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-sm border border-gray-100 dark:border-gray-600">
+            <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-2">New Quantity Preview</h4>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-500">Current: {material.current_quantity}</span>
+              <span className="text-gray-400">→</span>
+              <span className={`font-bold ${formData.transaction_type === 'IN' ? 'text-green-600' :
+                  formData.transaction_type === 'OUT' ? 'text-red-600' : 'text-blue-600'
+                }`}>
+                {formData.transaction_type === 'IN'
+                  ? (material.current_quantity + parseFloat(formData.quantity)).toFixed(2)
+                  : formData.transaction_type === 'OUT'
+                    ? (material.current_quantity - parseFloat(formData.quantity)).toFixed(2)
+                    : parseFloat(formData.quantity).toFixed(2)
+                }
+              </span>
             </div>
           </div>
         )}
 
-        <div className="flex justify-end gap-3 pt-4 border-t">
+        <div className="flex justify-end gap-3 pt-4 border-t dark:border-gray-700">
           <Button
             type="button"
             variant="outline"
@@ -308,12 +304,12 @@ const MaterialTransactionModal: React.FC<MaterialTransactionModalProps> = ({
             type="submit"
             variant="primary"
             disabled={loading}
+            className="min-w-[120px]"
           >
             {loading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              'Record Transaction'
-            )}
+              <Loader2 className="w-5 h-5 animate-spin mr-2" />
+            ) : null}
+            Record
           </Button>
         </div>
       </form>

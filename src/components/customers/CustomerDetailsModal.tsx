@@ -1,20 +1,23 @@
+// src/components/customers/CustomerDetailsModal.tsx
 import React, { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import Modal from '../ui/Modal';
-import { Loader2, AlertTriangle, FileX, MessageSquare, DollarSign, ListOrdered, ClipboardList } from 'lucide-react';
+import { Loader2, AlertTriangle, MessageSquare, DollarSign, ListOrdered, ClipboardList, Phone, Mail, MapPin, ShoppingBag, CreditCard } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Button from '../ui/Button';
-import CustomerCommunicationLog from './enhancements/CustomerCommunicationLog'; // Import the new component
+import CustomerCommunicationLog from './enhancements/CustomerCommunicationLog';
+import { motion, AnimatePresence } from 'framer-motion';
 
-// Interface for order data from the view
+// Interfaces
 interface Order {
   order_id: number;
   total_amount: number;
   status?: string;
   date: string;
+  quantity: number;
+  order_type: string;
 }
 
-// Interface for payment data
 interface Payment {
   id: string;
   order_id: number;
@@ -23,13 +26,24 @@ interface Payment {
   created_at: string;
 }
 
-// Interface for WhatsApp log data
 interface WhatsappLog {
   id: number;
   phone: string;
   message: string;
   template_name?: string;
   sent_at: string;
+}
+
+interface CustomerDetails {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  joined_date: string | null;
+  total_orders: number | null;
+  balance_due: number | null;
+  tags: string[] | null;
 }
 
 interface CustomerDetailsModalProps {
@@ -40,254 +54,259 @@ interface CustomerDetailsModalProps {
 }
 
 const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({ customerId, customerName, isOpen, onClose }) => {
+  const [customer, setCustomer] = useState<CustomerDetails | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [whatsappLogs, setWhatsappLogs] = useState<WhatsappLog[]>([]);
-  
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'orders' | 'payments' | 'whatsapp' | 'communication'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'payments' | 'communication'>('orders');
 
-  // Add validation for customerId
-  if (!customerId || customerId.trim() === '') {
-    return (
-      <Modal isOpen={isOpen} onClose={onClose} title={`Customer Details: ${customerName}`} size="3xl">
-        <div className="text-center py-10 text-red-500">
-          <p>Invalid Customer ID: "{customerId}"</p>
-          <p className="text-sm text-gray-500 mt-2">Please contact support if this issue persists.</p>
-        </div>
-      </Modal>
-    );
-  }
-
-  const fetchCustomerDetails = useCallback(async () => {
-    if (!customerId || activeTab === 'communication') return;
-    
-    console.log('=== Fetching customer details ===');
-    console.log('Customer ID:', customerId);
-    console.log('Customer ID type:', typeof customerId);
-    console.log('Customer ID length:', customerId.length);
-    console.log('Customer Name:', customerName);
-    console.log('Active Tab:', activeTab);
-    
+  const fetchCustomerData = useCallback(async () => {
+    if (!customerId) return;
     setLoading(true);
     setError(null);
-
     try {
-      if (activeTab === 'orders') {
-        console.log('Fetching orders for customer ID:', customerId);
-        
-        // First try with customer_id
-        let { data, error: fetchError } = await supabase
-          .from('orders')
-          .select('id, total_amount, date, customer_id, customer_name, order_type, quantity')
-          .eq('customer_id', customerId)
-          .eq('is_deleted', false)
-          .order('date', { ascending: false });
+      // 1. Fetch Basic Info
+      const { data: custData, error: custError } = await supabase
+        .from('customer_summary')
+        .select('*')
+        .eq('id', customerId)
+        .single();
 
-        // If no results and we have a customer name, try with customer_name
-        if ((!data || data.length === 0) && customerName) {
-          console.log('No orders found by customer_id, trying customer_name:', customerName);
-          const { data: nameData, error: nameError } = await supabase
-            .from('orders')
-            .select('id, total_amount, date, customer_id, customer_name, order_type, quantity')
-            .eq('customer_name', customerName)
-            .eq('is_deleted', false)
-            .order('date', { ascending: false });
-          
-          if (!nameError) {
-            data = nameData;
-            fetchError = null;
-          }
-        }
+      if (custError && custError.code !== 'PGRST116') throw custError;
+      setCustomer(custData || { name: customerName, id: customerId } as any);
 
-        if (fetchError) {
-          console.error('Error fetching orders:', fetchError);
-          throw fetchError;
-        }
-        
-        console.log('Fetched orders data:', data);
-        
-        // Get the latest status for each order from order_status_log
-        const orderIds = (data || []).map(order => order.id);
-        let statusMap: Record<number, string> = {};
-        
-        if (orderIds.length > 0) {
-          const { data: statusData, error: statusError } = await supabase
-            .from('order_status_log')
-            .select('order_id, status, updated_at')
-            .in('order_id', orderIds)
-            .order('updated_at', { ascending: false });
+      // 2. Fetch Orders
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .select('id, total_amount, date, order_type, quantity') // Removed status
+        .eq('customer_id', customerId)
+        .eq('is_deleted', false)
+        .order('date', { ascending: false });
 
-          if (!statusError && statusData) {
-            // Create a map of order_id to latest status
-            statusData.forEach((log) => {
-              if (log.order_id && !statusMap[log.order_id]) {
-                statusMap[log.order_id] = log.status;
-              }
-            });
-          }
-        }
-        
-        // Transform data to match the expected interface with actual status
-        const transformedOrders = (data || []).map(order => ({
-          order_id: order.id,
-          total_amount: order.total_amount,
-          status: statusMap[order.id] || 'Pending', // Use actual status from log or default to Pending
-          date: order.date
-        }));
-        
-        setOrders(transformedOrders);
-      } else if (activeTab === 'payments') {
-        console.log('Fetching payments for customer ID:', customerId);
-        const { data, error: fetchError } = await supabase
-          .from('payments')
-          .select('id, order_id, amount_paid, payment_method, created_at')
-          .eq('customer_id', customerId)
-          .order('created_at', { ascending: false });
+      if (orderError) throw orderError;
 
-        if (fetchError) {
-          console.error('Error fetching payments:', fetchError);
-          throw fetchError;
-        }
-        
-        console.log('Fetched payments data:', data);
-        setPayments(data || []);
-      } else if (activeTab === 'whatsapp') {
-        const { data, error: fetchError } = await supabase
-          .from('whatsapp_log')
-          .select('id, phone, message, template_name, sent_at')
-          .eq('customer_id', customerId)
-          .order('sent_at', { ascending: false });
+      const formattedOrders = (orderData || []).map(o => ({
+        order_id: o.id,
+        total_amount: o.total_amount,
+        date: o.date,
+        quantity: o.quantity,
+        order_type: o.order_type
+      }));
+      setOrders(formattedOrders);
 
-        if (fetchError) throw fetchError;
-        setWhatsappLogs(data || []);
-      }
+      // 3. Fetch Payments
+      const { data: payData, error: payError } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('customer_id', customerId)
+        .order('created_at', { ascending: false });
+      if (payError) throw payError;
+      setPayments(payData || []);
+
+      // 4. Fetch WhatsApp
+      const { data: waData } = await supabase
+        .from('whatsapp_log')
+        .select('*')
+        .eq('customer_id', customerId)
+        .order('sent_at', { ascending: false });
+      setWhatsappLogs(waData || []);
+
     } catch (err: any) {
-      console.error(`Error fetching ${activeTab} for customer:`, err);
-      // ✅ FIX: Use err.message to display a meaningful error string
-      setError(err.message || `An unknown error occurred while fetching ${activeTab}.`);
+      console.error("Error loading details:", err);
+      setError(err.message || "Failed to load customer details");
     } finally {
       setLoading(false);
     }
-  }, [customerId, activeTab]);
+  }, [customerId]);
 
   useEffect(() => {
-    if (isOpen) {
-      fetchCustomerDetails();
-    }
-  }, [isOpen, customerId, activeTab, fetchCustomerDetails]);
+    if (isOpen) fetchCustomerData();
+  }, [isOpen, fetchCustomerData]);
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'delivered':
-        return 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400';
-      case 'printing':
-        return 'bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400';
-      case 'design':
-        return 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400';
-      case 'cancelled':
-        return 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400';
-      default:
-        return 'bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400';
-    }
-  };
-
-  const renderContent = () => {
-    if (loading) {
-      return <div className="flex justify-center items-center py-10"><Loader2 className="w-8 h-8 animate-spin text-primary-500" /></div>;
-    }
-    if (error) {
-      return <div className="py-10 text-center text-red-600"><AlertTriangle className="mx-auto h-8 w-8 mb-2" /><p>{error}</p></div>;
-    }
-
-    // ... (rest of the render logic is unchanged)
-
-    switch (activeTab) {
-      case 'orders':
-        return orders.length === 0 ? (
-          <div className="text-center py-10 text-gray-500"><FileX className="mx-auto h-10 w-10 mb-2" /><p>No orders found for this customer.</p></div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full table-auto text-sm">
-              <thead className="bg-gray-50 dark:bg-gray-700/50 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                <tr>
-                  <th className="px-4 py-2">Order #</th>
-                  <th className="px-4 py-2">Total</th>
-                  <th className="px-4 py-2">Status</th>
-                  <th className="px-4 py-2">Date</th>
-                  <th className="px-4 py-2"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {orders.map((order) => (
-                  <tr key={order.order_id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                    <td className="px-4 py-2 font-medium">#{order.order_id}</td>
-                    <td className="px-4 py-2">₹{order.total_amount.toLocaleString('en-IN')}</td>
-                    <td className="px-4 py-2">
-                      <span className={`px-2 py-1 text-xs rounded-full font-medium ${getStatusColor(order.status || 'pending')}`}>
-                        {order.status || 'Pending'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2">{new Date(order.date).toLocaleDateString('en-GB')}</td>
-                    <td className="px-4 py-2 text-right"><Link to={`/invoices/${order.order_id}`}><Button variant="link" size="sm">View Invoice</Button></Link></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        );
-      case 'payments':
-        return payments.length === 0 ? (
-            <div className="text-center py-10 text-gray-500"><DollarSign className="mx-auto h-10 w-10 mb-2" /><p>No payment records found.</p></div>
-        ) : (
-            <div className="overflow-x-auto">
-            <table className="min-w-full table-auto text-sm">
-                <thead className="bg-gray-50 dark:bg-gray-700/50 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                <tr><th className="px-4 py-2">Payment ID</th><th className="px-4 py-2">Order #</th><th className="px-4 py-2">Amount Paid</th><th className="px-4 py-2">Method</th><th className="px-4 py-2">Date</th></tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {payments.map((payment) => (<tr key={payment.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50"><td className="px-4 py-2 max-w-xs truncate">{payment.id}</td><td className="px-4 py-2">#{payment.order_id}</td><td className="px-4 py-2">₹{payment.amount_paid.toLocaleString('en-IN')}</td><td className="px-4 py-2">{payment.payment_method || '-'}</td><td className="px-4 py-2">{new Date(payment.created_at).toLocaleDateString('en-GB')}</td></tr>))}
-                </tbody>
-            </table>
-            </div>
-        );
-      case 'whatsapp':
-        return whatsappLogs.length === 0 ? (
-            <div className="text-center py-10 text-gray-500"><MessageSquare className="mx-auto h-10 w-10 mb-2" /><p>No WhatsApp logs found.</p></div>
-        ) : (
-            <div className="overflow-x-auto">
-            <table className="min-w-full table-auto text-sm">
-                <thead className="bg-gray-50 dark:bg-gray-700/50 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                <tr><th className="px-4 py-2">Phone</th><th className="px-4 py-2">Message</th><th className="px-4 py-2">Template</th><th className="px-4 py-2">Date</th></tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {whatsappLogs.map((log) => (<tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50"><td className="px-4 py-2">{log.phone}</td><td className="px-4 py-2 max-w-xs truncate">{log.message}</td><td className="px-4 py-2">{log.template_name || '-'}</td><td className="px-4 py-2">{new Date(log.sent_at).toLocaleDateString('en-GB')}</td></tr>))}
-                </tbody>
-            </table>
-            </div>
-        );
-      case 'communication':
-        return <CustomerCommunicationLog customerId={customerId} />;
-      default:
-        return null;
-    }
-  };
-
+  if (!isOpen) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Customer Details: ${customerName}`} size="3xl">
-      <div className="border-b border-gray-200 dark:border-gray-700 mb-4">
-        <nav className="-mb-px flex space-x-6 overflow-x-auto">
-          <button className={`flex items-center gap-2 px-1 py-3 text-sm font-medium whitespace-nowrap border-b-2 ${activeTab === 'orders' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`} onClick={() => setActiveTab('orders')}><ListOrdered size={16} /> Orders</button>
-          <button className={`flex items-center gap-2 px-1 py-3 text-sm font-medium whitespace-nowrap border-b-2 ${activeTab === 'payments' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`} onClick={() => setActiveTab('payments')}><DollarSign size={16} /> Payments</button>
-          <button className={`flex items-center gap-2 px-1 py-3 text-sm font-medium whitespace-nowrap border-b-2 ${activeTab === 'whatsapp' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`} onClick={() => setActiveTab('whatsapp')}><MessageSquare size={16} /> WhatsApp Logs</button>
-          <button className={`flex items-center gap-2 px-1 py-3 text-sm font-medium whitespace-nowrap border-b-2 ${activeTab === 'communication' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`} onClick={() => setActiveTab('communication')}><ClipboardList size={16} /> Communication Log</button>
-        </nav>
+    <Modal isOpen={isOpen} onClose={onClose} title="Customer Profile" size="3xl">
+      <div className="flex flex-col lg:flex-row h-[600px] bg-gray-50 dark:bg-gray-900/50 -m-6 rounded-b-xl overflow-hidden">
+
+        {/* Sidebar - Profile Info */}
+        <div className="w-full lg:w-1/3 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-y-auto">
+          <div className="p-6 flex flex-col items-center border-b border-gray-100 dark:border-gray-700">
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-3xl font-bold text-white shadow-xl mb-4">
+              {customerName.charAt(0).toUpperCase()}
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white text-center">{customerName}</h2>
+            {customer?.tags && (
+              <div className="flex flex-wrap justify-center gap-1 mt-2">
+                {customer.tags.map(tag => (
+                  <span key={tag} className="px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-xs text-gray-600 dark:text-gray-300">{tag}</span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="p-6 space-y-6">
+            <div className="space-y-4">
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Contact Info</h3>
+              <div className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
+                <Phone size={16} className="text-gray-400" />
+                <span>{customer?.phone || 'No phone'}</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
+                <Mail size={16} className="text-gray-400" />
+                <span>{customer?.email || 'No email'}</span>
+              </div>
+              <div className="flex items-start gap-3 text-sm text-gray-700 dark:text-gray-300">
+                <MapPin size={16} className="text-gray-400 mt-0.5" />
+                <span>{customer?.address || 'No address provided'}</span>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Financials</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                  <p className="text-xs text-gray-500">Balance Due</p>
+                  <p className={`font-bold ${(customer?.balance_due || 0) > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    ₹{(customer?.balance_due || 0).toLocaleString()}
+                  </p>
+                </div>
+                <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                  <p className="text-xs text-gray-500">Orders</p>
+                  <p className="font-bold text-gray-900 dark:text-white">
+                    {orders.length}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content - Tabs */}
+        <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-gray-800/50">
+          {/* Tab Navigation */}
+          <div className="flex border-b border-gray-200 dark:border-gray-700 px-6 bg-white dark:bg-gray-800">
+            <button
+              onClick={() => setActiveTab('orders')}
+              className={`flex items-center gap-2 px-4 py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'orders' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-800'}`}
+            >
+              <ShoppingBag size={16} /> Orders
+            </button>
+            <button
+              onClick={() => setActiveTab('payments')}
+              className={`flex items-center gap-2 px-4 py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'payments' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-800'}`}
+            >
+              <CreditCard size={16} /> Payments
+            </button>
+            <button
+              onClick={() => setActiveTab('communication')}
+              className={`flex items-center gap-2 px-4 py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'communication' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-800'}`}
+            >
+              <MessageSquare size={16} /> Communication
+            </button>
+          </div>
+
+          {/* Tab Content */}
+          <div className="flex-1 overflow-y-auto p-6">
+            {loading ? (
+              <div className="flex h-full items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : error ? (
+              <div className="text-red-500 flex flex-col items-center justify-center h-full">
+                <AlertTriangle className="w-8 h-8 mb-2" />
+                {error}
+              </div>
+            ) : (
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {activeTab === 'orders' && (
+                    <div className="space-y-4">
+                      {orders.length === 0 ? (
+                        <div className="text-center py-12 text-gray-400">No orders found</div>
+                      ) : orders.map(order => (
+                        <div key={order.order_id} className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl hover:shadow-md transition-shadow">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 flex items-center justify-center font-bold text-sm">
+                              #{order.order_id}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-900 dark:text-white">{order.order_type}</p>
+                              <p className="text-xs text-gray-500">{new Date(order.date).toLocaleDateString()}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-gray-900 dark:text-white">₹{order.total_amount.toLocaleString()}</p>
+                            {/* <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getStatusColor(order.status || '')}`}>
+                              {order.status}
+                            </span> */}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {activeTab === 'payments' && (
+                    <div className="space-y-4">
+                      {payments.length === 0 ? (
+                        <div className="text-center py-12 text-gray-400">No payments found</div>
+                      ) : payments.map(payment => (
+                        <div key={payment.id} className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 flex items-center justify-center">
+                              <DollarSign size={18} />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-900 dark:text-white">Payment for #{payment.order_id}</p>
+                              <p className="text-xs text-gray-500">{new Date(payment.created_at).toLocaleDateString()}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-emerald-600">₹{payment.amount_paid.toLocaleString()}</p>
+                            <p className="text-xs text-gray-400">{payment.payment_method}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {activeTab === 'communication' && (
+                    <div className="space-y-6">
+                      <CustomerCommunicationLog customerId={customerId} />
+
+                      {whatsappLogs.length > 0 && (
+                        <div>
+                          <h4 className="font-bold text-gray-900 dark:text-white mb-3">WhatsApp History</h4>
+                          <div className="space-y-3">
+                            {whatsappLogs.map(log => (
+                              <div key={log.id} className="p-3 bg-green-50 dark:bg-green-900/10 border border-green-100 rounded-lg">
+                                <div className="flex justify-between items-start mb-1">
+                                  <span className="text-xs font-bold text-green-700">WhatsApp</span>
+                                  <span className="text-xs text-gray-400">{new Date(log.sent_at).toLocaleString()}</span>
+                                </div>
+                                <p className="text-sm text-gray-700 dark:text-gray-300">{log.message}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            )}
+          </div>
+        </div>
       </div>
-      <div>{renderContent()}</div>
     </Modal>
   );
 };

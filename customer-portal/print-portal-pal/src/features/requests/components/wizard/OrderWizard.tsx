@@ -147,32 +147,88 @@ const OrderWizard: React.FC<OrderWizardProps> = ({ customer, onComplete }) => {
     };
 
     return (
-        <Card className="w-full max-w-4xl mx-auto shadow-xl border-t-4 border-t-primary">
-            <CardHeader>
-                <CardTitle className="flex justify-between items-center text-2xl">
-                    <span>New Order Request</span>
-                    <span className="text-sm font-normal text-muted-foreground">
-                        Step {currentStep} of {steps.length}
-                    </span>
-                </CardTitle>
+        <Card className="w-full max-w-4xl mx-auto shadow-lg border-0 bg-white dark:bg-slate-900 overflow-hidden">
+            <CardHeader className="bg-slate-50 dark:bg-slate-800/50 border-b border-border/50 pb-6">
+                {/* Step Indicators */}
+                <div className="flex items-center justify-between mb-6">
+                    {steps.map((step, index) => (
+                        <div key={step.id} className="flex items-center">
+                            <div className="flex flex-col items-center">
+                                <motion.div
+                                    initial={false}
+                                    animate={{
+                                        backgroundColor: currentStep >= step.id ? '#3b82f6' : '#e2e8f0',
+                                        scale: currentStep === step.id ? 1.1 : 1
+                                    }}
+                                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${
+                                        currentStep >= step.id 
+                                            ? 'text-white' 
+                                            : 'text-slate-500 dark:text-slate-400'
+                                    }`}
+                                >
+                                    {currentStep > step.id ? (
+                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    ) : (
+                                        step.id
+                                    )}
+                                </motion.div>
+                                <span className={`mt-2 text-xs font-medium hidden sm:block ${
+                                    currentStep >= step.id 
+                                        ? 'text-blue-600 dark:text-blue-400' 
+                                        : 'text-slate-400'
+                                }`}>
+                                    {step.title}
+                                </span>
+                            </div>
+                            {index < steps.length - 1 && (
+                                <div className={`w-8 sm:w-16 h-0.5 mx-2 transition-colors ${
+                                    currentStep > step.id 
+                                        ? 'bg-blue-500' 
+                                        : 'bg-slate-200 dark:bg-slate-700'
+                                }`} />
+                            )}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Current Step Title */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <CardTitle className="text-xl font-bold">
+                            {steps[currentStep - 1].title}
+                        </CardTitle>
+                        <p className="text-sm text-muted-foreground mt-1">
+                            Step {currentStep} of {steps.length}
+                        </p>
+                    </div>
+                    <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-full">
+                        <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse"></div>
+                        <span className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                            {Math.round((currentStep / steps.length) * 100)}% Complete
+                        </span>
+                    </div>
+                </div>
+
                 {/* Progress Bar */}
-                <div className="w-full bg-secondary h-2 rounded-full mt-4 overflow-hidden">
+                <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full mt-4 overflow-hidden">
                     <motion.div
-                        className="bg-primary h-full rounded-full"
+                        className="bg-gradient-to-r from-blue-500 to-indigo-500 h-full rounded-full"
                         initial={{ width: 0 }}
                         animate={{ width: `${(currentStep / steps.length) * 100}%` }}
-                        transition={{ duration: 0.3 }}
+                        transition={{ duration: 0.4, ease: "easeOut" }}
                     />
                 </div>
             </CardHeader>
-            <CardContent className="p-6 min-h-[400px]">
+            <CardContent className="p-6 md:p-8 min-h-[420px]">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={currentStep}
-                        initial={{ opacity: 0, x: 20 }}
+                        initial={{ opacity: 0, x: 30 }}
                         animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{ duration: 0.2 }}
+                        exit={{ opacity: 0, x: -30 }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
                         className="h-full"
                     >
                         {currentStep === 1 && (
@@ -203,12 +259,16 @@ const OrderWizard: React.FC<OrderWizardProps> = ({ customer, onComplete }) => {
                     </motion.div>
                 </AnimatePresence>
             </CardContent>
-            <CardFooter className="flex justify-between p-6 bg-muted/20">
+            <CardFooter className="flex justify-between items-center p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-border/50">
                 <Button
                     variant="outline"
                     onClick={prevStep}
                     disabled={currentStep === 1 || isSubmitting}
+                    className="gap-2"
                 >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
                     Previous
                 </Button>
 
@@ -216,16 +276,32 @@ const OrderWizard: React.FC<OrderWizardProps> = ({ customer, onComplete }) => {
                     <Button
                         onClick={nextStep}
                         disabled={!isStepValid()}
+                        className="gap-2 bg-blue-600 hover:bg-blue-700"
                     >
                         Next Step
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
                     </Button>
                 ) : (
                     <Button
                         onClick={handleSubmit}
                         disabled={!isStepValid() || isSubmitting}
-                        className="bg-green-600 hover:bg-green-700"
+                        className="gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-lg"
                     >
-                        {isSubmitting ? "Submitting..." : "Submit Order Request"}
+                        {isSubmitting ? (
+                            <>
+                                <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                Submitting...
+                            </>
+                        ) : (
+                            <>
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                                Submit Request
+                            </>
+                        )}
                     </Button>
                 )}
             </CardFooter>

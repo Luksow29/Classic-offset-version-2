@@ -8,11 +8,12 @@ import Select from '../ui/Select';
 import Button from '../ui/Button';
 import Modal from '../ui/Modal';
 import ConfirmationModal from '../ui/ConfirmationModal';
-import { 
-  Search, Filter, Download, RefreshCw, Edit, Trash2, Eye, 
-  Calendar, DollarSign, User, FileText, ArrowUpDown, 
+import {
+  Search, Filter, Download, RefreshCw, Edit, Trash2, Eye,
+  Calendar, DollarSign, User, FileText, ArrowUpDown,
   CheckSquare, Square, MoreHorizontal, Loader2, AlertTriangle,
-  Plus, Minus, CreditCard, Clock, TrendingUp, TrendingDown
+  Plus, Minus, CreditCard, Clock, TrendingUp, TrendingDown,
+  Phone, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -65,17 +66,17 @@ const PaymentManagementTable: React.FC = () => {
   const [groupedPayments, setGroupedPayments] = useState<GroupedPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Filter and search states
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [amountFilter, setAmountFilter] = useState({ min: '', max: '' });
-  
+
   // Sorting states
   const [sortField, setSortField] = useState<SortField>('created_at');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-  
+
   // Selection states
   const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
   const [selectAll, setSelectAll] = useState(false);
@@ -89,7 +90,7 @@ const PaymentManagementTable: React.FC = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
-  
+
   // Edit form states
   const [editForm, setEditForm] = useState({
     amount_paid: '',
@@ -98,7 +99,7 @@ const PaymentManagementTable: React.FC = () => {
     payment_method: '',
     notes: ''
   });
-  
+
   // Payment history
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistory[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -114,17 +115,17 @@ const PaymentManagementTable: React.FC = () => {
 
       if (error) throw error;
 
-  const grouped = (data || []).reduce((acc, item) => {
+      const grouped = (data || []).reduce((acc, item) => {
         const orderId = item.order_id;
         if (!acc[orderId]) {
           acc[orderId] = {
             order_id: orderId,
-    customer_name: item.customer_name || 'Unknown',
-    customer_phone: item.customer_phone || '',
-    order_total_amount: Number(item.order_total_amount ?? 0),
-    order_amount_paid: Number(item.order_amount_paid ?? 0),
-    order_balance_due: Number(item.order_balance_due ?? 0),
-    status: item.order_status || 'Due',
+            customer_name: item.customer_name || 'Unknown',
+            customer_phone: item.customer_phone || '',
+            order_total_amount: Number(item.order_total_amount ?? 0),
+            order_amount_paid: Number(item.order_amount_paid ?? 0),
+            order_balance_due: Number(item.order_balance_due ?? 0),
+            status: item.order_status || 'Due',
             payments: [],
           };
         }
@@ -133,18 +134,18 @@ const PaymentManagementTable: React.FC = () => {
             id: item.payment_id,
             customer_id: item.customer_id,
             order_id: item.order_id,
-    amount_paid: Number(item.payment_amount ?? 0),
-    due_date: item.payment_due_date || new Date().toISOString().split('T')[0],
-    status: item.payment_status || 'Due',
+            amount_paid: Number(item.payment_amount ?? 0),
+            due_date: item.payment_due_date || new Date().toISOString().split('T')[0],
+            status: item.payment_status || 'Due',
             payment_method: item.payment_method,
             notes: item.payment_notes,
             created_at: item.payment_created_at,
             updated_at: item.payment_updated_at,
             customer_name: item.customer_name,
             customer_phone: item.customer_phone,
-    order_total_amount: Number(item.order_total_amount ?? 0),
-    order_amount_paid: Number(item.order_amount_paid ?? 0),
-    order_balance_due: Number(item.order_balance_due ?? 0),
+            order_total_amount: Number(item.order_total_amount ?? 0),
+            order_amount_paid: Number(item.order_amount_paid ?? 0),
+            order_balance_due: Number(item.order_balance_due ?? 0),
           });
         }
         return acc;
@@ -205,6 +206,21 @@ const PaymentManagementTable: React.FC = () => {
       setSortOrder('desc');
     }
   };
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+
+  // Computed pagination
+  const paginatedPayments = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredAndSortedPayments.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredAndSortedPayments, currentPage, itemsPerPage]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, dateFilter, amountFilter]);
 
   // Handle selection
   const handleSelectPayment = (paymentId: string) => {
@@ -416,15 +432,15 @@ const PaymentManagementTable: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Paid':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+        return 'bg-emerald-500/10 text-emerald-500';
       case 'Partial':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
+        return 'bg-amber-500/10 text-amber-500';
       case 'Overdue':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+        return 'bg-destructive/10 text-destructive';
       case 'Due':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+        return 'bg-blue-500/10 text-blue-500';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -461,25 +477,27 @@ const PaymentManagementTable: React.FC = () => {
 
   return (
     <>
-      <Card>
+      <Card className="overflow-hidden border-border/50 shadow-sm">
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
+        <div className="p-4 sm:p-6 border-b border-border/50 space-y-6">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <div>
-              <h3 className="text-lg font-semibold">💳 Payment Management</h3>
-              <p className="text-sm text-gray-500">Comprehensive payment tracking and management</p>
+              <h3 className="text-xl font-bold flex items-center gap-2 text-foreground">
+                Payment Activity
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">Manage and track all payment transactions</p>
             </div>
-            <div className="flex items-center gap-2">
-              <Button onClick={fetchPayments} variant="outline" size="sm">
-                <RefreshCw className="w-4 h-4 mr-1" />
+            <div className="flex flex-wrap items-center gap-2">
+              <Button onClick={fetchPayments} variant="outline" size="sm" className="h-9 transition-all hover:bg-muted">
+                <RefreshCw className="w-4 h-4 mr-2" />
                 Refresh
               </Button>
-              <Button onClick={exportToCSV} variant="outline" size="sm">
-                <Download className="w-4 h-4 mr-1" />
-                Export CSV
+              <Button onClick={exportToCSV} variant="outline" size="sm" className="h-9 transition-all hover:bg-muted">
+                <Download className="w-4 h-4 mr-2" />
+                Export
               </Button>
               {selectedPayments.length > 0 && (
-                <Button onClick={() => setShowBulkModal(true)} variant="destructive" size="sm">
+                <Button onClick={() => setShowBulkModal(true)} variant="destructive" size="sm" className="h-9 animate-in fade-in zoom-in duration-200">
                   Delete Selected ({selectedPayments.length})
                 </Button>
               )}
@@ -487,209 +505,305 @@ const PaymentManagementTable: React.FC = () => {
           </div>
 
           {/* Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-            <div className="relative">
-              <Search className="w-4 h-4 text-gray-400 absolute top-1/2 left-3 -translate-y-1/2" />
+          {/* New Filter Bar */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center bg-muted/30 p-3 rounded-xl border border-border/50">
+            <div className="md:col-span-4 relative group">
+              <Search className="w-4 h-4 text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2 group-focus-within:text-primary transition-colors" />
               <Input
                 id="search-payments"
-                placeholder="Search payments..."
+                placeholder="Search customer, order ID..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-9 h-9 border-border/50 bg-background focus:ring-1 focus:ring-primary/20 transition-all"
               />
             </div>
-            
-            <Select
-              id="status-filter"
-              label=""
-              options={[
-                { value: 'Paid', label: 'Paid' },
-                { value: 'Partial', label: 'Partial' },
-                { value: 'Due', label: 'Due' },
-                { value: 'Overdue', label: 'Overdue' }
-              ]}
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              placeholder="All Status"
-            />
 
-            <Input
-              id="date-filter"
-              type="month"
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              placeholder="Filter by month"
-            />
+            <div className="md:col-span-2">
+              <Select
+                id="status-filter"
+                label=""
+                options={[
+                  { value: 'Paid', label: 'Paid' },
+                  { value: 'Partial', label: 'Partial' },
+                  { value: 'Due', label: 'Due' },
+                  { value: 'Overdue', label: 'Overdue' }
+                ]}
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                placeholder="All Status"
+                className="h-9 bg-background border-border/50"
+              />
+            </div>
 
-            <Input
-              id="min-amount"
-              type="number"
-              placeholder="Min amount"
-              value={amountFilter.min}
-              onChange={(e) => setAmountFilter({ ...amountFilter, min: e.target.value })}
-            />
+            <div className="md:col-span-2">
+              <Input
+                id="date-filter"
+                type="month"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="h-9 border-border/50 bg-background"
+              />
+            </div>
 
-            <Input
-              id="max-amount"
-              type="number"
-              placeholder="Max amount"
-              value={amountFilter.max}
-              onChange={(e) => setAmountFilter({ ...amountFilter, max: e.target.value })}
-            />
+            <div className="md:col-span-3 flex gap-2">
+              <Input
+                id="min-amount"
+                type="number"
+                placeholder="Min ₹"
+                value={amountFilter.min}
+                onChange={(e) => setAmountFilter({ ...amountFilter, min: e.target.value })}
+                className="h-9 border-border/50 bg-background"
+              />
+              <Input
+                id="max-amount"
+                type="number"
+                placeholder="Max ₹"
+                value={amountFilter.max}
+                onChange={(e) => setAmountFilter({ ...amountFilter, max: e.target.value })}
+                className="h-9 border-border/50 bg-background"
+              />
+            </div>
 
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setSearchQuery('');
-                setStatusFilter('');
-                setDateFilter('');
-                setAmountFilter({ min: '', max: '' });
-              }}
-            >
-              Clear Filters
-            </Button>
+            <div className="md:col-span-1 flex justify-end">
+              {(searchQuery || statusFilter || dateFilter || amountFilter.min || amountFilter.max) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setStatusFilter('');
+                    setDateFilter('');
+                    setAmountFilter({ min: '', max: '' });
+                  }}
+                  className="h-9 w-9 p-0 rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors"
+                  title="Clear filters"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Table */}
+        {/* Table */}
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-gray-50 dark:bg-gray-700">
-              <tr>
-                <th className="px-4 py-3 text-left">
+            <thead>
+              <tr className="border-b border-border/50 bg-muted/40">
+                <th className="px-6 py-4 text-left w-12">
                   <input
                     type="checkbox"
                     checked={selectAll}
                     onChange={handleSelectAll}
-                    className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    className="rounded border-border text-primary focus:ring-primary/20 cursor-pointer"
                   />
                 </th>
-                <th className="px-4 py-3 text-left font-medium">
+                <th className="px-6 py-4 text-left font-medium text-muted-foreground w-12"></th>
+                <th className="px-6 py-4 text-left font-semibold text-foreground">
                   <SortButton field="customer_name">Customer</SortButton>
                 </th>
-                <th className="px-4 py-3 text-left font-medium">Order</th>
-                <th className="px-4 py-3 text-right font-medium">
-                  <SortButton field="order_total_amount">Order Total</SortButton>
+                <th className="px-6 py-4 text-left font-semibold text-foreground">Order</th>
+                <th className="px-6 py-4 text-right font-semibold text-foreground">
+                  <SortButton field="order_total_amount">Total</SortButton>
                 </th>
-                <th className="px-4 py-3 text-right font-medium">
-                  <SortButton field="amount_paid">Amount Paid</SortButton>
+                <th className="px-6 py-4 text-right font-semibold text-foreground">
+                  <SortButton field="amount_paid">Paid</SortButton>
                 </th>
-                <th className="px-4 py-3 text-right font-medium">Balance Due</th>
-                <th className="px-4 py-3 text-center font-medium">
+                <th className="px-6 py-4 text-right font-semibold text-foreground">Due</th>
+                <th className="px-6 py-4 text-center font-semibold text-foreground">
                   <SortButton field="status">Status</SortButton>
                 </th>
-                <th className="px-4 py-3 text-left font-medium">
-                  <SortButton field="due_date">Due Date</SortButton>
-                </th>
-                <th className="px-4 py-3 text-left font-medium">Method</th>
-                <th className="px-4 py-3 text-center font-medium">Actions</th>
+                <th className="px-6 py-4 text-center font-semibold text-foreground">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredAndSortedPayments.map((group) => (
+            <tbody className="divide-y divide-border/30">
+              {paginatedPayments.map((group) => (
                 <React.Fragment key={group.order_id}>
-                  <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                    <td className="px-4 py-3">
-                      <Button variant="ghost" size="icon" onClick={() => toggleOrderExpansion(group.order_id)}>
+                  <tr className={`group transition-colors ${expandedOrders.has(group.order_id) ? 'bg-muted/10' : 'hover:bg-muted/20'
+                    }`}>
+                    <td className="px-6 py-4">
+                      {/* Spacer or Checkbox if needed */}
+                    </td>
+                    <td className="px-2 py-4">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => toggleOrderExpansion(group.order_id)}
+                        className={`h-8 w-8 rounded-full transition-colors ${expandedOrders.has(group.order_id)
+                          ? 'bg-primary/10 text-primary'
+                          : 'hover:bg-muted text-muted-foreground'
+                          }`}
+                      >
                         {expandedOrders.has(group.order_id) ? <Minus size={14} /> : <Plus size={14} />}
                       </Button>
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-gray-400" />
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs uppercase border border-primary/20">
+                          {(group.customer_name || '??').substring(0, 2)}
+                        </div>
                         <div>
-                          <div className="font-medium text-gray-900 dark:text-white">{group.customer_name}</div>
-                          <div className="text-xs text-gray-500">{group.customer_phone}</div>
+                          <div className="font-medium text-foreground">{group.customer_name}</div>
+                          <div className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Phone className="w-3 h-3" />
+                            {group.customer_phone}
+                          </div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-6 py-4">
                       <Link
                         to={`/invoices/${group.order_id}`}
-                        className="text-primary-600 hover:text-primary-700 hover:underline"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/50 text-xs font-medium text-foreground border border-border/50 hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all"
                       >
+                        <FileText className="w-3 h-3" />
                         #{group.order_id}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-right font-medium">₹{Number(group.order_total_amount ?? 0).toLocaleString('en-IN')}</td>
-                    <td className="px-4 py-3 text-right font-medium text-green-600">₹{Number(group.order_amount_paid ?? 0).toLocaleString('en-IN')}</td>
-                    <td className="px-4 py-3 text-right font-medium text-red-600">₹{Number(group.order_balance_due ?? 0).toLocaleString('en-IN')}</td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(group.status)}`}>
+                    <td className="px-6 py-4 text-right font-medium text-foreground">₹{Number(group.order_total_amount ?? 0).toLocaleString('en-IN')}</td>
+                    <td className="px-6 py-4 text-right font-medium text-emerald-600">₹{Number(group.order_amount_paid ?? 0).toLocaleString('en-IN')}</td>
+                    <td className="px-6 py-4 text-right font-medium text-destructive">₹{Number(group.order_balance_due ?? 0).toLocaleString('en-IN')}</td>
+                    <td className="px-6 py-4 text-center">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-transparent ${getStatusColor(group.status)}`}>
                         {group.status}
                       </span>
                     </td>
-                    <td colSpan={3}></td>
+                    <td className="px-6 py-4 text-center text-muted-foreground">
+                      <span className="text-xs font-medium bg-muted px-2 py-1 rounded-full text-muted-foreground">
+                        {group.payments.length} txn
+                      </span>
+                    </td>
                   </tr>
                   {expandedOrders.has(group.order_id) && (
-                    <>
-                      {group.payments.map(payment => (
-                        <tr key={payment.id} className="bg-gray-50 dark:bg-gray-800">
-                          <td className="px-4 py-3 pl-12">
-                            <input
-                              type="checkbox"
-                              checked={selectedPayments.includes(payment.id)}
-                              onChange={() => handleSelectPayment(payment.id)}
-                              className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                            />
-                          </td>
-                          <td colSpan={3}></td>
-                          <td className="px-4 py-3 text-right font-medium text-green-600">₹{Number(payment.amount_paid ?? 0).toLocaleString('en-IN')}</td>
-                          <td></td>
-                          <td></td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3 text-gray-400" />
-                              <span>{new Date(payment.due_date).toLocaleDateString()}</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-1">
-                              <CreditCard className="w-3 h-3 text-gray-400" />
-                              <span>{payment.payment_method || '-'}</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-1">
-                              <Button variant="ghost" size="sm" onClick={() => handleView(payment)} title="View Details">
-                                <Eye size={14} />
-                              </Button>
-                              <Button variant="ghost" size="sm" onClick={() => handleEdit(payment)} title="Edit Payment">
-                                <Edit size={14} />
-                              </Button>
-                              <Button variant="ghost" size="sm" onClick={() => handleDelete(payment)} title="Delete Payment">
-                                <Trash2 size={14} className="text-red-500" />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </>
+                    <tr className="bg-muted/5">
+                      <td colSpan={9} className="px-6 py-4 p-0">
+                        <div className="bg-card w-[95%] ml-auto mr-auto my-2 rounded-xl border border-border/50 shadow-sm overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                          <div className="px-4 py-2 bg-muted/30 border-b border-border/50 flex justify-between items-center">
+                            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Transaction History</span>
+                            <span className="text-xs text-muted-foreground">Order #{group.order_id}</span>
+                          </div>
+                          <table className="w-full text-xs">
+                            <thead className="bg-muted/20">
+                              <tr>
+                                <th className="px-4 py-2 text-left w-10">
+                                  {/* Select */}
+                                </th>
+                                <th className="px-4 py-2 text-right">Amount</th>
+                                <th className="px-4 py-2 text-left">Due Date</th>
+                                <th className="px-4 py-2 text-left">Method</th>
+                                <th className="px-4 py-2 text-center">Status</th>
+                                <th className="px-4 py-2 text-right">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border/20">
+                              {group.payments.map(payment => (
+                                <tr key={payment.id} className="hover:bg-muted/40 transition-colors">
+                                  <td className="px-4 py-3">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedPayments.includes(payment.id)}
+                                      onChange={() => handleSelectPayment(payment.id)}
+                                      className="rounded border-border text-primary focus:ring-primary/20 cursor-pointer"
+                                    />
+                                  </td>
+                                  <td className="px-4 py-3 text-right font-medium text-foreground">₹{Number(payment.amount_paid ?? 0).toLocaleString('en-IN')}</td>
+                                  <td className="px-4 py-3 text-muted-foreground">
+                                    <div className="flex items-center gap-1.5">
+                                      <Calendar className="w-3 h-3" />
+                                      {new Date(payment.due_date).toLocaleDateString()}
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3 text-muted-foreground">
+                                    <div className="flex items-center gap-1.5">
+                                      <CreditCard className="w-3 h-3" />
+                                      {payment.payment_method || '-'}
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3 text-center">
+                                    <span className={`text-[10px] px-2 py-0.5 rounded-full border border-black/5 dark:border-white/10 ${getStatusColor(payment.status)}`}>
+                                      {payment.status}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 text-right">
+                                    <div className="flex justify-end gap-1">
+                                      <Button variant="ghost" size="sm" onClick={() => handleView(payment)} className="h-7 w-7 p-0 rounded-full hover:bg-background hover:text-primary hover:shadow-sm" title="View"><Eye size={12} /></Button>
+                                      <Button variant="ghost" size="sm" onClick={() => handleEdit(payment)} className="h-7 w-7 p-0 rounded-full hover:bg-background hover:text-blue-500 hover:shadow-sm" title="Edit"><Edit size={12} /></Button>
+                                      <Button variant="ghost" size="sm" onClick={() => handleDelete(payment)} className="h-7 w-7 p-0 rounded-full hover:bg-background text-destructive/70 hover:text-destructive hover:shadow-sm" title="Delete"><Trash2 size={12} /></Button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </td>
+                    </tr>
                   )}
                 </React.Fragment>
               ))}
             </tbody>
           </table>
-          
+
           {filteredAndSortedPayments.length === 0 && (
-            <div className="text-center py-12 text-gray-500">
-              <DollarSign className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>No payments found matching your filters.</p>
+            <div className="text-center py-24">
+              <div className="bg-muted/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <DollarSign className="w-8 h-8 text-muted-foreground/50" />
+              </div>
+              <h3 className="text-lg font-medium text-foreground">No payments found</h3>
+              <p className="text-muted-foreground text-sm mt-1">Try adjusting your filters or search terms.</p>
+              <Button
+                variant="outline"
+                className="mt-6"
+                onClick={() => {
+                  setSearchQuery('');
+                  setStatusFilter('');
+                  setDateFilter('');
+                  setAmountFilter({ min: '', max: '' });
+                }}
+              >
+                Clear Filters
+              </Button>
             </div>
           )}
         </div>
 
-        {/* Footer */}
+        {/* Footer & Pagination */}
         {filteredAndSortedPayments.length > 0 && (
-          <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex justify-between items-center text-sm text-gray-500">
-              <span>
-                Showing {filteredAndSortedPayments.length} of {groupedPayments.length} orders
-                {selectedPayments.length > 0 && ` • ${selectedPayments.length} selected`}
-              </span>
+          <div className="px-6 py-4 border-t border-border/50 bg-muted/10">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="text-sm text-muted-foreground">
+                Showing <span className="font-medium text-foreground">{((currentPage - 1) * itemsPerPage) + 1}</span> to <span className="font-medium text-foreground">{Math.min(currentPage * itemsPerPage, filteredAndSortedPayments.length)}</span> of <span className="font-medium text-foreground">{filteredAndSortedPayments.length}</span> results
+              </div>
+
               <div className="flex items-center gap-2">
-                <Filter size={16} />
-                <span>Total Value: ₹{filteredAndSortedPayments.reduce((sum, g) => sum + Number(g.order_amount_paid ?? 0), 0).toLocaleString('en-IN')}</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="h-8"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Previous
+                </Button>
+
+                <div className="flex items-center gap-1">
+                  <span className="text-sm py-1 px-3 bg-background border border-border rounded-md font-medium text-foreground">
+                    Page {currentPage} of {Math.ceil(filteredAndSortedPayments.length / itemsPerPage)}
+                  </span>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredAndSortedPayments.length / itemsPerPage)))}
+                  disabled={currentPage >= Math.ceil(filteredAndSortedPayments.length / itemsPerPage)}
+                  className="h-8"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
               </div>
             </div>
           </div>
@@ -721,7 +835,7 @@ const PaymentManagementTable: React.FC = () => {
               onChange={(e) => setEditForm({ ...editForm, due_date: e.target.value })}
             />
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Select
               id="status"
@@ -749,7 +863,7 @@ const PaymentManagementTable: React.FC = () => {
               onChange={(e) => setEditForm({ ...editForm, payment_method: e.target.value })}
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
             <textarea
@@ -760,7 +874,7 @@ const PaymentManagementTable: React.FC = () => {
               placeholder="Add any notes about this payment..."
             />
           </div>
-          
+
           <div className="flex justify-end gap-3 pt-4">
             <Button variant="outline" onClick={() => setShowEditModal(false)}>
               Cancel
@@ -792,8 +906,8 @@ const PaymentManagementTable: React.FC = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Order ID:</span>
-                    <Link 
-                      to={`/invoices/${viewingPayment.order_id}`} 
+                    <Link
+                      to={`/invoices/${viewingPayment.order_id}`}
                       className="text-primary-600 hover:underline"
                     >
                       #{viewingPayment.order_id}
@@ -819,7 +933,7 @@ const PaymentManagementTable: React.FC = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="space-y-4">
                 <h4 className="font-semibold text-gray-800 dark:text-white">Customer & Dates</h4>
                 <div className="space-y-2 text-sm">

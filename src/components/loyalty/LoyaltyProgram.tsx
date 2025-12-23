@@ -1,18 +1,18 @@
 // src/components/loyalty/LoyaltyProgram.tsx
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { 
-  Gift, Star, Users, Trophy, TrendingUp, Award, 
-  Crown, Target, Calendar, ArrowRight, Sparkles
+import {
+  Gift, Users, TrendingUp, Star, Sparkles
 } from 'lucide-react';
-import Card from '../ui/Card';
-import Button from '../ui/Button';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
+
 import LoyaltyDashboard from './LoyaltyDashboard';
 import RewardsManagement from './RewardsManagement';
 import CustomerLoyalty from './CustomerLoyalty';
 import ReferralProgram from './ReferralProgram';
+import LoyaltyStatsWidgets from './LoyaltyStatsWidgets';
+import LoyaltyTiersGrid from './LoyaltyTiersGrid';
 
 interface LoyaltyTier {
   id: string;
@@ -41,24 +41,23 @@ const LoyaltyProgram: React.FC = () => {
   const [tiers, setTiers] = useState<LoyaltyTier[]>([]);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'rewards' | 'customers' | 'referrals'>('dashboard');
 
+  const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
+  const [tierDistribution, setTierDistribution] = useState<{ id: string; count: number; percentage: number }[]>([]);
+
   const fetchLoyaltyData = async () => {
     setLoading(true);
     try {
-      // Fetch loyalty tiers
+      // 1. Fetch loyalty tiers
       const { data: tiersData, error: tiersError } = await supabase
         .from('loyalty_tiers')
         .select('*')
         .order('tier_level');
 
-      if (tiersError) {
-        console.error('Error fetching tiers:', tiersError);
-        toast.error('Failed to fetch loyalty tiers');
-        return;
-      }
-
+      if (tiersError) throw tiersError;
       setTiers(tiersData || []);
 
-      // Fetch analytics data
+      // 2. Fetch customers for analytics and tier distribution
+      // Note: In a real large-scale app, we would use a DB view or RPC for this aggregation
       const { data: customersData, error: customersError } = await supabase
         .from('customers')
         .select(`
@@ -70,34 +69,65 @@ const LoyaltyProgram: React.FC = () => {
           loyalty_tiers!inner(tier_level)
         `);
 
-      if (customersError) {
-        console.error('Error fetching customers:', customersError);
-        toast.error('Failed to fetch customer data');
-        return;
-      }
+      if (customersError) throw customersError;
 
-      // Calculate analytics
+      // 3. Fetch Redemptions (Active & Claimed)
+      const { data: redemptionsData, error: redemptionsError } = await supabase
+        .from('loyalty_redemptions')
+        .select('id, status');
+
+      if (redemptionsError) throw redemptionsError;
+
+      const activeRedemptions = redemptionsData?.filter(r => r.status === 'pending').length || 0;
+      const rewardsClaimed = redemptionsData?.filter(r => r.status === 'completed' || r.status === 'approved').length || 0;
+
+      // 4. Fetch Recent Transactions
+      const { data: transactionsData, error: transactionsError } = await supabase
+        .from('loyalty_points')
+        .select(`
+          *,
+          customers (name)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (transactionsError) throw transactionsError;
+      setRecentTransactions(transactionsData || []);
+
+      // Analytics Calculations
       const totalMembers = customersData?.length || 0;
       const totalPointsEarned = customersData?.reduce((sum, c) => sum + (c.total_points_earned || 0), 0) || 0;
       const averagePointsPerCustomer = totalMembers > 0 ? Math.round(totalPointsEarned / totalMembers) : 0;
-      
-      // Calculate top tier customers (Platinum and Diamond)
-      const topTierCustomers = customersData?.filter(c => 
-        Array.isArray(c.loyalty_tiers) && c.loyalty_tiers.some((lt: any) => lt.tier_level >= 4)
+
+      // Calculate top tier customers (Level 4 & 5)
+      const topTierCustomers = customersData?.filter(c =>
+        Array.isArray(c.loyalty_tiers) ? c.loyalty_tiers.some((lt: any) => lt.tier_level >= 4) :
+          (c.loyalty_tiers as any)?.tier_level >= 4
       ).length || 0;
 
-      // Calculate monthly growth (customers joined this month)
+      // Calculate monthly growth
       const thisMonth = new Date();
       thisMonth.setDate(1);
-      const monthlyGrowth = customersData?.filter(c => 
+      const monthlyGrowth = customersData?.filter(c =>
         new Date(c.created_at || '') >= thisMonth
       ).length || 0;
 
+      // Calculate Tier Distribution
+      const distribution = (tiersData || []).map(tier => {
+        const count = customersData?.filter(c => c.loyalty_tier_id === tier.id).length || 0;
+        return {
+          id: tier.id,
+          count,
+          percentage: totalMembers > 0 ? (count / totalMembers) * 100 : 0
+        };
+      });
+      setTierDistribution(distribution);
+
       const analyticsData: LoyaltyAnalytics = {
         totalMembers,
-        activeRedemptions: 0, // TODO: Calculate from redemptions table
+        activeRedemptions,
         pointsAwarded: totalPointsEarned,
-        rewardsClaimed: 0, // TODO: Calculate from redemptions table
+        rewardsClaimed,
         averagePointsPerCustomer,
         topTierCustomers,
         monthlyGrowth,
@@ -117,206 +147,111 @@ const LoyaltyProgram: React.FC = () => {
     fetchLoyaltyData();
   }, []);
 
-  const getTierIcon = (tierLevel: number) => {
-    switch (tierLevel) {
-      case 1: return <Award className="w-5 h-5" />;
-      case 2: return <Star className="w-5 h-5" />;
-      case 3: return <Trophy className="w-5 h-5" />;
-      case 4: return <Crown className="w-5 h-5" />;
-      case 5: return <Sparkles className="w-5 h-5" />;
-      default: return <Award className="w-5 h-5" />;
-    }
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  const getTierColor = (tierLevel: number) => {
-    switch (tierLevel) {
-      case 1: return 'text-amber-600 bg-amber-100 dark:bg-amber-900/30';
-      case 2: return 'text-gray-600 bg-gray-100 dark:bg-gray-900/30';
-      case 3: return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30';
-      case 4: return 'text-purple-600 bg-purple-100 dark:bg-purple-900/30';
-      case 5: return 'text-blue-600 bg-blue-100 dark:bg-blue-900/30';
-      default: return 'text-gray-600 bg-gray-100 dark:bg-gray-900/30';
-    }
-  };
-
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
-        {[...Array(6)].map((_, i) => (
-          <div key={i} className="h-48 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
-        ))}
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
 
+  const tabs = [
+    { id: 'dashboard', label: 'Dashboard', icon: TrendingUp },
+    { id: 'rewards', label: 'Rewards', icon: Gift },
+    { id: 'customers', label: 'Customers', icon: Users },
+    { id: 'referrals', label: 'Referrals', icon: Star },
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <Card className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Gift className="w-8 h-8 text-purple-500" />
+    <div className="space-y-6 pb-20">
+      {/* Premium Header */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-violet-600 to-indigo-600 p-8 text-white shadow-2xl">
+        <div className="absolute top-0 right-0 p-4 opacity-10">
+          <Sparkles className="w-64 h-64" />
+        </div>
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-white/20 backdrop-blur-md rounded-2xl border border-white/30 shadow-lg">
+              <Gift className="w-8 h-8 text-white" />
+            </div>
             <div>
-              <h1 className="text-2xl font-bold">Customer Loyalty Program</h1>
-              <p className="text-gray-500">Reward your best customers and increase retention</p>
+              <h1 className="text-3xl font-bold tracking-tight text-white mb-1">Loyalty Program</h1>
+              <p className="text-indigo-100 font-medium max-w-xl">
+                Reward your best customers, boost retention, and drive growth with our tiered rewards system.
+              </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-              Active
-            </span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/20 backdrop-blur-md border border-emerald-400/30 rounded-full text-emerald-100 font-semibold text-sm">
+              <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
+              System Active
+            </div>
           </div>
         </div>
-      </Card>
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <Card className="p-6">
-            <div className="flex items-center gap-3">
-              <Users className="w-8 h-8 text-blue-500" />
-              <div>
-                <p className="text-sm text-gray-500">Total Members</p>
-                <p className="text-2xl font-bold">{analytics?.totalMembers || 0}</p>
-              </div>
-            </div>
-          </Card>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <Card className="p-6">
-            <div className="flex items-center gap-3">
-              <TrendingUp className="w-8 h-8 text-green-500" />
-              <div>
-                <p className="text-sm text-gray-500">Points Awarded</p>
-                <p className="text-2xl font-bold">{(analytics?.pointsAwarded || 0).toLocaleString()}</p>
-              </div>
-            </div>
-          </Card>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <Card className="p-6">
-            <div className="flex items-center gap-3">
-              <Trophy className="w-8 h-8 text-yellow-500" />
-              <div>
-                <p className="text-sm text-gray-500">VIP Customers</p>
-                <p className="text-2xl font-bold">{analytics?.topTierCustomers || 0}</p>
-              </div>
-            </div>
-          </Card>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <Card className="p-6">
-            <div className="flex items-center gap-3">
-              <Target className="w-8 h-8 text-purple-500" />
-              <div>
-                <p className="text-sm text-gray-500">Avg Points/Customer</p>
-                <p className="text-2xl font-bold">{analytics?.averagePointsPerCustomer || 0}</p>
-              </div>
-            </div>
-          </Card>
-        </motion.div>
       </div>
 
-      {/* Tier Overview */}
-      <Card className="p-6">
-        <h2 className="text-xl font-bold mb-4">Loyalty Tiers</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          {tiers.map((tier) => (
+      {/* Stats Widgets */}
+      <LoyaltyStatsWidgets analytics={analytics} />
+
+      {/* Loyalty Tiers */}
+      <LoyaltyTiersGrid tiers={tiers} />
+
+      {/* Main Content Area */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden min-h-[600px]">
+        {/* Tab Navigation */}
+        <div className="sticky top-0 z-10 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-6">
+          <div className="flex gap-8 overflow-x-auto no-scrollbar">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`relative py-4 px-2 flex items-center gap-2 text-sm font-medium transition-colors whitespace-nowrap outline-none ${activeTab === tab.id
+                    ? 'text-primary'
+                    : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
+                  }`}
+              >
+                <tab.icon size={18} className={activeTab === tab.id ? 'stroke-[2.5px]' : ''} />
+                <span className={activeTab === tab.id ? 'font-bold' : ''}>{tab.label}</span>
+                {activeTab === tab.id && (
+                  <motion.div
+                    layoutId="activeTabLoyalty"
+                    className="absolute bottom-0 left-0 right-0 h-[3px] bg-primary rounded-t-full shadow-[0_-2px_8px_rgba(var(--primary-rgb),0.3)]"
+                  />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Tab Panels */}
+        <div className="p-6">
+          <AnimatePresence mode="wait">
             <motion.div
-              key={tier.id}
-              className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-all"
-              whileHover={{ scale: 1.02 }}
+              key={activeTab}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2 }}
+              className="min-h-[400px]"
             >
-              <div className="flex items-center gap-2 mb-2">
-                <div className={`p-2 rounded-lg ${getTierColor(tier.tier_level)}`}>
-                  {getTierIcon(tier.tier_level)}
-                </div>
-                <div>
-                  <h3 className="font-semibold" style={{ color: tier.tier_color }}>
-                    {tier.tier_name}
-                  </h3>
-                  <p className="text-xs text-gray-500">{tier.min_points}+ points</p>
-                </div>
-              </div>
-              <p className="text-sm text-green-600 font-medium">
-                {tier.discount_percentage}% Discount
-              </p>
-              <div className="mt-2">
-                <p className="text-xs text-gray-500">Benefits:</p>
-                <ul className="text-xs text-gray-600 mt-1">
-                  {tier.benefits.slice(0, 2).map((benefit, index) => (
-                    <li key={index}>• {benefit}</li>
-                  ))}
-                  {tier.benefits.length > 2 && (
-                    <li className="text-gray-400">+ {tier.benefits.length - 2} more</li>
-                  )}
-                </ul>
-              </div>
+              {activeTab === 'dashboard' && (
+                <LoyaltyDashboard
+                  analytics={analytics}
+                  tiers={tiers}
+                  transactions={recentTransactions}
+                  tierDistribution={tierDistribution}
+                />
+              )}
+              {activeTab === 'rewards' && <RewardsManagement onUpdate={fetchLoyaltyData} />}
+              {activeTab === 'customers' && <CustomerLoyalty onUpdate={fetchLoyaltyData} />}
+              {activeTab === 'referrals' && <ReferralProgram onUpdate={fetchLoyaltyData} />}
             </motion.div>
-          ))}
+          </AnimatePresence>
         </div>
-      </Card>
-
-      {/* Tab Navigation */}
-      <Card className="p-6">
-        <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6">
-          {[
-            { key: 'dashboard', label: 'Dashboard', icon: TrendingUp },
-            { key: 'rewards', label: 'Rewards', icon: Gift },
-            { key: 'customers', label: 'Customers', icon: Users },
-            { key: 'referrals', label: 'Referrals', icon: Star }
-          ].map(({ key, label, icon: Icon }) => (
-            <button
-              key={key}
-              onClick={() => setActiveTab(key as any)}
-              className={`flex items-center gap-2 px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
-                activeTab === key
-                  ? 'border-purple-500 text-purple-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {/* Tab Content */}
-        {activeTab === 'dashboard' && <LoyaltyDashboard analytics={analytics} tiers={tiers} />}
-        {activeTab === 'rewards' && <RewardsManagement onUpdate={fetchLoyaltyData} />}
-        {activeTab === 'customers' && <CustomerLoyalty onUpdate={fetchLoyaltyData} />}
-        {activeTab === 'referrals' && <ReferralProgram onUpdate={fetchLoyaltyData} />}
-      </Card>
+      </div>
     </div>
   );
 };
 
 export default LoyaltyProgram;
+

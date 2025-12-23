@@ -8,7 +8,9 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@shared/*": ["../../shared/*"]
+      "@shared/*": ["../../shared/*"],
+      "@classic-offset/shared": ["../../shared/index.ts"],
+      "@classic-offset/shared/*": ["../../shared/*"]
     },
     "noImplicitAny": false,
     "noUnusedParameters": false,

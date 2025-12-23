@@ -139,7 +139,7 @@ const ReferralProgram: React.FC<ReferralProgramProps> = ({ onUpdate }) => {
     try {
       const { error } = await supabase
         .from('loyalty_referrals')
-        .update({ 
+        .update({
           status: newStatus,
           completed_at: newStatus === 'completed' ? new Date().toISOString() : null
         })
@@ -162,10 +162,10 @@ const ReferralProgram: React.FC<ReferralProgramProps> = ({ onUpdate }) => {
 
   const getStatusColor = (status: ReferralData['status']) => {
     switch (status) {
-      case 'pending': return 'text-yellow-400 bg-yellow-400/10';
-      case 'completed': return 'text-green-400 bg-green-400/10';
-      case 'rewarded': return 'text-blue-400 bg-blue-400/10';
-      default: return 'text-gray-400 bg-gray-400/10';
+      case 'pending': return 'text-warning bg-warning/10';
+      case 'completed': return 'text-success bg-success/10';
+      case 'rewarded': return 'text-blue-500 bg-blue-500/10';
+      default: return 'text-muted-foreground bg-muted';
     }
   };
 
@@ -190,8 +190,8 @@ const ReferralProgram: React.FC<ReferralProgramProps> = ({ onUpdate }) => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-white">Referral Program</h2>
-          <p className="text-gray-400 text-sm">Track and manage customer referrals and rewards</p>
+          <h2 className="text-xl font-semibold text-foreground">Referral Program</h2>
+          <p className="text-muted-foreground text-sm">Track and manage customer referrals and rewards</p>
         </div>
       </div>
 
@@ -251,10 +251,10 @@ const ReferralProgram: React.FC<ReferralProgramProps> = ({ onUpdate }) => {
       {/* Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Referrers */}
-        <Card className="bg-gray-800 border-gray-700">
+        <Card className="bg-card border-border">
           <div className="p-6">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-green-400" />
+            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-success" />
               Top Referrers
             </h3>
             <div className="space-y-3">
@@ -264,70 +264,65 @@ const ReferralProgram: React.FC<ReferralProgramProps> = ({ onUpdate }) => {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="flex items-center justify-between p-3 bg-gray-700 rounded-lg"
+                  className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm ${
-                      index === 0 ? 'bg-yellow-500' :
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm ${index === 0 ? 'bg-yellow-500' :
                       index === 1 ? 'bg-gray-400' :
-                      index === 2 ? 'bg-orange-600' :
-                      'bg-gray-600'
-                    }`}>
+                        index === 2 ? 'bg-orange-600' :
+                          'bg-gray-600'
+                      }`}>
                       {index + 1}
                     </div>
                     <div>
-                      <p className="text-white font-medium text-sm">{referrer.name}</p>
-                      <p className="text-gray-400 text-xs">{referrer.email}</p>
+                      <p className="text-card-foreground font-medium text-sm">{referrer.name}</p>
+                      <p className="text-foreground/70 text-xs">{referrer.email}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-green-400 font-semibold">{referrer.referral_count} referrals</p>
-                    <p className="text-blue-400 text-sm">{referrer.total_points} points</p>
+                    <p className="text-success font-semibold">{referrer.referral_count} referrals</p>
+                    <p className="text-blue-500 text-sm">{referrer.total_points} points</p>
                   </div>
                 </motion.div>
               ))}
               {(!stats?.topReferrers || stats.topReferrers.length === 0) && (
-                <p className="text-gray-400 text-center py-4">No referrers yet</p>
+                <p className="text-muted-foreground text-center py-4">No referrers yet</p>
               )}
             </div>
           </div>
         </Card>
 
         {/* Referral Program Info */}
-        <Card className="bg-gray-800 border-gray-700">
+        <Card className="bg-card border-border">
           <div className="p-6">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <Share className="w-5 h-5 text-pink-400" />
+            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Share className="w-5 h-5 text-primary" />
               Program Details
             </h3>
             <div className="space-y-4">
-              <div className="bg-gray-700 rounded-lg p-4">
-                <h4 className="text-white font-medium mb-2">How it Works</h4>
-                <ul className="text-gray-300 text-sm space-y-1">
+              <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                <h4 className="text-foreground font-medium mb-2">How it Works</h4>
+                <ul className="text-foreground/80 text-sm space-y-1">
                   <li>• Share your unique referral code</li>
                   <li>• Friend places their first order</li>
                   <li>• Both get reward points</li>
-                  <li>• No limit on referrals</li>
                 </ul>
-              </div>
-              
-              <div className="bg-gray-700 rounded-lg p-4">
-                <h4 className="text-white font-medium mb-2">Reward Structure</h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+
+                <div className="mt-4 grid grid-cols-2 gap-4 text-center">
                   <div>
-                    <p className="text-gray-400">Referrer Gets:</p>
+                    <p className="text-foreground/70">You Get:</p>
                     <p className="text-green-400 font-semibold">200 Points</p>
                   </div>
                   <div>
-                    <p className="text-gray-400">Friend Gets:</p>
-                    <p className="text-blue-400 font-semibold">100 Points</p>
+                    <p className="text-foreground/70">Friend Gets:</p>
+                    <p className="text-blue-500 font-semibold">100 Points</p>
                   </div>
                 </div>
               </div>
-              
-              <div className="bg-gray-700 rounded-lg p-4">
-                <h4 className="text-white font-medium mb-2">Terms</h4>
-                <ul className="text-gray-300 text-xs space-y-1">
+
+              <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                <h4 className="text-foreground font-medium mb-2">Terms</h4>
+                <ul className="text-foreground/70 text-xs space-y-1">
                   <li>• Points awarded after first order completion</li>
                   <li>• Self-referrals not allowed</li>
                   <li>• Points expire after 1 year</li>
@@ -339,10 +334,10 @@ const ReferralProgram: React.FC<ReferralProgramProps> = ({ onUpdate }) => {
       </div>
 
       {/* Recent Referrals */}
-      <Card className="bg-gray-800 border-gray-700">
+      <Card className="bg-card border-border">
         <div className="p-6">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <Users className="w-5 h-5 text-blue-400" />
+          <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+            <Users className="w-5 h-5 text-blue-500" />
             Recent Referrals
           </h3>
           <div className="space-y-3">
@@ -352,67 +347,67 @@ const ReferralProgram: React.FC<ReferralProgramProps> = ({ onUpdate }) => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-gray-700 rounded-lg p-4"
+                className="bg-muted/30 rounded-lg p-4 border border-border"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <User className="w-4 h-4 text-gray-400" />
-                      <span className="text-white font-medium">{referral.referrer_name}</span>
-                      <span className="text-gray-400">referred</span>
+                      <User className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-card-foreground font-medium">{referral.referrer_name}</span>
+                      <span className="text-muted-foreground">referred</span>
                       {referral.referred_name ? (
-                        <span className="text-green-400 font-medium">{referral.referred_name}</span>
+                        <span className="text-success font-medium">{referral.referred_name}</span>
                       ) : (
-                        <span className="text-yellow-400">pending signup</span>
+                        <span className="text-warning">pending signup</span>
                       )}
                     </div>
-                    
+
                     <div className="flex items-center gap-4 text-sm">
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-400">Code:</span>
-                        <span className="text-blue-400 font-mono">{referral.referrer_code}</span>
+                        <span className="text-foreground/70">Code:</span>
+                        <span className="text-blue-500 font-mono">{referral.referrer_code}</span>
                         <button
                           onClick={() => copyReferralCode(referral.referrer_code)}
-                          className="text-gray-400 hover:text-white transition-colors"
+                          className="text-foreground/70 hover:text-foreground transition-colors"
                         >
                           {copiedCode === referral.referrer_code ? (
-                            <Check className="w-4 h-4 text-green-400" />
+                            <Check className="w-4 h-4 text-success" />
                           ) : (
                             <Copy className="w-4 h-4" />
                           )}
                         </button>
                       </div>
-                      
+
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-400">Date:</span>
-                        <span className="text-gray-300">{formatDate(referral.created_at)}</span>
+                        <span className="text-foreground/70">Date:</span>
+                        <span className="text-foreground/80">{formatDate(referral.created_at)}</span>
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-3">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(referral.status)}`}>
                       {referral.status}
                     </span>
-                    
+
                     {referral.status === 'pending' && (
                       <Button
                         onClick={() => updateReferralStatus(referral.id, 'completed')}
                         size="sm"
-                        className="bg-green-600 hover:bg-green-700"
+                        className="bg-success hover:bg-success/90 text-success-foreground"
                       >
                         Mark Complete
                       </Button>
                     )}
-                    
+
                     <div className="text-right">
                       {referral.referrer_points > 0 && (
-                        <p className="text-green-400 text-sm font-semibold">
+                        <p className="text-success text-sm font-semibold">
                           +{referral.referrer_points} pts
                         </p>
                       )}
                       {referral.referred_points > 0 && (
-                        <p className="text-blue-400 text-xs">
+                        <p className="text-blue-500 text-xs">
                           Friend: +{referral.referred_points} pts
                         </p>
                       )}
@@ -421,12 +416,12 @@ const ReferralProgram: React.FC<ReferralProgramProps> = ({ onUpdate }) => {
                 </div>
               </motion.div>
             ))}
-            
+
             {referrals.length === 0 && (
               <div className="text-center py-8">
-                <Share className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-400">No referrals yet</p>
-                <p className="text-gray-500 text-sm">Referrals will appear here once customers start sharing</p>
+                <Share className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No referrals yet</p>
+                <p className="text-muted-foreground text-sm">Referrals will appear here once customers start sharing</p>
               </div>
             )}
           </div>

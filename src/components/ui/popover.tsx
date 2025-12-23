@@ -45,7 +45,7 @@ export function PopoverContent({ children, className = '', align = 'center' }: P
             leaveTo="opacity-0 translate-y-1"
         >
             <HeadlessPopover.Panel
-                className={`absolute z-50 mt-2 ${alignmentClasses[align]} ${className}`}
+                className={`absolute z-50 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-xl ring-1 ring-black/5 ${alignmentClasses[align]} ${className}`}
             >
                 {children}
             </HeadlessPopover.Panel>

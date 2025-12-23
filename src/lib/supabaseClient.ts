@@ -1,7 +1,6 @@
 // src/lib/supabaseClient.ts
-import { createClient } from '@supabase/supabase-js';
+// Now uses shared Supabase client factory for consistency
+import { getSupabase } from '@classic-offset/shared';
 
-export const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL!,
-  import.meta.env.VITE_SUPABASE_ANON_KEY!
-);
+// Re-export the shared client for backward compatibility
+export const supabase = getSupabase();

@@ -2,15 +2,15 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import toast from 'react-hot-toast';
 import { handleSupabaseError } from '@/lib/supabaseErrorHandler';
-import Card from '../ui/Card';
 import Button from '../ui/Button';
-import MaterialTable from './MaterialTable';
 import MaterialFormModal from './MaterialFormModal';
 import MaterialViewModal from './MaterialViewModal';
 import MaterialTransactionModal from './MaterialTransactionModal';
 import ConfirmationModal from '../ui/ConfirmationModal';
-import StockAlertsCard from './StockAlertsCard';
-import { Plus, Package, AlertTriangle, TrendingUp, DollarSign } from 'lucide-react';
+import ComprehensiveMaterialView from './ComprehensiveMaterialView';
+import MaterialHistory from './MaterialHistory';
+import { LayoutDashboard, History, Plus, Package } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export interface Material {
   id: string;
@@ -67,107 +67,78 @@ export interface MaterialTransaction {
 }
 
 const MaterialsPage: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'history'>('dashboard');
   const [materials, setMaterials] = useState<Material[]>([]);
   const [categories, setCategories] = useState<MaterialCategory[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [formLoading, setFormLoading] = useState(false);
-  
+
   // Modal states
   const [showFormModal, setShowFormModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showTransactionModal, setShowTransactionModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  
+
   // Selected items
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
   const [viewingMaterial, setViewingMaterial] = useState<Material | null>(null);
   const [transactionMaterial, setTransactionMaterial] = useState<Material | null>(null);
   const [materialToDelete, setMaterialToDelete] = useState<Material | null>(null);
 
-  // Pagination and filtering
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [filters, setFilters] = useState({
-    category: '',
-    supplier: '',
-    stockStatus: '',
-    search: ''
-  });
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  const fetchMaterials = useCallback(async (page = 1) => {
+  // Handle URL queries for tab switching if needed
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const tab = searchParams.get('tab');
+    if (tab === 'history') setActiveTab('history');
+    else setActiveTab('dashboard');
+  }, [location.search]);
+
+  const fetchMaterials = useCallback(async () => {
     setLoading(true);
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from('materials_with_details')
-        .select('*', { count: 'exact' })
+        .select('*')
         .order('created_at', { ascending: false });
 
-      // Apply filters
-      if (filters.category) {
-        query = query.eq('category_name', filters.category);
-      }
-      if (filters.supplier) {
-        query = query.eq('supplier_name', filters.supplier);
-      }
-      if (filters.stockStatus) {
-        query = query.eq('stock_status', filters.stockStatus);
-      }
-      if (filters.search) {
-        query = query.or(`material_name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
-      }
-
-      // Pagination
-      const limit = 10;
-      query = query.range((page - 1) * limit, page * limit - 1);
-
-      const { data, error, count } = await query;
-      
       if (error) {
-        const handledError = handleSupabaseError(error, { 
-          operation: 'select_materials', 
-          table: 'materials_with_details' 
+        const handledError = handleSupabaseError(error, {
+          operation: 'select_materials',
+          table: 'materials_with_details'
         });
         if (handledError) throw handledError;
       }
-      
+
       setMaterials(data || []);
-      setTotalPages(Math.ceil((count || 0) / limit));
-      setCurrentPage(page);
     } catch (err: any) {
       console.error('Materials fetch error:', err);
-      toast.error('Failed to fetch materials. Please check your permissions.');
+      toast.error('Failed to fetch materials.');
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, []);
 
   const fetchCategories = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('material_categories')
-        .select('*')
-        .order('name');
-      
+      const { data, error } = await supabase.from('material_categories').select('*').order('name');
       if (error) throw error;
       setCategories(data || []);
     } catch (err: any) {
-      toast.error('Failed to fetch categories');
+      // toast.error('Failed to fetch categories'); // Silent fail or log
     }
   }, []);
 
   const fetchSuppliers = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('suppliers')
-        .select('*')
-        .eq('is_active', true)
-        .order('name');
-      
+      const { data, error } = await supabase.from('suppliers').select('*').eq('is_active', true).order('name');
       if (error) throw error;
       setSuppliers(data || []);
     } catch (err: any) {
-      toast.error('Failed to fetch suppliers');
+      // toast.error('Failed to fetch suppliers'); // Silent fail or log
     }
   }, []);
 
@@ -183,26 +154,20 @@ const MaterialsPage: React.FC = () => {
       if (editingMaterial) {
         const { error } = await supabase
           .from('materials')
-          .update({
-            ...materialData,
-            version: editingMaterial.version + 1
-          })
+          .update({ ...materialData, version: editingMaterial.version + 1 })
           .eq('id', editingMaterial.id);
-        
+
         if (error) throw error;
         toast.success('Material updated successfully');
       } else {
-        const { error } = await supabase
-          .from('materials')
-          .insert([materialData]);
-        
+        const { error } = await supabase.from('materials').insert([materialData]);
         if (error) throw error;
         toast.success('Material created successfully');
       }
-      
+
       setShowFormModal(false);
       setEditingMaterial(null);
-      fetchMaterials(currentPage);
+      fetchMaterials();
     } catch (err: any) {
       if (err.code === '23505') {
         toast.error('A material with this name already exists');
@@ -236,18 +201,12 @@ const MaterialsPage: React.FC = () => {
 
   const confirmDelete = async () => {
     if (!materialToDelete) return;
-    
     setFormLoading(true);
     try {
-      const { error } = await supabase
-        .from('materials')
-        .update({ is_active: false })
-        .eq('id', materialToDelete.id);
-      
+      const { error } = await supabase.from('materials').update({ is_active: false }).eq('id', materialToDelete.id);
       if (error) throw error;
-      
       toast.success('Material deleted successfully');
-      fetchMaterials(currentPage);
+      fetchMaterials();
     } catch (err: any) {
       toast.error(err.message || 'Failed to delete material');
     } finally {
@@ -260,89 +219,88 @@ const MaterialsPage: React.FC = () => {
   const handleTransactionSuccess = () => {
     setShowTransactionModal(false);
     setTransactionMaterial(null);
-    fetchMaterials(currentPage);
+    fetchMaterials();
   };
 
-  // Calculate summary statistics
-  const totalMaterials = materials.length;
-  const lowStockCount = materials.filter(m => m.stock_status === 'LOW_STOCK').length;
-  const outOfStockCount = materials.filter(m => m.stock_status === 'OUT_OF_STOCK').length;
-  const totalValue = materials.reduce((sum, m) => sum + m.total_value, 0);
+  const handleAddMaterial = () => {
+    setEditingMaterial(null);
+    setShowFormModal(true);
+  }
+
+  const handleTabChange = (tab: 'dashboard' | 'history') => {
+    setActiveTab(tab);
+    // Update URL without reload
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', tab);
+    window.history.pushState({}, '', url.toString());
+  };
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">📦 Materials Management</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">Comprehensive material inventory and tracking system</p>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+            <Package className="w-8 h-8 text-primary" />
+            Materials Management
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+            Track inventory, manage suppliers, and monitor stock levels.
+          </p>
         </div>
-        <Button onClick={() => { setEditingMaterial(null); setShowFormModal(true); }} className="w-full sm:w-auto">
-          <Plus className="w-4 h-4 mr-2" /> Add Material
-        </Button>
+        <div className="flex gap-3 w-full sm:w-auto">
+          <Button onClick={handleAddMaterial} className="flex-1 sm:flex-none">
+            <Plus className="w-4 h-4 mr-2" /> Add Material
+          </Button>
+        </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <Package className="w-8 h-8 text-blue-500" />
-            <div>
-              <p className="text-sm text-gray-500">Total Materials</p>
-              <p className="text-2xl font-bold text-gray-800 dark:text-white">{totalMaterials}</p>
-            </div>
-          </div>
-        </Card>
-        
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="w-8 h-8 text-yellow-500" />
-            <div>
-              <p className="text-sm text-gray-500">Low Stock</p>
-              <p className="text-2xl font-bold text-yellow-600">{lowStockCount}</p>
-            </div>
-          </div>
-        </Card>
-        
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <TrendingUp className="w-8 h-8 text-red-500" />
-            <div>
-              <p className="text-sm text-gray-500">Out of Stock</p>
-              <p className="text-2xl font-bold text-red-600">{outOfStockCount}</p>
-            </div>
-          </div>
-        </Card>
-        
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <DollarSign className="w-8 h-8 text-green-500" />
-            <div>
-              <p className="text-sm text-gray-500">Total Value</p>
-              <p className="text-2xl font-bold text-green-600">₹{totalValue.toLocaleString('en-IN')}</p>
-            </div>
-          </div>
-        </Card>
+      {/* Tabs */}
+      <div className="border-b border-gray-200 dark:border-gray-700">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => handleTabChange('dashboard')}
+            className={`
+              whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2
+              ${activeTab === 'dashboard'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}
+            `}
+          >
+            <LayoutDashboard className="w-4 h-4" />
+            Inventory Dashboard
+          </button>
+          <button
+            onClick={() => handleTabChange('history')}
+            className={`
+              whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2
+              ${activeTab === 'history'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'}
+            `}
+          >
+            <History className="w-4 h-4" />
+            Transaction History
+          </button>
+        </nav>
       </div>
 
-      {/* Stock Alerts */}
-      <StockAlertsCard />
-
-      {/* Materials Table */}
-      <MaterialTable
-        materials={materials}
-        categories={categories}
-        suppliers={suppliers}
-        loading={loading}
-        currentPage={currentPage}
-        totalPages={totalPages}
-        filters={filters}
-        onFiltersChange={setFilters}
-        onPageChange={(page) => fetchMaterials(page)}
-        onEdit={handleEdit}
-        onView={handleView}
-        onTransaction={handleTransaction}
-        onDelete={handleDeleteRequest}
-      />
+      <div className="mt-6">
+        {activeTab === 'dashboard' ? (
+          <ComprehensiveMaterialView
+            materials={materials}
+            categories={categories}
+            suppliers={suppliers}
+            loading={loading}
+            onRefresh={fetchMaterials}
+            onEdit={handleEdit}
+            onView={handleView}
+            onTransaction={handleTransaction}
+            onDelete={handleDeleteRequest}
+          />
+        ) : (
+          <MaterialHistory />
+        )}
+      </div>
 
       {/* Modals */}
       <MaterialFormModal

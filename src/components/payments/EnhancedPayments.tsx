@@ -30,29 +30,33 @@ const EnhancedPayments: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">💳 Payment Management System</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="p-2 bg-primary/10 rounded-lg text-primary">
+              <BarChart3 size={24} />
+            </div>
+            <h1 className="text-2xl font-bold font-display text-foreground">Payment Management</h1>
+          </div>
+          <p className="text-muted-foreground text-sm ml-12">
             Comprehensive payment tracking, analytics, and management
           </p>
         </div>
       </div>
 
       {/* Tab Navigation */}
-      <div className="border-b border-gray-200 dark:border-gray-700">
-        <nav className="flex space-x-8 overflow-x-auto">
+      <div className="border-b border-border">
+        <nav className="flex space-x-6 overflow-x-auto">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-3 py-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? 'border-primary-600 text-primary-600 dark:text-primary-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-                }`}
+                className={`flex items-center gap-2 px-1 py-4 text-sm font-medium transition-all border-b-2 whitespace-nowrap ${activeTab === tab.id
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300 dark:hover:border-gray-700'
+                  }`}
               >
-                <Icon size={16} />
+                <Icon size={18} />
                 {tab.label}
               </button>
             );
@@ -65,17 +69,17 @@ const EnhancedPayments: React.FC = () => {
         {activeTab === 'dashboard' && (
           <PaymentDashboard />
         )}
-        
+
         {activeTab === 'manage' && (
           <PaymentManagementTable key={refreshKey} />
         )}
-        
+
         {activeTab === 'add' && (
           <div className="max-w-2xl mx-auto">
             <PaymentForm onSuccess={handlePaymentSuccess} />
           </div>
         )}
-        
+
         {activeTab === 'history' && (
           <PaymentHistory />
         )}

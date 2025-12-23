@@ -17,6 +17,7 @@
     "supabase:status": "supabase status"
   },
   "dependencies": {
+    "@classic-offset/shared": "file:./shared",
     "@google/generative-ai": "^0.24.1",
     "@headlessui/react": "^2.2.9",
     "@hello-pangea/dnd": "^16.6.0",

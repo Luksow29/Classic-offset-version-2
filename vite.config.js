@@ -96,6 +96,7 @@ export default defineConfig({
         alias: {
             '@': path.resolve(__dirname, 'src'),
             '@shared': sharedPath,
+            '@classic-offset/shared': sharedPath,
         },
         dedupe: ['react', 'react-dom'],
     },

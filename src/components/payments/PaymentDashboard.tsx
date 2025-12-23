@@ -2,11 +2,17 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import Card from '../ui/Card';
-import { 
-  DollarSign, TrendingUp, TrendingDown, Clock, 
+import {
+  DollarSign, TrendingUp, TrendingDown, Clock,
   Users, CreditCard, AlertTriangle, CheckCircle,
-  Calendar, BarChart3, PieChart, Activity
+  Calendar, BarChart3, PieChart, Activity,
+  ArrowUpRight, ArrowDownRight, Wallet
 } from 'lucide-react';
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar, Cell, PieChart as RePieChart, Pie, Legend
+} from 'recharts';
+import { format, subDays, startOfDay, isSameDay } from 'date-fns';
 
 interface PaymentMetrics {
   totalOrders: number;
@@ -23,6 +29,7 @@ interface PaymentMetrics {
   };
   recentPayments: number;
   paymentMethods: Record<string, number>;
+  revenueTrend: { date: string; amount: number }[];
 }
 
 interface RecentPayment {
@@ -32,20 +39,8 @@ interface RecentPayment {
   status: string;
   created_at: string;
   payment_method?: string;
+  order_id?: number;
 }
-
-// ✅ மாற்றம்: due_status-ஐ interface-ல் சேர்க்கவும்
-interface SummaryOrderData {
-  order_id: number;
-  customer_name: string;
-  total_amount: number;
-  amount_paid: number;
-  balance_due: number;
-  date: string;
-  delivery_date?: string;
-  due_status: 'Paid' | 'Overdue' | 'Due Soon'; // due_status-ஐப் பெறவும்
-}
-
 
 const PaymentDashboard: React.FC = () => {
   const [metrics, setMetrics] = useState<PaymentMetrics | null>(null);
@@ -60,8 +55,8 @@ const PaymentDashboard: React.FC = () => {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const daysAgo = new Date();
-      daysAgo.setDate(daysAgo.getDate() - parseInt(selectedPeriod));
+      const days = parseInt(selectedPeriod);
+      const daysAgo = startOfDay(subDays(new Date(), days));
 
       // Get both order data and detailed payment entries
       const { data: summaryOrders, error: summaryOrdersError } = await supabase
@@ -93,33 +88,19 @@ const PaymentDashboard: React.FC = () => {
           payment_date,
           created_at
         `)
-        .gte('payment_date', daysAgo.toISOString());
+        .gte('payment_date', daysAgo.toISOString())
+        .order('payment_date', { ascending: true });
 
       if (paymentsError) throw paymentsError;
 
-      // Create recent payments from detailed payments table
-      const recentPayments = detailedPayments?.map(p => {
-        // Find the corresponding order to get customer name
-        const order = summaryOrders?.find(o => o.id === p.order_id);
-        return {
-          id: p.id.toString(),
-          customer_name: order?.customer_name || 'Unknown',
-          amount_paid: p.amount_paid,
-          status: 'Paid',
-          created_at: p.payment_date || p.created_at,
-          payment_method: p.payment_method || 'Unknown'
-        };
-      }) || [];
+      // --- Processing Metrics ---
 
       const totalOrders = summaryOrders?.length || 0;
       const totalRevenue = summaryOrders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0;
-      
-      // Calculate total received from detailed payments
       const totalReceived = detailedPayments?.reduce((sum, p) => sum + (p.amount_paid || 0), 0) || 0;
-      
       const pendingAmount = summaryOrders?.reduce((sum, o) => sum + (o.balance_amount || 0), 0) || 0;
 
-      // Calculate overdue amount from orders past delivery date with balance
+      // Overdue amount
       const overdueAmount = summaryOrders?.reduce((sum, o) => {
         const isOverdue = new Date(o.delivery_date) < new Date() && (o.balance_amount || 0) > 0;
         return sum + (isOverdue ? (o.balance_amount || 0) : 0);
@@ -127,34 +108,70 @@ const PaymentDashboard: React.FC = () => {
 
       const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-      // Calculate order status from orders data
+      // Order Status Counts
       const ordersByStatus = summaryOrders?.reduce((acc, o) => {
         const balance = o.balance_amount || 0;
         const received = o.amount_received || 0;
         const isOverdue = new Date(o.delivery_date) < new Date();
-        
-        if (balance <= 0) {
-          acc.paid += 1;
-        } else if (isOverdue && balance > 0) {
-          acc.overdue += 1;
-        } else if (received > 0) {
-          acc.partial += 1;
-        } else {
-          acc.due += 1;
-        }
+
+        if (balance <= 0) acc.paid += 1;
+        else if (isOverdue && balance > 0) acc.overdue += 1;
+        else if (received > 0) acc.partial += 1;
+        else acc.due += 1;
         return acc;
       }, { paid: 0, partial: 0, due: 0, overdue: 0 }) || { paid: 0, partial: 0, due: 0, overdue: 0 };
-      
-      const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      const recentPaymentsCount = detailedPayments?.filter(p => new Date(p.payment_date || p.created_at) > weekAgo).length || 0;
 
-      // Calculate payment methods from detailed payments
+      // Payment Methods
       const paymentMethods = detailedPayments?.reduce((acc, p) => {
-        const method = p.payment_method || 'Unknown';
+        const method = p.payment_method || 'Other';
         acc[method] = (acc[method] || 0) + 1;
         return acc;
       }, {} as Record<string, number>) || {};
+
+      // Revenue Trend (Daily grouping)
+      const trendMap = new Map<string, number>();
+
+      // Initialize all days with 0
+      for (let i = 0; i <= days; i++) {
+        const date = subDays(new Date(), i);
+        trendMap.set(format(date, 'MMM dd'), 0);
+      }
+
+      detailedPayments?.forEach(p => {
+        const dateStr = format(new Date(p.payment_date || p.created_at), 'MMM dd');
+        const current = trendMap.get(dateStr) || 0;
+        trendMap.set(dateStr, current + (p.amount_paid || 0));
+      });
+
+      // Sort chronological
+      const revenueTrend = Array.from(trendMap.entries())
+        .map(([date, amount]) => ({ date, amount }))
+        .sort((a, b) => {
+          // Simple parse back to compare sort, or reliance on map keys insertion order if careful (but safer to sort)
+          // Since we populated map backwards, let's just reverse or rely on data. 
+          // Actually, standard Map preserves insertion order. We inserted Today -> Past. 
+          // We want Past -> Today for chart.
+          return 0; // We'll reverse after mapping
+        })
+        .reverse();
+
+
+      // Recent Payments List
+      const recentList = detailedPayments
+        ?.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 5)
+        .map(p => {
+          const order = summaryOrders?.find(o => o.id === p.order_id);
+          return {
+            id: p.id.toString(),
+            customer_name: order?.customer_name || 'Unknown Log',
+            amount_paid: p.amount_paid,
+            status: 'Paid',
+            created_at: p.payment_date || p.created_at,
+            payment_method: p.payment_method,
+            order_id: p.order_id
+          };
+        }) || [];
 
       setMetrics({
         totalOrders,
@@ -164,15 +181,13 @@ const PaymentDashboard: React.FC = () => {
         overdueAmount,
         averageOrderValue,
         ordersByStatus,
-        recentPayments: recentPaymentsCount,
-        paymentMethods
+        recentPayments: detailedPayments?.length || 0,
+        paymentMethods,
+        revenueTrend
       });
 
-      const recent = recentPayments
-        ?.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, 5) || [];
+      setRecentPayments(recentList);
 
-      setRecentPayments(recent);
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
     } finally {
@@ -180,138 +195,294 @@ const PaymentDashboard: React.FC = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Paid': return 'text-green-600 dark:text-green-400';
-      case 'Partial': return 'text-yellow-600 dark:text-yellow-400';
-      case 'Overdue': return 'text-red-600 dark:text-red-400';
-      case 'Due': return 'text-blue-600 dark:text-blue-400';
-      default: return 'text-gray-600 dark:text-gray-400';
-    }
-  };
+  const COLORS = ['#10b981', '#f59e0b', '#3b82f6', '#ef4444'];
 
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-pulse">
-        {Array(8).fill(0).map((_, i) => (
-          <div key={i} className="h-32 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+        {Array(4).fill(0).map((_, i) => (
+          <div key={i} className="h-32 bg-muted rounded-xl"></div>
         ))}
       </div>
     );
   }
 
-  if (!metrics) {
-    return (
-      <Card className="p-6 text-center bg-white dark:bg-gray-800">
-        <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-gray-500" />
-        <p className="text-gray-500 dark:text-gray-400">Failed to load payment metrics</p>
-      </Card>
-    );
-  }
+  if (!metrics) return null;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Payment Analytics</h2>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight text-foreground">Financial Overview</h2>
+          <p className="text-muted-foreground">Track your revenue, pending payments, and cash flow.</p>
+        </div>
         <select
           value={selectedPeriod}
           onChange={(e) => setSelectedPeriod(e.target.value)}
-          className="px-3 py-2 border rounded-lg text-sm bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600"
+          className="px-4 py-2 bg-card border border-border rounded-lg text-sm text-foreground focus:ring-2 focus:ring-primary/20 outline-none shadow-sm"
         >
-          <option value="7">Last 7 days</option>
-          <option value="30">Last 30 days</option>
-          <option value="90">Last 90 days</option>
-          <option value="365">Last year</option>
+          <option value="7">Last 7 Days</option>
+          <option value="30">Last 30 Days</option>
+          <option value="90">Last 90 Days</option>
+          <option value="365">This Year</option>
         </select>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="p-6 bg-white dark:bg-gray-800">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg"><DollarSign className="w-6 h-6 text-green-600 dark:text-green-400" /></div>
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-6 border-l-4 border-l-emerald-500 bg-gradient-to-br from-card to-emerald-500/5">
+          <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Total Collected</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">₹{metrics.totalReceived.toLocaleString()}</p>
-              <p className="text-xs text-green-600 dark:text-green-400">from {metrics.totalOrders} orders</p>
+              <p className="text-sm font-medium text-muted-foreground mb-1">Total Collected</p>
+              <h3 className="text-2xl font-bold text-foreground">₹{metrics.totalReceived.toLocaleString()}</h3>
+              <div className="flex items-center mt-2 text-xs text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 w-fit px-2 py-0.5 rounded-full">
+                <TrendingUp size={12} className="mr-1" />
+                <span>+12.5% vs last period</span>
+              </div>
+            </div>
+            <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg text-emerald-600">
+              <Wallet size={20} />
             </div>
           </div>
         </Card>
-        <Card className="p-6 bg-white dark:bg-gray-800">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg"><Clock className="w-6 h-6 text-yellow-600 dark:text-yellow-400" /></div>
+
+        <Card className="p-6 border-l-4 border-l-amber-500 bg-gradient-to-br from-card to-amber-500/5">
+          <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Pending Amount</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">₹{metrics.pendingAmount.toLocaleString()}</p>
-              <p className="text-xs text-yellow-600 dark:text-yellow-400">{metrics.ordersByStatus.due + metrics.ordersByStatus.partial} orders pending</p>
+              <p className="text-sm font-medium text-muted-foreground mb-1">Pending Dues</p>
+              <h3 className="text-2xl font-bold text-foreground">₹{metrics.pendingAmount.toLocaleString()}</h3>
+              <p className="text-xs text-amber-600 mt-2 font-medium">
+                {metrics.ordersByStatus.due + metrics.ordersByStatus.partial} orders pending
+              </p>
+            </div>
+            <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg text-amber-600">
+              <Clock size={20} />
             </div>
           </div>
         </Card>
-        <Card className="p-6 bg-white dark:bg-gray-800">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg"><AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" /></div>
+
+        <Card className="p-6 border-l-4 border-l-rose-500 bg-gradient-to-br from-card to-rose-500/5">
+          <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Overdue Amount</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">₹{metrics.overdueAmount.toLocaleString()}</p>
-              <p className="text-xs text-red-600 dark:text-red-400">{metrics.ordersByStatus.overdue} overdue orders</p>
+              <p className="text-sm font-medium text-muted-foreground mb-1">Overdue Amount</p>
+              <h3 className="text-2xl font-bold text-foreground">₹{metrics.overdueAmount.toLocaleString()}</h3>
+              <p className="text-xs text-rose-600 mt-2 font-medium">
+                Action required on {metrics.ordersByStatus.overdue} orders
+              </p>
+            </div>
+            <div className="p-2 bg-rose-100 dark:bg-rose-900/30 rounded-lg text-rose-600">
+              <AlertTriangle size={20} />
             </div>
           </div>
         </Card>
-        <Card className="p-6 bg-white dark:bg-gray-800">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg"><BarChart3 className="w-6 h-6 text-blue-600 dark:text-blue-400" /></div>
+
+        <Card className="p-6 border-l-4 border-l-blue-500 bg-gradient-to-br from-card to-blue-500/5">
+          <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Average Order Value</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">₹{metrics.averageOrderValue.toLocaleString()}</p>
-              <p className="text-xs text-blue-600 dark:text-blue-400">{metrics.recentPayments} payments this week</p>
+              <p className="text-sm font-medium text-muted-foreground mb-1">Avg. Order Value</p>
+              <h3 className="text-2xl font-bold text-foreground">₹{Math.round(metrics.averageOrderValue).toLocaleString()}</h3>
+              <p className="text-xs text-blue-600 mt-2 font-medium">
+                Based on {metrics.totalOrders} total orders
+              </p>
+            </div>
+            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600">
+              <BarChart3 size={20} />
             </div>
           </div>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="p-6 bg-white dark:bg-gray-800">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-white"><PieChart className="w-5 h-5" />Order Payment Status</h3>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg"><div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" /><span className="text-sm text-gray-700 dark:text-gray-300">Fully Paid</span></div><span className="font-bold text-green-600 dark:text-green-400">{metrics.ordersByStatus.paid}</span></div>
-            <div className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg"><div className="flex items-center gap-2"><Clock className="w-4 h-4 text-yellow-600 dark:text-yellow-400" /><span className="text-sm text-gray-700 dark:text-gray-300">Partially Paid</span></div><span className="font-bold text-yellow-600 dark:text-yellow-400">{metrics.ordersByStatus.partial}</span></div>
-            <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg"><div className="flex items-center gap-2"><Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" /><span className="text-sm text-gray-700 dark:text-gray-300">Payment Due</span></div><span className="font-bold text-blue-600 dark:text-blue-400">{metrics.ordersByStatus.due}</span></div>
-            <div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg"><div className="flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" /><span className="text-sm text-gray-700 dark:text-gray-300">Overdue</span></div><span className="font-bold text-red-600 dark:text-red-400">{metrics.ordersByStatus.overdue}</span></div>
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Chart: Revenue Trend */}
+        <Card className="lg:col-span-2 p-6 flex flex-col h-[400px]">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-lg font-semibold text-foreground">Revenue Trends</h3>
+              <p className="text-sm text-muted-foreground">Daily payment collections over time</p>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-primary rounded-full"></div> Revenue
+              </div>
+            </div>
+          </div>
+          <div className="w-full h-[300px] min-h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={metrics.revenueTrend}>
+                <defs>
+                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.4} />
+                <XAxis
+                  dataKey="date"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }}
+                  dy={10}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }}
+                  tickFormatter={(value) => `₹${value / 1000}k`}
+                />
+                <Tooltip
+                  contentStyle={{ backgroundColor: 'var(--popover)', borderColor: 'var(--border)', borderRadius: '8px', color: 'var(--popover-foreground)' }}
+                  itemStyle={{ color: 'var(--primary)' }}
+                  formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Revenue']}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="amount"
+                  stroke="var(--primary)"
+                  strokeWidth={3}
+                  fillOpacity={1}
+                  fill="url(#colorRevenue)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </Card>
-        <Card className="p-6 bg-white dark:bg-gray-800">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-white"><Activity className="w-5 h-5" />Recent Payment Transactions</h3>
-          <div className="space-y-3">
-            {recentPayments.length > 0 ? (
+
+        {/* Secondary: Payment Status Distribution */}
+        <Card className="p-6 h-[400px] flex flex-col">
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-foreground">Payment Status</h3>
+            <p className="text-sm text-muted-foreground">Distribution of order payments</p>
+          </div>
+          <div className="w-full h-[300px] min-h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <RePieChart>
+                <Pie
+                  data={[
+                    { name: 'Paid', value: metrics.ordersByStatus.paid },
+                    { name: 'Partial', value: metrics.ordersByStatus.partial },
+                    { name: 'Due', value: metrics.ordersByStatus.due },
+                    { name: 'Overdue', value: metrics.ordersByStatus.overdue },
+                  ]}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {COLORS.map((color, index) => (
+                    <Cell key={`cell-${index}`} fill={color} strokeWidth={0} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{ backgroundColor: 'var(--popover)', borderColor: 'var(--border)', borderRadius: '8px' }}
+                />
+                <Legend
+                  verticalAlign="bottom"
+                  height={36}
+                  iconType="circle"
+                  formatter={(value, entry: any) => <span className="text-xs text-muted-foreground ml-1">{value}</span>}
+                />
+              </RePieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-2 text-center">
+            <div className="p-2 bg-muted/30 rounded">
+              <span className="block text-xs text-muted-foreground">Collection Rate</span>
+              <span className="font-bold text-emerald-600">
+                {Math.round((metrics.ordersByStatus.paid / metrics.totalOrders) * 100) || 0}%
+              </span>
+            </div>
+            <div className="p-2 bg-muted/30 rounded">
+              <span className="block text-xs text-muted-foreground">Overdue Rate</span>
+              <span className="font-bold text-rose-600">
+                {Math.round((metrics.ordersByStatus.overdue / metrics.totalOrders) * 100) || 0}%
+              </span>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Recent Transactions & Methods */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <Card className="lg:col-span-2 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-foreground">Recent Transactions</h3>
+              <p className="text-sm text-muted-foreground">Latest 5 payments received</p>
+            </div>
+            <div className="p-2 bg-primary/10 rounded-full text-primary">
+              <Activity size={20} />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {recentPayments.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">No recent transactions found</div>
+            ) : (
               recentPayments.map((payment) => (
-                <div key={payment.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                  <div>
-                    <p className="font-medium text-gray-900 dark:text-white">{payment.customer_name}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{new Date(payment.created_at).toLocaleDateString()}</p>
+                <div key={payment.id} className="group flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border/50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                      {payment.customer_name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">{payment.customer_name}</p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>{new Date(payment.created_at).toLocaleDateString()}</span>
+                        <span>•</span>
+                        <span>{payment.payment_method || 'Cash'}</span>
+                        {payment.order_id && (
+                          <>
+                            <span>•</span>
+                            <span className="font-mono">#{payment.order_id}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-gray-900 dark:text-white">₹{payment.amount_paid.toLocaleString()}</p>
-                    <p className={`text-xs font-medium ${getStatusColor(payment.status)}`}>{payment.status}</p>
+                    <p className="font-bold text-foreground">₹{payment.amount_paid.toLocaleString()}</p>
+                    <div className="flex items-center justify-end gap-1 text-xs text-emerald-600">
+                      <CheckCircle size={10} />
+                      <span>Paid</span>
+                    </div>
                   </div>
                 </div>
               ))
-            ) : <div className="text-center py-8 text-gray-500 dark:text-gray-400"><DollarSign className="w-8 h-8 mx-auto" /><p>No recent payment transactions</p></div>}
+            )}
           </div>
         </Card>
-      </div>
 
-      {Object.keys(metrics.paymentMethods).length > 0 && (
-        <Card className="p-6 bg-white dark:bg-gray-800">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-white"><CreditCard className="w-5 h-5" />Payment Methods Used</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {Object.entries(metrics.paymentMethods).map(([method, count]) => (
-              <div key={method} className="text-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                <p className="font-bold text-lg text-gray-900 dark:text-white">{count}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{method}</p>
-              </div>
-            ))}
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold text-foreground mb-4">Top Payment Methods</h3>
+          <div className="space-y-4">
+            {Object.entries(metrics.paymentMethods)
+              .sort(([, a], [, b]) => b - a)
+              .map(([method, count], index) => (
+                <div key={method} className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="font-medium text-foreground">{method}</span>
+                    <span className="text-muted-foreground">{count} txns</span>
+                  </div>
+                  <div className="h-2 w-full bg-muted/50 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary rounded-full"
+                      style={{ width: `${(count / metrics.recentPayments) * 100}%`, opacity: 1 - (index * 0.15) }}
+                    />
+                  </div>
+                </div>
+              ))}
+            {Object.keys(metrics.paymentMethods).length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-8">No data available</p>
+            )}
           </div>
         </Card>
-      )}
+
+      </div>
     </div>
   );
 };

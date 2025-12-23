@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/services/supabase/client';
-import { Search, ShoppingBag, ZoomIn, Loader2, Package } from 'lucide-react';
-import { Card } from '@/shared/components/ui/card';
+import { Search, ShoppingBag, ZoomIn, Package, Filter, X } from 'lucide-react';
+import { Card, CardContent } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
+import { Skeleton } from '@/shared/components/ui/skeleton';
 import {
     Dialog,
     DialogContent,
@@ -22,6 +23,54 @@ interface Product {
     image_url?: string;
     created_at: string;
 }
+
+// Skeleton Components
+const ProductCardSkeleton = () => (
+    <Card className="overflow-hidden border border-gray-100 dark:border-gray-800">
+        <Skeleton className="aspect-[4/3] w-full" />
+        <CardContent className="p-4 space-y-3">
+            <div className="flex justify-between items-start">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-6 w-16 rounded-full" />
+            </div>
+            <Skeleton className="h-5 w-20 rounded-full" />
+            <div className="space-y-2">
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-3/4" />
+            </div>
+        </CardContent>
+    </Card>
+);
+
+const LibrarySkeleton = () => (
+    <div className="space-y-6">
+        {/* Filter Bar Skeleton */}
+        <div className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                <Skeleton className="h-10 w-full md:w-96 rounded-lg" />
+                <div className="flex gap-2">
+                    {[...Array(4)].map((_, i) => (
+                        <Skeleton key={i} className="h-9 w-20 rounded-full" />
+                    ))}
+                </div>
+            </div>
+        </div>
+        
+        {/* Grid Skeleton */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+            {[...Array(8)].map((_, i) => (
+                <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                >
+                    <ProductCardSkeleton />
+                </motion.div>
+            ))}
+        </div>
+    </div>
+);
 
 const ProductLibrary: React.FC = () => {
     const [products, setProducts] = useState<Product[]>([]);
@@ -77,63 +126,100 @@ const ProductLibrary: React.FC = () => {
         return data.publicUrl;
     };
 
-    return (
-        <div className="space-y-6">
-            <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white/50 dark:bg-gray-800/50 p-4 rounded-xl backdrop-blur-md border border-white/20 shadow-sm">
-                <div className="relative w-full md:w-96">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <Input
-                        type="text"
-                        placeholder="Search products..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 bg-white dark:bg-gray-800"
-                    />
-                </div>
+    if (loading) {
+        return <LibrarySkeleton />;
+    }
 
-                <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto custom-scrollbar">
-                    {categories.map(category => (
-                        <Button
-                            key={category}
-                            onClick={() => setSelectedCategory(category)}
-                            variant={selectedCategory === category ? "default" : "outline"}
-                            size="sm"
-                            className="rounded-full whitespace-nowrap"
-                        >
-                            {category}
-                        </Button>
-                    ))}
+    return (
+        <div className="space-y-5">
+            {/* Filter Bar */}
+            <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm"
+            >
+                <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                    <div className="relative w-full md:w-96">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <Input
+                            type="text"
+                            placeholder="Search designs..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-10 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                        />
+                        {searchTerm && (
+                            <button
+                                onClick={() => setSearchTerm('')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 w-full md:w-auto">
+                        <Filter className="h-4 w-4 text-muted-foreground hidden md:block" />
+                        {categories.map(category => (
+                            <Button
+                                key={category}
+                                onClick={() => setSelectedCategory(category)}
+                                variant={selectedCategory === category ? "default" : "outline"}
+                                size="sm"
+                                className={`rounded-full whitespace-nowrap text-xs ${
+                                    selectedCategory === category 
+                                        ? 'bg-gradient-to-r from-purple-600 to-pink-600 border-0' 
+                                        : ''
+                                }`}
+                            >
+                                {category}
+                            </Button>
+                        ))}
+                    </div>
                 </div>
+            </motion.div>
+
+            {/* Results Count */}
+            <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                    Showing <span className="font-medium text-foreground">{filteredProducts.length}</span> designs
+                    {searchTerm && <span> for "<span className="font-medium">{searchTerm}</span>"</span>}
+                </p>
             </div>
 
-            {loading ? (
-                <div className="flex justify-center py-20">
-                    <Loader2 className="w-10 h-10 animate-spin text-primary" />
-                </div>
-            ) : filteredProducts.length === 0 ? (
-                <div className="text-center py-20 text-gray-500">
-                    <Package className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                    <p className="text-xl font-semibold">No products found</p>
-                    <p>Try adjusting your search or category filter</p>
-                </div>
+            {/* Products Grid */}
+            {filteredProducts.length === 0 ? (
+                <Card className="border-dashed border-2">
+                    <CardContent className="py-16 text-center">
+                        <div className="h-16 w-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-4">
+                            <Package className="h-8 w-8 text-gray-400" />
+                        </div>
+                        <h3 className="text-lg font-semibold mb-2">No designs found</h3>
+                        <p className="text-muted-foreground text-sm max-w-sm mx-auto mb-4">
+                            Try adjusting your search or category filter to find what you're looking for.
+                        </p>
+                        <Button variant="outline" onClick={() => { setSearchTerm(''); setSelectedCategory('All'); }}>
+                            Clear Filters
+                        </Button>
+                    </CardContent>
+                </Card>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    <AnimatePresence>
-                        {filteredProducts.map((product) => (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                    <AnimatePresence mode="popLayout">
+                        {filteredProducts.map((product, index) => (
                             <motion.div
                                 key={product.id}
                                 layout
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.9 }}
-                                whileHover={{ y: -5 }}
-                                transition={{ duration: 0.2 }}
+                                transition={{ delay: index * 0.03, duration: 0.2 }}
                             >
                                 <Card
-                                    className="h-full overflow-hidden group cursor-pointer border-0 ring-1 ring-white/20 shadow-xl hover:shadow-2xl transition-all duration-300"
+                                    className="h-full overflow-hidden group cursor-pointer border border-gray-100 dark:border-gray-800 hover:border-purple-300 dark:hover:border-purple-700 shadow-sm hover:shadow-xl transition-all duration-300"
                                     onClick={() => setSelectedProduct(product)}
                                 >
-                                    <div className="relative aspect-[4/3] overflow-hidden bg-gray-100 dark:bg-gray-900">
+                                    <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900">
                                         {product.image_url ? (
                                             <img
                                                 src={getImageUrl(product.image_url)!}
@@ -141,35 +227,41 @@ const ProductLibrary: React.FC = () => {
                                                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                             />
                                         ) : (
-                                            <div className="flex items-center justify-center h-full text-gray-300">
-                                                <ShoppingBag className="w-12 h-12" />
+                                            <div className="flex items-center justify-center h-full">
+                                                <div className="p-4 rounded-full bg-gray-200 dark:bg-gray-700">
+                                                    <ShoppingBag className="w-8 h-8 text-gray-400" />
+                                                </div>
                                             </div>
                                         )}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-between p-4">
-                                            <span className="text-white font-medium flex items-center gap-2">
+                                        {/* Hover Overlay */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                                            <span className="text-white font-medium flex items-center gap-2 text-sm">
                                                 <ZoomIn className="w-4 h-4" /> View Details
                                             </span>
                                         </div>
+                                        {/* Category Badge */}
+                                        {product.category && (
+                                            <div className="absolute top-3 left-3">
+                                                <Badge className="bg-white/90 dark:bg-gray-900/90 text-gray-700 dark:text-gray-300 backdrop-blur-sm border-0 text-xs">
+                                                    {product.category}
+                                                </Badge>
+                                            </div>
+                                        )}
                                     </div>
 
-                                    <div className="p-4 space-y-2 text-left">
+                                    <CardContent className="p-4 space-y-2">
                                         <div className="flex justify-between items-start gap-2">
-                                            <h3 className="font-semibold text-gray-800 dark:text-white line-clamp-1 text-lg group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                            <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-1 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
                                                 {product.name}
                                             </h3>
-                                            <Badge variant="secondary" className="whitespace-nowrap">
-                                                ₹{product.unit_price.toFixed(2)}
+                                            <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0 whitespace-nowrap text-xs">
+                                                ₹{product.unit_price.toFixed(0)}
                                             </Badge>
                                         </div>
-                                        {product.category && (
-                                            <Badge variant="outline" className="text-xs">
-                                                {product.category}
-                                            </Badge>
-                                        )}
-                                        <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 min-h-[2.5em]">
-                                            {product.description || 'No description available'}
+                                        <p className="text-sm text-muted-foreground line-clamp-2">
+                                            {product.description || 'Premium quality print template'}
                                         </p>
-                                    </div>
+                                    </CardContent>
                                 </Card>
                             </motion.div>
                         ))}
@@ -180,11 +272,11 @@ const ProductLibrary: React.FC = () => {
             <Dialog open={!!selectedProduct} onOpenChange={(open) => !open && setSelectedProduct(null)}>
                 <DialogContent className="max-w-3xl">
                     <DialogHeader>
-                        <DialogTitle>{selectedProduct?.name}</DialogTitle>
+                        <DialogTitle className="text-xl">{selectedProduct?.name}</DialogTitle>
                     </DialogHeader>
                     {selectedProduct && (
                         <div className="grid md:grid-cols-2 gap-6">
-                            <div className="aspect-square bg-gray-100 dark:bg-gray-900 rounded-xl overflow-hidden shadow-inner">
+                            <div className="aspect-square bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl overflow-hidden">
                                 {selectedProduct.image_url ? (
                                     <img
                                         src={getImageUrl(selectedProduct.image_url)!}
@@ -192,38 +284,38 @@ const ProductLibrary: React.FC = () => {
                                         className="w-full h-full object-cover"
                                     />
                                 ) : (
-                                    <div className="flex items-center justify-center h-full text-gray-300">
-                                        <ShoppingBag className="w-20 h-20" />
+                                    <div className="flex items-center justify-center h-full">
+                                        <div className="p-6 rounded-full bg-gray-200 dark:bg-gray-700">
+                                            <ShoppingBag className="w-12 h-12 text-gray-400" />
+                                        </div>
                                     </div>
                                 )}
                             </div>
 
-                            <div className="space-y-6 text-left">
-                                <div>
-                                    <div className="flex flex-wrap gap-2 mb-4">
-                                        {selectedProduct.category && (
-                                            <Badge variant="secondary">
-                                                {selectedProduct.category}
-                                            </Badge>
-                                        )}
-                                        <Badge className="bg-emerald-600 hover:bg-emerald-700">
-                                            Price: ₹{selectedProduct.unit_price.toFixed(2)}
+                            <div className="space-y-5 text-left">
+                                <div className="flex flex-wrap gap-2">
+                                    {selectedProduct.category && (
+                                        <Badge variant="secondary" className="text-sm">
+                                            {selectedProduct.category}
                                         </Badge>
-                                    </div>
+                                    )}
+                                    <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0 text-sm">
+                                        ₹{selectedProduct.unit_price.toFixed(0)}
+                                    </Badge>
                                 </div>
 
-                                <div className="prose dark:prose-invert max-w-none">
-                                    <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider mb-2">Description</h4>
-                                    <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-                                        {selectedProduct.description || 'No detailed description available for this product.'}
+                                <div>
+                                    <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Description</h4>
+                                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                                        {selectedProduct.description || 'Premium quality print template ready for your customization.'}
                                     </p>
                                 </div>
 
-                                <div className="pt-6 border-t border-gray-100 dark:border-gray-800 flex gap-3">
+                                <div className="pt-4 border-t border-gray-100 dark:border-gray-800 flex gap-3">
                                     <Button onClick={() => setSelectedProduct(null)} variant="outline" className="flex-1">
                                         Close
                                     </Button>
-                                    <Button className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white">
+                                    <Button className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0">
                                         Enquire Now
                                     </Button>
                                 </div>

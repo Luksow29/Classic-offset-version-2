@@ -24,7 +24,12 @@ import { Switch } from "@/shared/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 
 type Customer = Tables<'customers'>;
-type UserSettings = Tables<'user_settings'>;
+
+// Custom settings interface for our app (not tied to DB schema)
+interface AppSettings {
+  high_contrast?: boolean;
+  font_size?: string;
+}
 
 interface CustomerProfileProps {
   customer: Customer;
@@ -34,7 +39,7 @@ interface CustomerProfileProps {
 export default function CustomerProfile({ customer, onUpdate }: CustomerProfileProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [settings, setSettings] = useState<Partial<UserSettings>>({});
+  const [settings, setSettings] = useState<AppSettings>({});
   const { t, i18n } = useTranslation();
   const [formData, setFormData] = useState({
     name: customer.name || "",
@@ -58,8 +63,12 @@ export default function CustomerProfile({ customer, onUpdate }: CustomerProfileP
       // Use .shape[field] to validate a single field
       profileSchema.shape[field].parse(value);
       setFormErrors(prev => ({ ...prev, [field]: "" }));
-    } catch (e: any) {
-      setFormErrors(prev => ({ ...prev, [field]: e.errors?.[0]?.message || "Invalid" }));
+    } catch (e) {
+      if (e instanceof z.ZodError) {
+        setFormErrors(prev => ({ ...prev, [field]: e.errors?.[0]?.message || "Invalid" }));
+      } else {
+        setFormErrors(prev => ({ ...prev, [field]: "Invalid" }));
+      }
     }
   };
 
@@ -69,12 +78,16 @@ export default function CustomerProfile({ customer, onUpdate }: CustomerProfileP
       profileSchema.parse(formData);
       setFormErrors({});
       return true;
-    } catch (e: any) {
-      const errors: { [key: string]: string } = {};
-      e.errors.forEach((err: any) => {
-        errors[err.path[0]] = err.message;
-      });
-      setFormErrors(errors);
+    } catch (e) {
+      if (e instanceof z.ZodError) {
+        const errors: { [key: string]: string } = {};
+        e.errors.forEach((err) => {
+          if (err.path[0]) {
+            errors[String(err.path[0])] = err.message;
+          }
+        });
+        setFormErrors(errors);
+      }
       return false;
     }
   };
@@ -85,13 +98,21 @@ export default function CustomerProfile({ customer, onUpdate }: CustomerProfileP
       const { data, error } = await supabase
         .from('user_settings')
         .select('*')
-        .eq('user_id', customer.user_id)
-        .single();
+        .eq('user_id', customer.user_id);
 
-      if (data) {
-        setSettings(data);
+      if (data && data.length > 0) {
+        // Convert key-value rows to settings object
+        const settingsObj: AppSettings = {};
+        data.forEach((row) => {
+          if (row.setting_key === 'high_contrast') {
+            settingsObj.high_contrast = row.setting_value === true || row.setting_value === 'true';
+          } else if (row.setting_key === 'font_size') {
+            settingsObj.font_size = String(row.setting_value || 'base');
+          }
+        });
+        setSettings(settingsObj);
         // Apply initial settings
-        applySettings(data);
+        applySettings(settingsObj);
       } else if (error && error.code !== 'PGRST116') { // Ignore "no rows found" error
         console.error("Error fetching settings:", error);
       }
@@ -99,7 +120,7 @@ export default function CustomerProfile({ customer, onUpdate }: CustomerProfileP
     fetchSettings();
   }, [customer.user_id]);
 
-  const applySettings = (newSettings: Partial<UserSettings>) => {
+  const applySettings = (newSettings: AppSettings) => {
     const root = document.documentElement;
     // High Contrast
     if (newSettings.high_contrast) {
@@ -114,20 +135,44 @@ export default function CustomerProfile({ customer, onUpdate }: CustomerProfileP
     }
   };
 
-  const handleSettingsChange = async (key: keyof UserSettings, value: any) => {
+  const handleSettingsChange = async (key: keyof AppSettings, value: boolean | string) => {
     const newSettings = { ...settings, [key]: value };
     setSettings(newSettings);
     applySettings(newSettings);
 
-    // Save to database
-    const { error } = await supabase
+    // Check if setting already exists
+    const { data: existingData } = await supabase
       .from('user_settings')
-      .upsert({ user_id: customer.user_id, id: settings.id, ...newSettings }, { onConflict: 'user_id' });
+      .select('id')
+      .eq('user_id', customer.user_id)
+      .eq('setting_key', key)
+      .single();
+
+    let error;
+    if (existingData) {
+      // Update existing setting
+      const result = await supabase
+        .from('user_settings')
+        .update({ setting_value: value, updated_at: new Date().toISOString() })
+        .eq('id', existingData.id);
+      error = result.error;
+    } else {
+      // Insert new setting
+      const result = await supabase
+        .from('user_settings')
+        .insert({ 
+          user_id: customer.user_id, 
+          setting_key: key,
+          setting_value: value
+        });
+      error = result.error;
+    }
 
     if (error) {
+      console.error("Settings save error:", error);
       toast({ title: "Error", description: "Could not save settings.", variant: "destructive" });
     } else {
-      toast({ title: "Settings Saved", description: `${key.replace('_', ' ')} updated.` });
+      toast({ title: "Settings Saved", description: `${String(key).replace('_', ' ')} updated.` });
     }
   };
 

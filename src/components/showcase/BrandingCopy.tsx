@@ -37,15 +37,15 @@ const BrandingCopy: React.FC = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-8">
-        <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
-        <span className="ml-2 text-gray-500 dark:text-gray-400">Loading branding content...</span>
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <span className="ml-2 text-muted-foreground">Loading branding content...</span>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-4 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-md flex items-center gap-2">
+      <div className="p-4 bg-destructive/10 text-destructive rounded-md flex items-center gap-2">
         <AlertTriangle className="w-5 h-5" />
         <span>{error}</span>
       </div>
@@ -54,7 +54,7 @@ const BrandingCopy: React.FC = () => {
 
   if (!content) {
     return (
-      <div className="flex flex-col items-center justify-center py-8 text-gray-500 dark:text-gray-400">
+      <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
         <Frown className="w-12 h-12 mb-4" />
         <p className="text-lg font-semibold">Branding content not available.</p>
         <p className="text-sm">Please add content for 'BrandingCopyMain' in the admin panel.</p>
@@ -63,7 +63,7 @@ const BrandingCopy: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 text-gray-700 dark:text-gray-300 text-sm md:text-base leading-relaxed">
+    <div className="space-y-6 text-foreground text-sm md:text-base leading-relaxed">
       {/* ⚠️ குறிப்பு: HTML உள்ளடக்கத்தைப் பாதுகாப்பாக ரெண்டர் செய்ய dangerouslySetInnerHTML ஐப் பயன்படுத்துகிறோம்.
          இது XSS தாக்குதல்களுக்கு வழிவகுக்கும், உள்ளடக்கத்தை நீங்கள் நம்பினால் மட்டுமே இதைப் பயன்படுத்தவும்.
          நிர்வாகப் பலகம் மூலம் உள்ளடக்கத்தை நீங்கள் நிர்வகித்தால் இது பொதுவாகப் பாதுகாப்பானது. */}

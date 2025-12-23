@@ -21,6 +21,7 @@ const OrderStatusCard = lazy(() => import('./OrderStatusCard'));
 const OrdersChart = lazy(() => import('./OrdersChart'));
 const FinancialSummary = lazy(() => import('./summary/FinancialSummary'));
 const ActivityLogFeed = lazy(() => import('./ActivityLogFeed'));
+const DashboardIntelligence = lazy(() => import('./intelligence/DashboardIntelligence'));
 import RealtimeStatus from '../ui/RealtimeStatus';
 import { useRealtimeOrders } from '@/hooks/useRealtimeOrders';
 import { useRealtimePayments } from '@/hooks/useRealtimePayments';
@@ -34,6 +35,7 @@ interface DraggableDashboardCardProps {
     provided: DraggableProvided;
     isDragging: boolean;
     showDragHandle?: boolean;
+    noCardWrapper?: boolean; // New prop to skip Wrapper for custom components like Intelligence
 }
 
 const DraggableDashboardCard: React.FC<DraggableDashboardCardProps> = ({
@@ -42,39 +44,66 @@ const DraggableDashboardCard: React.FC<DraggableDashboardCardProps> = ({
     provided,
     isDragging,
     showDragHandle = true,
-}) => (
-    <Card
-        ref={provided.innerRef}
-        {...provided.draggableProps}
-        className={`transition-all duration-500 transform ${isDragging
-            ? 'shadow-2xl shadow-blue-500/30 scale-[1.02] rotate-1 ring-2 ring-blue-400/50'
-            : 'shadow-lg hover:shadow-xl hover:shadow-blue-500/15 hover:-translate-y-1'
-            } bg-white/90 dark:bg-gray-900/90 backdrop-blur-2xl border border-gray-200/60 dark:border-gray-700/60 rounded-3xl overflow-hidden`}
-    >
-        <div className="flex justify-between items-center px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100/80 dark:border-gray-800/80 bg-gradient-to-r from-slate-50/90 via-blue-50/50 to-indigo-50/90 dark:from-slate-900/90 dark:via-blue-950/50 dark:to-indigo-950/90">
-            <div className="flex items-center gap-3">
-                <div className="w-1.5 h-6 rounded-full bg-gradient-to-b from-blue-500 to-indigo-600" />
-                <h3 className="font-display font-bold text-base sm:text-lg text-gray-800 dark:text-gray-100">
-                    {title}
-                </h3>
-            </div>
-            {showDragHandle ? (
-                <div
-                    {...provided.dragHandleProps}
-                    className="cursor-grab active:cursor-grabbing p-2 rounded-xl hover:bg-white/80 dark:hover:bg-gray-800/80 transition-all duration-200 group border border-transparent hover:border-gray-200/50 dark:hover:border-gray-700/50"
-                >
-                    <GripVertical className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors duration-200" />
+    noCardWrapper = false,
+}) => {
+    if (noCardWrapper) {
+        return (
+            <div
+                ref={provided.innerRef}
+                {...provided.draggableProps}
+                className={`transition-all duration-500 transform ${isDragging ? 'opacity-80 scale-[1.01]' : ''}`}
+            >
+                {/* Drag handle wrapper for custom components */}
+                <div className="relative group">
+                    {showDragHandle && (
+                        <div
+                            {...provided.dragHandleProps}
+                            className="absolute top-4 right-4 z-10 p-2 rounded-xl bg-background/80 hover:bg-muted/80 backdrop-blur cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity duration-200 border border-border/50 shadow-sm"
+                        >
+                            <GripVertical className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                    )}
+                    {children}
                 </div>
-            ) : null}
-        </div>
-        <div className="p-4 sm:p-6 bg-gradient-to-b from-transparent to-slate-50/30 dark:to-slate-900/30">
-            {children}
-        </div>
-    </Card>
-);
+            </div>
+        );
+    }
+
+    return (
+        <Card
+            ref={provided.innerRef}
+            {...provided.draggableProps}
+            className={`transition-all duration-500 transform ${isDragging
+                ? 'shadow-2xl shadow-primary/30 scale-[1.02] rotate-1 ring-2 ring-primary/50'
+                : 'shadow-lg hover:shadow-xl hover:shadow-primary/15 hover:-translate-y-1'
+                } bg-card/90 backdrop-blur-2xl border border-border/60 rounded-3xl overflow-hidden`}
+        >
+            <div className="flex justify-between items-center px-4 sm:px-6 py-4 sm:py-5 border-b border-border/80 bg-gradient-to-r from-muted/50 via-card to-muted/50">
+                <div className="flex items-center gap-3">
+                    <div className="w-1.5 h-6 rounded-full bg-gradient-to-b from-primary to-primary/80" />
+                    <h3 className="font-display font-bold text-base sm:text-lg text-foreground">
+                        {title}
+                    </h3>
+                </div>
+                {showDragHandle ? (
+                    <div
+                        {...provided.dragHandleProps}
+                        className="cursor-grab active:cursor-grabbing p-2 rounded-xl hover:bg-muted/80 transition-all duration-200 group border border-transparent hover:border-border/50"
+                    >
+                        <GripVertical className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors duration-200" />
+                    </div>
+                ) : null}
+            </div>
+            <div className="p-4 sm:p-6 bg-gradient-to-b from-transparent to-muted/10">
+                {children}
+            </div>
+        </Card>
+    );
+};
 
 const componentList = [
     { id: 'metrics', title: 'Key Metrics', gridClass: 'md:col-span-2 lg:col-span-3' },
+    { id: 'intelligence', title: 'Business Intelligence', gridClass: 'md:col-span-2 lg:col-span-3', noCardWrapper: true },
     { id: 'financialSummary', title: 'Financial Summary', gridClass: 'md:col-span-2 lg:col-span-3' },
     { id: 'revenueChart', title: 'Revenue Over Time', gridClass: 'md:col-span-1 lg:col-span-2' },
     { id: 'ordersChart', title: 'Recent Orders', gridClass: 'md:col-span-1 lg:col-span-1' },
@@ -82,7 +111,7 @@ const componentList = [
     { id: 'activityFeed', title: 'Activity Feed', gridClass: 'md:col-span-2 lg:col-span-3' },
 ];
 
-const DEFAULT_ORDER = ['metrics', 'financialSummary', 'revenueChart', 'ordersChart', 'orderStatus', 'activityFeed'];
+const DEFAULT_ORDER = ['metrics', 'intelligence', 'financialSummary', 'revenueChart', 'ordersChart', 'orderStatus', 'activityFeed'];
 
 const Dashboard: React.FC = () => {
     const { userProfile } = useUser();
@@ -91,7 +120,29 @@ const Dashboard: React.FC = () => {
     const [componentOrder, setComponentOrder] = useState<string[]>(() => {
         try {
             const savedOrder = localStorage.getItem('dashboardOrder');
-            return savedOrder ? JSON.parse(savedOrder) : DEFAULT_ORDER;
+            if (savedOrder) {
+                const parsedOrder = JSON.parse(savedOrder);
+                // Check if any new components are missing from the saved order
+                const missingComponents = DEFAULT_ORDER.filter(id => !parsedOrder.includes(id));
+                if (missingComponents.length > 0) {
+                    // Add missing components to the top/beginning like in DEFAULT_ORDER or append
+                    // Let's insert them at their default index if possible, or just merge
+                    // Simple merge: [...parsedOrder, ...missingComponents] puts them at end.
+                    // Better: Re-sync with default logic.
+                    // We'll append missing ones to the second position (after metrics) or just reset behavior?
+                    // Let's just append for safety, or insert 'intelligence' specifically at index 1 if missing.
+
+                    // Specific fix for intelligence: insert at index 1 if missing
+                    if (missingComponents.includes('intelligence')) {
+                        const newOrder = [...parsedOrder];
+                        newOrder.splice(1, 0, 'intelligence');
+                        return newOrder;
+                    }
+                    return [...parsedOrder, ...missingComponents];
+                }
+                return parsedOrder;
+            }
+            return DEFAULT_ORDER;
         } catch {
             return DEFAULT_ORDER;
         }
@@ -167,6 +218,13 @@ const Dashboard: React.FC = () => {
                         loading={loading}
                         onDrilldown={handleMetricDrilldown}
                     />
+                );
+            }
+            case 'intelligence': {
+                return (
+                    <div className="h-full">
+                        <DashboardIntelligence />
+                    </div>
                 );
             }
             case 'financialSummary': {
@@ -255,26 +313,26 @@ const Dashboard: React.FC = () => {
                     />
                 )}
             </Suspense>
-            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950/30">
+            <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
                 {/* Decorative background elements */}
                 <div className="fixed inset-0 overflow-hidden pointer-events-none hidden sm:block">
-                    <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-blue-400/20 to-indigo-400/20 rounded-full blur-3xl" />
-                    <div className="absolute top-1/2 -left-40 w-80 h-80 bg-gradient-to-br from-purple-400/15 to-pink-400/15 rounded-full blur-3xl" />
-                    <div className="absolute -bottom-20 right-1/3 w-72 h-72 bg-gradient-to-br from-emerald-400/15 to-teal-400/15 rounded-full blur-3xl" />
+                    <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-primary/10 to-primary/5 rounded-full blur-3xl" />
+                    <div className="absolute top-1/2 -left-40 w-80 h-80 bg-gradient-to-br from-secondary/10 to-accent/10 rounded-full blur-3xl" />
+                    <div className="absolute -bottom-20 right-1/3 w-72 h-72 bg-gradient-to-br from-primary/5 to-accent/5 rounded-full blur-3xl" />
                 </div>
-                
+
                 <div className="relative p-4 sm:p-6 md:p-8 space-y-6 md:space-y-8">
                     {/* Quick Actions Glassmorphism Box */}
                     <div className="max-w-4xl mx-auto">
-                        <div className="flex flex-wrap justify-center items-center gap-3 p-4 md:p-5 rounded-2xl border border-white/40 dark:border-gray-700/40 bg-white/70 dark:bg-gray-900/70 backdrop-blur-2xl shadow-xl shadow-blue-500/5">
+                        <div className="flex flex-wrap justify-center items-center gap-3 p-4 md:p-5 rounded-2xl border border-border/40 bg-background/70 backdrop-blur-2xl shadow-xl shadow-primary/5">
                             <div className="flex items-center gap-2 mr-2 md:mr-4">
-                                <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30">
-                                    <Bolt className="w-4 h-4 text-white" />
+                                <div className="p-2 rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-lg shadow-primary/30">
+                                    <Bolt className="w-4 h-4 text-primary-foreground" />
                                 </div>
-                                <span className="font-display font-bold text-gray-800 dark:text-gray-100 text-sm md:text-base">Quick Actions</span>
+                                <span className="font-display font-bold text-foreground text-sm md:text-base">Quick Actions</span>
                             </div>
                             <div className="flex flex-wrap justify-center gap-2">
-                                <Button onClick={() => setIsOrderModalOpen(true)} variant="primary" size="sm" className="shadow-lg shadow-blue-500/20 hover:shadow-xl hover:shadow-blue-500/30 transition-all">
+                                <Button onClick={() => setIsOrderModalOpen(true)} variant="primary" size="sm" className="shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all">
                                     + Add Order
                                 </Button>
                                 <Button onClick={() => setIsCustomerModalOpen(true)} variant="secondary" size="sm" className="hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
@@ -294,21 +352,21 @@ const Dashboard: React.FC = () => {
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 max-w-7xl mx-auto">
                         <div className="space-y-1">
                             <div className="flex items-center gap-3">
-                                <div className="p-2.5 rounded-2xl bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 shadow-lg shadow-blue-500/30">
-                                    <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <div className="p-2.5 rounded-2xl bg-gradient-to-br from-primary via-primary/80 to-primary/60 shadow-lg shadow-primary/30">
+                                    <svg className="w-6 h-6 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
                                     </svg>
                                 </div>
-                                <h1 className="text-3xl md:text-4xl font-display font-black text-gray-900 dark:text-white tracking-tight">
+                                <h1 className="text-3xl md:text-4xl font-display font-black text-foreground tracking-tight">
                                     Dashboard
                                 </h1>
                             </div>
-                            <p className="text-gray-600 dark:text-gray-400 font-sans font-medium pl-14">Welcome back, <span className="text-blue-600 dark:text-blue-400">{userProfile?.name || 'Owner'}</span>! ✨</p>
+                            <p className="text-muted-foreground font-sans font-medium pl-14">Welcome back, <span className="text-primary">{userProfile?.name || 'Owner'}</span>! ✨</p>
                         </div>
                         <div className="flex items-center gap-3 w-full sm:w-auto">
                             <RealtimeStatus />
                             <div className="relative flex-1 sm:flex-none">
-                                <button 
+                                <button
                                     type="button"
                                     onClick={() => {
                                         const input = document.getElementById('month-picker') as HTMLInputElement;
@@ -319,14 +377,14 @@ const Dashboard: React.FC = () => {
                                     }}
                                     className="absolute top-1/2 left-3.5 -translate-y-1/2 z-10 cursor-pointer hover:scale-110 transition-transform"
                                 >
-                                    <Calendar className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+                                    <Calendar className="w-4 h-4 text-primary" />
                                 </button>
                                 <input
                                     id="month-picker"
                                     type="month"
                                     value={currentMonth}
                                     onChange={(e) => setCurrentMonth(e.target.value)}
-                                    className="w-full sm:w-auto bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border border-gray-200/60 dark:border-gray-700/60 rounded-xl py-2.5 px-4 pl-10 text-sm font-medium shadow-lg shadow-gray-500/5 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all duration-200 cursor-pointer"
+                                    className="w-full sm:w-auto bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border border-border/60 rounded-xl py-2.5 px-4 pl-10 text-sm font-medium shadow-lg shadow-muted/5 focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all duration-200 cursor-pointer"
                                 />
                             </div>
                             <Button
@@ -400,6 +458,7 @@ const Dashboard: React.FC = () => {
                                                                 provided={provided}
                                                                 isDragging={snapshot.isDragging}
                                                                 showDragHandle={!isMobile}
+                                                                noCardWrapper={componentInfo.noCardWrapper}
                                                             >
                                                                 {renderComponent(id)}
                                                             </DraggableDashboardCard>

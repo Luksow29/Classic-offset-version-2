@@ -18,10 +18,10 @@ const ShowcasePage: React.FC = () => {
       {/* Product Library Section */}
       <section>
         <div className="mb-6 text-center space-y-2">
-          <h2 className="text-3xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
+          <h2 className="text-3xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/80">
             ✨ Design Library
           </h2>
-          <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+          <p className="text-muted-foreground max-w-2xl mx-auto">
             Explore our collection of premium print products and templates.
           </p>
         </div>
@@ -31,7 +31,7 @@ const ShowcasePage: React.FC = () => {
       {/* Gallery Uploader Section (Admin Page க்கு நகர்த்தப்பட்டது) */}
       {/* ShowcaseGallery component இன்னும் இங்கே உள்ளது, அது படங்களை Display செய்கிறது */}
       <section>
-        <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-white mb-4">
+        <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-4">
           📸 Recent Work Gallery
         </h2>
         <Card className="p-4">
@@ -41,7 +41,7 @@ const ShowcasePage: React.FC = () => {
 
       {/* Highlights Section */}
       <section>
-        <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-white mb-4">
+        <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-4">
           🌟 Highlight Features
         </h2>
         <Card className="p-4">
@@ -51,7 +51,7 @@ const ShowcasePage: React.FC = () => {
 
       {/* Branding Section */}
       <section>
-        <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-white mb-4">
+        <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-4">
           🖋️ Why Choose Us?
         </h2>
         <Card className="p-4">
@@ -61,7 +61,7 @@ const ShowcasePage: React.FC = () => {
 
       {/* Testimonials Section */}
       <section>
-        <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-white mb-4">
+        <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-4">
           💬 Client Praise
         </h2>
         <Card className="p-4">

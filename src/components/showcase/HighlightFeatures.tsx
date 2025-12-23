@@ -116,7 +116,7 @@ const HighlightFeatures: React.FC = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
         <span className="ml-2 text-gray-500 dark:text-gray-400">Loading features...</span>
       </div>
     );
@@ -146,12 +146,12 @@ const HighlightFeatures: React.FC = () => {
       {features.map((feat) => (
         <div
           key={feat.id}
-          className="flex items-start gap-4 bg-white dark:bg-zinc-800 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-700"
+          className="flex items-start gap-4 bg-card p-4 rounded-lg shadow border border-border"
         >
-          <div className="text-blue-600 dark:text-blue-400">{getLucideIcon(feat.icon_name)}</div>
+          <div className="text-primary">{getLucideIcon(feat.icon_name)}</div>
           <div>
-            <h4 className="text-md font-semibold text-gray-800 dark:text-white mb-1">{feat.title}</h4>
-            <p className="text-sm text-gray-600 dark:text-gray-300">{feat.description}</p>
+            <h4 className="text-md font-semibold text-card-foreground mb-1">{feat.title}</h4>
+            <p className="text-sm text-muted-foreground">{feat.description}</p>
           </div>
         </div>
       ))}

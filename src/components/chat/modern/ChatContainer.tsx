@@ -241,7 +241,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ starterPrompt = ''
     };
 
     return (
-        <div className="flex flex-col h-full w-full bg-gray-50 dark:bg-gray-900 overflow-hidden relative font-sans text-gray-900 dark:text-gray-100">
+        <div className="flex flex-col h-full w-full bg-transparent overflow-hidden relative font-sans text-foreground">
             <ChatHeader
                 isLoading={isLoading}
                 onClearChat={() => setConversationHistory([])}
@@ -277,7 +277,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ starterPrompt = ''
             />
 
             {error && (
-                <div className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-red-100 border border-red-300 text-red-700 px-4 py-2 rounded-xl shadow-lg z-50">
+                <div className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-destructive/10 border border-destructive text-destructive px-4 py-2 rounded-xl shadow-lg z-50">
                     {error}
                 </div>
             )}

@@ -6,13 +6,13 @@ import Input from '@/components/ui/Input';
 import { useUser } from '@/context/UserContext';
 import { uploadAdminChatFile, validateFileForUpload, formatFileSize } from '@/lib/adminFileUpload';
 import toast from 'react-hot-toast';
-import { 
-  MessageCircle, 
-  Send, 
-  Phone, 
-  Mail, 
-  Clock, 
-  CheckCircle2, 
+import {
+  MessageCircle,
+  Send,
+  Phone,
+  Mail,
+  Clock,
+  CheckCircle2,
   CheckCircle,
   User,
   AlertCircle,
@@ -30,7 +30,7 @@ import {
 
 // Simple Badge component
 const Badge: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${className}`}>
+  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${className}`}>
     {children}
   </span>
 );
@@ -176,7 +176,7 @@ const OrderChatAdminPage: React.FC = () => {
           console.log('Admin: New order message received:', payload);
           const newMessage = payload.new as OrderChatMessage;
           setMessages(prev => (prev.some(msg => msg.id === newMessage.id) ? prev : [...prev, newMessage]));
-          
+
           // Mark as read if it's from customer
           if (newMessage.sender_type === 'customer') {
             console.log('Admin: Marking customer order message as read');
@@ -196,7 +196,7 @@ const OrderChatAdminPage: React.FC = () => {
   const fetchThreads = async () => {
     try {
       console.log('Admin: Loading order chat threads with filter:', statusFilter);
-      
+
       // First, get threads without complex joins
       let threadsQuery = supabase
         .from('order_chat_threads')
@@ -224,7 +224,7 @@ const OrderChatAdminPage: React.FC = () => {
 
       // Then fetch additional data for each thread
       const transformedThreads: OrderChatThread[] = [];
-      
+
       for (const thread of threadsData) {
         let customerName = 'Unknown Customer';
         let customerPhone = '';
@@ -239,7 +239,7 @@ const OrderChatAdminPage: React.FC = () => {
             .select('name, phone, email')
             .eq('user_id', thread.customer_id)
             .single();
-          
+
           if (customerData) {
             customerName = customerData.name || 'Unknown Customer';
             customerPhone = customerData.phone || '';
@@ -256,7 +256,7 @@ const OrderChatAdminPage: React.FC = () => {
             .select('id, order_type, total_amount')
             .eq('id', thread.order_id)
             .single();
-          
+
           if (orderData) {
             orderType = orderData.order_type || 'Unknown';
             totalAmount = orderData.total_amount || 0;
@@ -288,7 +288,7 @@ const OrderChatAdminPage: React.FC = () => {
   const fetchMessages = async (threadId: string) => {
     try {
       console.log('Admin: Loading messages for order thread:', threadId);
-      
+
       const { data, error } = await supabase
         .from('order_chat_messages')
         .select('*')
@@ -299,7 +299,7 @@ const OrderChatAdminPage: React.FC = () => {
         console.error('Admin: Error loading order messages:', error);
         throw error;
       }
-      
+
       console.log('Admin: Loaded order messages:', data);
       setMessages(data || []);
     } catch (error) {
@@ -311,7 +311,7 @@ const OrderChatAdminPage: React.FC = () => {
   const fetchCustomerDetails = async (customerId: string) => {
     try {
       console.log('Admin: Fetching customer details for auth user ID:', customerId);
-      
+
       // Since customerId references auth.users, we need to get customer via user_id
       const { data, error } = await supabase
         .from('customers')
@@ -322,7 +322,7 @@ const OrderChatAdminPage: React.FC = () => {
       if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
         console.error('Error fetching customer:', error);
       }
-      
+
       if (data) {
         console.log('Admin: Found customer data:', data);
         setCustomer(data);
@@ -335,12 +335,12 @@ const OrderChatAdminPage: React.FC = () => {
             .select('email')
             .eq('id', customerId)
             .single();
-          
-          setCustomer({ 
-            id: customerId, 
-            name: 'Customer', 
-            phone: '', 
-            email: authData?.email || '' 
+
+          setCustomer({
+            id: customerId,
+            name: 'Customer',
+            phone: '',
+            email: authData?.email || ''
           });
         } catch (authError) {
           console.log('Admin: Could not fetch auth user either, using basic fallback');
@@ -365,7 +365,7 @@ const OrderChatAdminPage: React.FC = () => {
         console.error('Error fetching order:', error);
         return;
       }
-      
+
       setOrder(data);
     } catch (error) {
       console.error('Error fetching order:', error);
@@ -376,9 +376,9 @@ const OrderChatAdminPage: React.FC = () => {
     try {
       const { error } = await supabase
         .from('order_chat_messages')
-        .update({ 
-          is_read: true, 
-          read_at: new Date().toISOString() 
+        .update({
+          is_read: true,
+          read_at: new Date().toISOString()
         })
         .eq('thread_id', threadId)
         .eq('sender_type', 'customer')
@@ -407,10 +407,10 @@ const OrderChatAdminPage: React.FC = () => {
     try {
       console.log('Admin: Uploading file:', file.name);
       const uploadResult = await uploadAdminChatFile(file, selectedThread.id);
-      
+
       // Determine message type based on file type
       const messageType = file.type.startsWith('image/') ? 'image' : 'file';
-      
+
       if (!user?.id) {
         toast.error('You must be signed in to send files.');
         return;
@@ -446,7 +446,7 @@ const OrderChatAdminPage: React.FC = () => {
       // Update thread's last_message_at
       await supabase
         .from('order_chat_threads')
-        .update({ 
+        .update({
           last_message_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
@@ -454,7 +454,7 @@ const OrderChatAdminPage: React.FC = () => {
 
       toast.success('File uploaded and sent!');
       await fetchMessages(selectedThread.id);
-      
+
     } catch (error) {
       console.error('Admin: Error uploading file:', error);
       toast.error('Failed to upload file. Please try again.');
@@ -477,9 +477,9 @@ const OrderChatAdminPage: React.FC = () => {
 
     console.log('Admin: Sending order message:', newMessage.trim());
     console.log('Admin: Selected thread ID:', selectedThread.id);
-      console.log('Admin: Thread status:', selectedThread.status);
+    console.log('Admin: Thread status:', selectedThread.status);
     setSending(true);
-    
+
     try {
       if (!user?.id) {
         toast.error('You must be signed in to send messages.');
@@ -520,7 +520,7 @@ const OrderChatAdminPage: React.FC = () => {
       console.log('Admin: Updating thread last_message_at for thread ID:', selectedThread.id);
       const { error: updateError } = await supabase
         .from('order_chat_threads')
-        .update({ 
+        .update({
           last_message_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
@@ -535,7 +535,7 @@ const OrderChatAdminPage: React.FC = () => {
       setNewMessage('');
       console.log('Admin: Message cleared, showing success toast');
       toast.success('Message sent!');
-      
+
       // Refresh messages to show the new message
       console.log('Admin: Refreshing messages...');
       await fetchMessages(selectedThread.id);
@@ -551,7 +551,7 @@ const OrderChatAdminPage: React.FC = () => {
     try {
       const { error } = await supabase
         .from('order_chat_threads')
-        .update({ 
+        .update({
           status: newStatus,
           updated_at: new Date().toISOString()
         })
@@ -561,7 +561,7 @@ const OrderChatAdminPage: React.FC = () => {
 
       toast.success('Thread status updated');
       fetchThreads();
-      
+
       if (selectedThread?.id === threadId) {
         setSelectedThread(prev => prev ? { ...prev, status: newStatus as any } : null);
       }
@@ -573,23 +573,23 @@ const OrderChatAdminPage: React.FC = () => {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      active: { color: 'bg-green-100 text-green-800', label: 'Active' },
-      resolved: { color: 'bg-blue-100 text-blue-800', label: 'Resolved' },
-      closed: { color: 'bg-gray-100 text-gray-800', label: 'Closed' }
+      active: { color: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800', label: 'Active' },
+      resolved: { color: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800', label: 'Resolved' },
+      closed: { color: 'bg-muted text-muted-foreground border-border', label: 'Closed' }
     };
-    
+
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.active;
     return <Badge className={config.color}>{config.label}</Badge>;
   };
 
   const getPriorityBadge = (priority: string) => {
     const priorityConfig = {
-      low: { color: 'bg-gray-100 text-gray-800', label: 'Low' },
-      normal: { color: 'bg-blue-100 text-blue-800', label: 'Normal' },
-      high: { color: 'bg-orange-100 text-orange-800', label: 'High' },
-      urgent: { color: 'bg-red-100 text-red-800', label: 'Urgent' }
+      low: { color: 'bg-muted text-muted-foreground border-border', label: 'Low' },
+      normal: { color: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800', label: 'Normal' },
+      high: { color: 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800', label: 'High' },
+      urgent: { color: 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800', label: 'Urgent' }
     };
-    
+
     const config = priorityConfig[priority as keyof typeof priorityConfig] || priorityConfig.normal;
     return <Badge className={config.color}>{config.label}</Badge>;
   };
@@ -612,9 +612,9 @@ const OrderChatAdminPage: React.FC = () => {
   }
 
   return (
-    <div className="h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+    <div className="h-screen bg-background flex flex-col">
       {/* Header */}
-      <div className="bg-blue-600 dark:bg-blue-700 text-white p-3 md:p-4 shadow-md">
+      <div className="bg-primary text-primary-foreground p-3 md:p-4 shadow-md">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2 md:gap-3">
             <Package className="h-5 w-5 md:h-6 md:w-6" />
@@ -624,7 +624,7 @@ const OrderChatAdminPage: React.FC = () => {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-2 md:px-3 py-1 bg-blue-700 dark:bg-blue-800 text-white rounded-md text-xs md:text-sm border-blue-500 dark:border-blue-600"
+              className="px-2 md:px-3 py-1 bg-primary-foreground/10 text-primary-foreground rounded-md text-xs md:text-sm border-primary-foreground/20 focus:ring-primary-foreground/30"
             >
               <option value="all">All Chats</option>
               <option value="active">Active</option>
@@ -637,44 +637,43 @@ const OrderChatAdminPage: React.FC = () => {
 
       <div className="flex flex-1 min-h-0 flex-col md:flex-row">
         {/* Chat List */}
-        <div className={`${selectedThread ? 'hidden md:flex' : 'flex'} md:w-1/3 w-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex-col`}>
-          <div className="p-3 bg-gray-100 dark:bg-gray-700 border-b dark:border-gray-600">
-            <h3 className="font-medium text-gray-800 dark:text-gray-200">Order Chats ({threads.length})</h3>
+        <div className={`${selectedThread ? 'hidden md:flex' : 'flex'} md:w-1/3 w-full bg-card border-r border-border flex-col`}>
+          <div className="p-3 bg-muted/30 border-b border-border">
+            <h3 className="font-medium text-foreground">Order Chats ({threads.length})</h3>
           </div>
           <div className="flex-1 overflow-y-auto">
             {threads.length === 0 ? (
-              <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+              <div className="text-center py-12 text-muted-foreground">
                 <Package className="h-16 w-16 mx-auto mb-4 opacity-30" />
                 <p className="font-medium">No order chats</p>
                 <p className="text-sm">Customer order discussions will appear here</p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-100 dark:divide-gray-700">
+              <div className="divide-y divide-border">
                 {threads.map((thread) => (
                   <div
                     key={thread.id}
-                    className={`p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                      selectedThread?.id === thread.id ? 'bg-blue-50 dark:bg-blue-900/30 border-r-4 border-blue-500 dark:border-blue-400' : ''
-                    }`}
+                    className={`p-4 cursor-pointer hover:bg-muted/50 transition-colors ${selectedThread?.id === thread.id ? 'bg-primary/5 border-r-4 border-primary' : ''
+                      }`}
                     onClick={() => setSelectedThread(thread)}
                   >
                     <div className="flex items-start gap-3">
-                      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 dark:from-blue-500 dark:to-blue-700 flex items-center justify-center text-white font-semibold text-lg">
+                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-lg">
                         {thread.customer_name?.charAt(0) || 'C'}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
-                          <h4 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                          <h4 className="font-semibold text-foreground truncate">
                             {thread.customer_name}
                           </h4>
                           <div className="flex items-center gap-1">
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                            <span className="text-xs text-muted-foreground">
                               #{thread.order_id}
                             </span>
                           </div>
                         </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-300 truncate mb-1">{thread.subject}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate mb-2">
+                        <p className="text-sm text-foreground/80 truncate mb-1">{thread.subject}</p>
+                        <p className="text-xs text-muted-foreground truncate mb-2">
                           {thread.order_type} • ₹{thread.total_amount}
                         </p>
                         <div className="flex items-center justify-between">
@@ -682,7 +681,7 @@ const OrderChatAdminPage: React.FC = () => {
                             {getStatusBadge(thread.status)}
                             {thread.priority !== 'normal' && getPriorityBadge(thread.priority)}
                           </div>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                          <span className="text-xs text-muted-foreground">
                             {formatDate(thread.last_message_at).split(',')[1]?.trim() || ''}
                           </span>
                         </div>
@@ -696,11 +695,11 @@ const OrderChatAdminPage: React.FC = () => {
         </div>
 
         {/* Chat Interface */}
-        <div className={`${selectedThread ? 'flex' : 'hidden md:flex'} flex-1 flex flex-col bg-white dark:bg-gray-800`}>
+        <div className={`${selectedThread ? 'flex' : 'hidden md:flex'} flex-1 flex flex-col bg-background`}>
           {selectedThread ? (
             <>
               {/* Chat Header */}
-              <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-3 md:px-4 py-3 shadow-sm">
+              <div className="bg-card border-b border-border px-3 md:px-4 py-3 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 md:gap-3">
                     <Button
@@ -711,47 +710,47 @@ const OrderChatAdminPage: React.FC = () => {
                     >
                       <X className="h-4 w-4" />
                     </Button>
-                    <div className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 dark:from-blue-500 dark:to-blue-700 flex items-center justify-center text-white font-semibold text-sm md:text-base">
+                    <div className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm md:text-base">
                       {selectedThread.customer_name?.charAt(0) || 'C'}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h2 className="font-semibold text-gray-900 dark:text-gray-100 text-sm md:text-base truncate">
+                      <h2 className="font-semibold text-foreground text-sm md:text-base truncate">
                         {selectedThread.customer_name}
                       </h2>
-                      <div className="flex items-center gap-1 md:gap-2 text-xs md:text-sm text-gray-500 dark:text-gray-400">
+                      <div className="flex items-center gap-1 md:gap-2 text-xs md:text-sm text-muted-foreground">
                         <span className="truncate">Order #{selectedThread.order_id}</span>
                         <span>•</span>
                         <span className="truncate">{selectedThread.subject}</span>
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-1 md:gap-2">
                     {customer && (
                       <>
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="sm"
-                          className="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 p-1 md:p-2"
+                          className="text-primary hover:bg-primary/10 p-1 md:p-2"
                           onClick={() => window.open(`tel:${customer.phone}`, '_self')}
                         >
                           <Phone className="h-3 w-3 md:h-4 md:w-4" />
                         </Button>
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="sm"
-                          className="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 p-1 md:p-2 hidden md:inline-flex"
+                          className="text-primary hover:bg-primary/10 p-1 md:p-2 hidden md:inline-flex"
                           onClick={() => window.open(`mailto:${customer.email}`, '_blank')}
                         >
                           <Mail className="h-3 w-3 md:h-4 md:w-4" />
                         </Button>
                       </>
                     )}
-                    
+
                     <select
                       value={selectedThread.status}
                       onChange={(e) => updateThreadStatus(selectedThread.id, e.target.value)}
-                      className="text-xs md:text-sm border border-gray-300 dark:border-gray-600 rounded-md px-1 md:px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      className="text-xs md:text-sm border border-input rounded-md px-1 md:px-2 py-1 bg-background text-foreground"
                       disabled={selectedThread.status === 'closed'}
                     >
                       <option value="active">Active</option>
@@ -762,7 +761,7 @@ const OrderChatAdminPage: React.FC = () => {
                 </div>
               </div>
 
-{/* OrderTimeline hidden - only showing chat UI
+              {/* OrderTimeline hidden - only showing chat UI
               <OrderTimeline
                 events={timelineEvents}
                 isLoading={timelineLoading}
@@ -775,7 +774,7 @@ const OrderChatAdminPage: React.FC = () => {
               */}
 
               {/* Messages Area */}
-              <div className="flex-1 flex flex-col min-h-0 bg-gray-50 dark:bg-gray-800">
+              <div className="flex-1 flex flex-col min-h-0 bg-secondary/20">
                 <div className="flex-1 overflow-y-auto p-4">
                   <div className="space-y-3">
                     {messages.map((message) => (
@@ -783,27 +782,25 @@ const OrderChatAdminPage: React.FC = () => {
                         key={message.id}
                         className={`flex ${message.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}
                       >
-                        <div className={`max-w-[70%] ${
-                          message.sender_type === 'admin' ? '' : 'flex items-end gap-2'
-                        }`}>
+                        <div className={`max-w-[70%] ${message.sender_type === 'admin' ? '' : 'flex items-end gap-2'
+                          }`}>
                           {message.sender_type === 'customer' && (
-                            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-green-400 to-green-600 dark:from-green-500 dark:to-green-700 flex items-center justify-center text-white text-xs font-semibold mb-1">
+                            <div className="h-8 w-8 rounded-full bg-accent flex items-center justify-center text-accent-foreground text-xs font-semibold mb-1">
                               {customer?.name?.charAt(0) || 'C'}
                             </div>
                           )}
                           <div
-                            className={`px-4 py-2 rounded-lg shadow-sm ${
-                              message.sender_type === 'admin'
-                                ? 'bg-blue-500 dark:bg-blue-600 text-white rounded-br-sm'
-                                : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-bl-sm border border-gray-200 dark:border-gray-600'
-                            }`}
+                            className={`px-4 py-2 rounded-lg shadow-sm ${message.sender_type === 'admin'
+                                ? 'bg-primary text-primary-foreground rounded-br-sm'
+                                : 'bg-card text-card-foreground rounded-bl-sm border border-border'
+                              }`}
                           >
                             <p className="text-sm leading-relaxed">{message.content}</p>
                             {message.file_url && (
-                              <div className="mt-2 p-2 rounded bg-black/10">
-                                <a 
-                                  href={message.file_url} 
-                                  target="_blank" 
+                              <div className="mt-2 p-2 rounded bg-black/10 dark:bg-white/10">
+                                <a
+                                  href={message.file_url}
+                                  target="_blank"
                                   rel="noopener noreferrer"
                                   className="text-xs underline flex items-center gap-1 hover:opacity-80"
                                 >
@@ -815,24 +812,23 @@ const OrderChatAdminPage: React.FC = () => {
                                     )}
                                     <span>{message.file_name || 'Attachment'}</span>
                                     {message.file_size && (
-                                      <span className="text-gray-500">
+                                      <span className="text-xs opacity-70">
                                         ({formatFileSize(message.file_size)})
                                       </span>
                                     )}
                                   </div>
                                 </a>
                                 {message.message_type === 'image' && message.file_url && (
-                                  <img 
-                                    src={message.file_url} 
-                                    alt={message.file_name || 'Image'} 
+                                  <img
+                                    src={message.file_url}
+                                    alt={message.file_name || 'Image'}
                                     className="mt-2 max-w-full h-auto rounded border max-h-48 object-contain"
                                   />
                                 )}
                               </div>
                             )}
-                            <div className={`flex items-center justify-end gap-1 mt-1 text-xs ${
-                              message.sender_type === 'admin' ? 'text-blue-100 dark:text-blue-200' : 'text-gray-500 dark:text-gray-400'
-                            }`}>
+                            <div className={`flex items-center justify-end gap-1 mt-1 text-xs ${message.sender_type === 'admin' ? 'text-primary-foreground/80' : 'text-muted-foreground'
+                              }`}>
                               <span>
                                 {new Date(message.created_at).toLocaleTimeString('en-IN', {
                                   hour: '2-digit',
@@ -843,9 +839,9 @@ const OrderChatAdminPage: React.FC = () => {
                               {message.sender_type === 'admin' && (
                                 <div className="flex">
                                   {message.is_read ? (
-                                    <CheckCircle2 className="h-3 w-3 text-blue-200 dark:text-blue-300" />
+                                    <CheckCircle2 className="h-3 w-3 text-primary-foreground/90" />
                                   ) : (
-                                    <CheckCircle className="h-3 w-3 text-white opacity-70" />
+                                    <CheckCircle className="h-3 w-3 opacity-70" />
                                   )}
                                 </div>
                               )}
@@ -860,7 +856,7 @@ const OrderChatAdminPage: React.FC = () => {
 
                 {/* Message Input */}
                 {selectedThread.status !== 'closed' ? (
-                  <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
+                  <div className="bg-card border-t border-border p-4">
                     <div className="flex items-end gap-3">
                       <div className="flex-1 relative">
                         <Input
@@ -874,13 +870,13 @@ const OrderChatAdminPage: React.FC = () => {
                             }
                           }}
                           disabled={sending || uploadingFile}
-                          className="pr-12 py-3 rounded-full border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                          className="pr-12 py-3 rounded-full border-input focus:border-primary focus:ring-primary bg-background text-foreground"
                         />
                       </div>
-                      <Button 
+                      <Button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={uploadingFile || sending}
-                        className="h-12 w-12 rounded-full bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 p-0 flex items-center justify-center"
+                        className="h-12 w-12 rounded-full bg-secondary hover:bg-secondary/80 text-secondary-foreground p-0 flex items-center justify-center"
                         type="button"
                       >
                         {uploadingFile ? (
@@ -889,10 +885,10 @@ const OrderChatAdminPage: React.FC = () => {
                           <Paperclip className="h-5 w-5" />
                         )}
                       </Button>
-                      <Button 
-                        onClick={sendMessage} 
+                      <Button
+                        onClick={sendMessage}
                         disabled={sending || !newMessage.trim() || uploadingFile}
-                        className="h-12 w-12 rounded-full bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 p-0 flex items-center justify-center"
+                        className="h-12 w-12 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground p-0 flex items-center justify-center"
                       >
                         {sending ? (
                           <Loader2 className="h-5 w-5 animate-spin" />
@@ -911,22 +907,22 @@ const OrderChatAdminPage: React.FC = () => {
                     />
                   </div>
                 ) : (
-                  <div className="bg-gray-100 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 p-4 text-center">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">This order chat has been closed</p>
+                  <div className="bg-muted border-t border-border p-4 text-center">
+                    <p className="text-sm text-muted-foreground">This order chat has been closed</p>
                   </div>
                 )}
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-              <div className="text-center text-gray-400 dark:text-gray-500">
-                <div className="h-32 w-32 mx-auto mb-6 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+            <div className="flex-1 flex items-center justify-center bg-muted/20">
+              <div className="text-center text-muted-foreground">
+                <div className="h-32 w-32 mx-auto mb-6 rounded-full bg-muted flex items-center justify-center">
                   <Package className="h-16 w-16 opacity-50" />
                 </div>
-                <h3 className="text-xl font-medium text-gray-600 dark:text-gray-300 mb-2">
+                <h3 className="text-xl font-medium text-foreground mb-2">
                   Order Chat Admin
                 </h3>
-                <p className="text-gray-500 dark:text-gray-400 max-w-md">
+                <p className="text-muted-foreground max-w-md">
                   Select an order conversation from the sidebar to start chatting with customers about their orders.
                 </p>
               </div>

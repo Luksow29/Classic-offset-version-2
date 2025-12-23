@@ -193,98 +193,153 @@ const AIAgentPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-slate-900 dark:to-indigo-950">
-      {/* Header Section */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-indigo-600/10 dark:from-blue-400/5 dark:to-indigo-400/5"></div>
-        <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-12">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg mb-6 animate-pulse">
-              <BrainCircuit className="w-10 h-10 text-white" />
-            </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-900 dark:from-white dark:via-blue-200 dark:to-indigo-200 bg-clip-text text-transparent mb-4">
-              Classic AI Assistant
-            </h1>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Your intelligent business analyst powered by advanced AI
-            </p>
-            <div className="flex items-center justify-center gap-2 mt-4 text-sm text-gray-500 dark:text-gray-400">
-              <Shield className="w-4 h-4" />
-              <span>Secure & Private</span>
+    <div className="h-[calc(100vh-4rem)] flex flex-col bg-background">
+      {/* Compact Header */}
+      <div className="flex items-center justify-between px-6 py-3 bg-card border-b border-border shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-primary/10">
+            <BrainCircuit className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-lg font-semibold text-foreground">Classic AI Assistant</h1>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
+                </span>
+                Online
+              </span>
               <span>•</span>
-              <Clock className="w-4 h-4" />
-              <span>{currentTime.toLocaleTimeString()}</span>
-              <span>•</span>
-              <Zap className="w-4 h-4" />
-              <span>Real-time Analysis</span>
+              <span>Business Analyst Intelligence</span>
             </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-4 text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-full">
+            <span className="flex items-center gap-1">
+              <Shield className="w-3 h-3" /> Secure
+            </span>
+            <span className="flex items-center gap-1">
+              <Zap className="w-3 h-3" /> Real-time
+            </span>
+            <span className="flex items-center gap-1 border-l border-border pl-3 ml-1">
+              <Clock className="w-3 h-3" /> {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 -mt-6">
-        <div className="max-w-7xl mx-auto">
-          <Tabs defaultValue="chat" className="w-full">
-            <TabsList className="mb-6 sm:mb-8 bg-white/80 dark:bg-gray-800/80 rounded-xl shadow-sm p-1 flex gap-2">
-              <TabsTrigger value="chat" className="flex-1 text-sm sm:text-lg">
-                <span className="sm:hidden">Chat</span>
-                <span className="hidden sm:inline">💬 Chat</span>
-              </TabsTrigger>
-              <TabsTrigger value="features" className="flex-1 text-sm sm:text-lg">
-                <span className="sm:hidden">Features</span>
-                <span className="hidden sm:inline">✨ Features & How to Use</span>
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="chat">
-              {/* Chat Interface */}
-              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
-                <div className="h-[70vh] sm:h-[650px] flex flex-col">
-                  <ChatContainer
-                    key={chatKey}
-                    starterPrompt={starterPrompt}
-                  />
-                </div>
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-hidden p-4 md:p-6">
+        <div className="h-full max-w-7xl mx-auto">
+          <Tabs defaultValue="chat" className="h-full flex flex-col">
+            <div className="flex justify-between items-center mb-4">
+              <TabsList className="bg-muted p-1 rounded-lg border border-border">
+                <TabsTrigger
+                  value="chat"
+                  className="px-4 py-1.5 text-sm font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-md transition-all"
+                >
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Chat
+                </TabsTrigger>
+                <TabsTrigger
+                  value="features"
+                  className="px-4 py-1.5 text-sm font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-md transition-all"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Capabilities
+                </TabsTrigger>
+              </TabsList>
+
+              <button
+                onClick={handleResetClick}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+              >
+                <RefreshCw className="w-4 h-4" />
+                <span className="hidden sm:inline">New Session</span>
+              </button>
+            </div>
+
+            <TabsContent value="chat" className="flex-1 mt-0 outline-none h-full overflow-hidden">
+              <div className="h-full flex flex-col bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
+                <ChatContainer
+                  key={chatKey}
+                  starterPrompt={starterPrompt}
+                />
               </div>
             </TabsContent>
-            <TabsContent value="features">
-              {/* AI Statistics */}
-              <div className="mb-8">
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+
+            <TabsContent value="features" className="flex-1 mt-0 outline-none overflow-y-auto pr-2">
+              <div className="space-y-8 pb-8">
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {aiStats.map((stat, index) => (
-                    <div key={index} className="p-4 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50">
+                    <div key={index} className="p-4 bg-card rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow">
                       <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg bg-gray-100 dark:bg-gray-700 ${stat.color}`}>
+                        <div className={`p-2 rounded-lg bg-primary/5 ${stat.color.replace('text-', 'text-')}`}>
                           {stat.icon}
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{stat.label}</p>
-                          <p className="text-lg font-bold text-gray-900 dark:text-white">{stat.value}</p>
+                          <p className="text-xs text-muted-foreground font-medium">{stat.label}</p>
+                          <p className="text-lg font-bold text-foreground">{stat.value}</p>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
 
-              {/* Search and Filter */}
-              <div className="mb-8">
-                <div className="flex flex-col sm:flex-row gap-4 p-4 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50">
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
-                    <Input
-                      type="text"
-                      placeholder="Search capabilities, features, or actions..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10"
-                    />
+                {/* Quick Actions */}
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-warning" />
+                    Quick Actions
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {quickActions.map((action, index) => (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          handleStarterClick(action.text);
+                          // Switch tab logic would go here if we had access to tabs ref
+                          const chatTab = document.querySelector('[value="chat"]') as HTMLElement;
+                          if (chatTab) chatTab.click();
+                        }}
+                        className="group p-4 bg-card hover:bg-muted/50 rounded-xl border border-border hover:border-primary/30 transition-all text-left"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                            {action.category}
+                          </span>
+                          <div className={`p-1.5 rounded-lg bg-gradient-to-r ${action.color} text-white opacity-80 group-hover:opacity-100`}>
+                            {action.icon}
+                          </div>
+                        </div>
+                        <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                          {action.text}
+                        </p>
+                      </button>
+                    ))}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Filter className="w-4 h-4 text-gray-500" />
+                </div>
+
+                {/* Capabilities Catalog */}
+                <div>
+                  <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        placeholder="Search capabilities..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 bg-card"
+                      />
+                    </div>
                     <select
                       value={selectedCategory}
                       onChange={(e) => setSelectedCategory(e.target.value)}
-                      className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="px-3 py-2 bg-card border border-input rounded-md text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
                     >
                       <option value="all">All Categories</option>
                       {abilityCategories.map((category) => (
@@ -294,159 +349,44 @@ const AIAgentPage: React.FC = () => {
                       ))}
                     </select>
                   </div>
-                </div>
-              </div>
 
-              {/* AI Capabilities Section */}
-              <div className="mb-12">
-                <div className="flex items-center gap-3 mb-8">
-                  <Sparkles className="w-7 h-7 text-indigo-500 animate-pulse" />
-                  <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Complete AI Capabilities</h2>
-                  <div className="ml-auto flex items-center gap-2 px-4 py-2 bg-green-100 dark:bg-green-900/30 rounded-full">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-sm font-medium text-green-700 dark:text-green-300">
-                      {filteredCategories.reduce((total, cat) => total + cat.abilities.length, 0)} of {abilityCategories.reduce((total, cat) => total + cat.abilities.length, 0)} Abilities
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-8">
-                  {filteredCategories.length === 0 ? (
-                    <div className="text-center py-12">
-                      <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
-                        <Search className="w-8 h-8 text-gray-400" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No capabilities found</h3>
-                      <p className="text-gray-500 dark:text-gray-400">Try adjusting your search or filter criteria</p>
-                    </div>
-                  ) : (
-                    filteredCategories.map((category, categoryIndex) => (
-                      <div key={categoryIndex} className="group">
-                        {/* Category Header */}
-                        <div className="flex items-center gap-4 mb-6">
-                          <div className={`p-3 rounded-xl bg-gradient-to-r ${category.color} text-white shadow-lg`}>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {filteredCategories.map((category, idx) => (
+                      <div key={idx} className="bg-card rounded-xl border border-border overflow-hidden">
+                        <div className="p-4 border-b border-border bg-muted/30 flex items-center gap-3">
+                          <div className={`p-2 rounded-lg bg-gradient-to-r ${category.color} text-white shadow-sm`}>
                             {category.icon}
                           </div>
                           <div>
-                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">{category.category}</h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              {category.abilities.length} abilities available
-                            </p>
+                            <h4 className="font-semibold text-foreground">{category.category}</h4>
+                            <p className="text-xs text-muted-foreground">{category.abilities.length} actions</p>
                           </div>
                         </div>
-
-                        {/* Abilities Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pl-6">
-                          {category.abilities.map((ability, abilityIndex) => (
+                        <div className="divide-y divide-border">
+                          {category.abilities.map((ability, aIdx) => (
                             <div
-                              key={abilityIndex}
-                              onClick={() => handleStarterClick(ability.action)}
-                              className={`group/ability relative p-5 rounded-xl border-2 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer ${category.bgColor}`}
+                              key={aIdx}
+                              onClick={() => {
+                                handleStarterClick(ability.action);
+                                const chatTab = document.querySelector('[value="chat"]') as HTMLElement;
+                                if (chatTab) chatTab.click();
+                              }}
+                              className="p-3 hover:bg-muted/50 cursor-pointer transition-colors flex items-start gap-3 group"
                             >
-                              <div className="flex items-start gap-3">
-                                <div className="flex-shrink-0 w-2 h-2 bg-gradient-to-r from-green-400 to-blue-500 rounded-full mt-2 group-hover/ability:animate-pulse"></div>
-                                <div className="flex-1">
-                                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2 group-hover/ability:text-indigo-600 dark:group-hover/ability:text-indigo-400 transition-colors">
-                                    {ability.name}
-                                  </h4>
-                                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
-                                    {ability.description}
-                                  </p>
-                                  <div className="text-xs px-3 py-1 bg-white/60 dark:bg-gray-800/60 rounded-full text-gray-500 dark:text-gray-400 inline-block">
-                                    Try: "{ability.action}"
-                                  </div>
-                                </div>
+                              <div className="w-1.5 h-1.5 rounded-full bg-primary/40 group-hover:bg-primary mt-2 transition-colors" />
+                              <div>
+                                <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{ability.name}</p>
+                                <p className="text-xs text-muted-foreground mb-1">{ability.description}</p>
+                                <span className="text-[10px] text-primary/70 bg-primary/5 px-1.5 py-0.5 rounded">
+                                  "{ability.action}"
+                                </span>
                               </div>
-
-                              {/* Hover Overlay */}
-                              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-xl opacity-0 group-hover/ability:opacity-100 transition-opacity duration-300"></div>
                             </div>
                           ))}
                         </div>
                       </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              {/* Quick Actions */}
-              <div className="mb-10">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <Zap className="w-6 h-6 text-yellow-500 animate-pulse" />
-                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Quick Actions</h3>
-                    <span className="text-sm px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded-full">
-                      Most Popular
-                    </span>
+                    ))}
                   </div>
-                  <button
-                    onClick={handleResetClick}
-                    className="flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-sm hover:shadow-md border border-gray-200 dark:border-gray-700 transition-all duration-200 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-gray-800"
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                    New Chat
-                  </button>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {quickActions.map((action, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleStarterClick(action.text)}
-                      className="group p-5 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 hover:bg-white dark:hover:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-300 text-left hover:shadow-lg hover:scale-105"
-                    >
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className={`p-2.5 rounded-xl bg-gradient-to-r ${action.color} text-white shadow-md group-hover:shadow-lg transition-shadow`}>
-                          {action.icon}
-                        </div>
-                        <span className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full text-gray-600 dark:text-gray-300 font-medium">
-                          {action.category}
-                        </span>
-                      </div>
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                        {action.text}
-                      </p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Smart Suggestions */}
-              <div className="mb-10">
-                <div className="flex items-center gap-3 mb-6">
-                  <BrainCircuit className="w-6 h-6 text-purple-500 animate-float" />
-                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Smart Suggestions</h3>
-                  <span className="text-sm px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full">
-                    AI Powered
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {smartSuggestions.map((suggestion, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleStarterClick(suggestion.text)}
-                      className="group p-5 bg-gradient-to-br from-white/60 to-gray-50/60 dark:from-gray-800/60 dark:to-gray-900/60 backdrop-blur-sm rounded-xl border border-gray-200/40 dark:border-gray-700/40 hover:from-white hover:to-gray-50 dark:hover:from-gray-800 dark:hover:to-gray-900 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-300 text-left hover:shadow-xl hover:scale-102"
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300 rounded-full font-medium">
-                            {suggestion.category}
-                          </span>
-                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${suggestion.complexity === 'Basic'
-                            ? 'bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300'
-                            : 'bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-300'
-                            }`}>
-                            {suggestion.complexity}
-                          </span>
-                        </div>
-                      </div>
-                      <h4 className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors mb-2">
-                        {suggestion.text}
-                      </h4>
-                      <p className="text-xs text-gray-600 dark:text-gray-300">
-                        {suggestion.description}
-                      </p>
-                    </button>
-                  ))}
                 </div>
               </div>
             </TabsContent>

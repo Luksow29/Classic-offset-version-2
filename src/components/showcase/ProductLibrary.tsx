@@ -76,7 +76,7 @@ const ProductLibrary: React.FC = () => {
                         placeholder="Search products..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                        className="w-full pl-10 pr-4 py-2 rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                     />
                 </div>
 
@@ -86,8 +86,8 @@ const ProductLibrary: React.FC = () => {
                             key={category}
                             onClick={() => setSelectedCategory(category)}
                             className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${selectedCategory === category
-                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25'
-                                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+                                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25'
+                                : 'bg-card text-muted-foreground hover:bg-muted border border-border'
                                 }`}
                         >
                             {category}
@@ -145,7 +145,7 @@ const ProductLibrary: React.FC = () => {
 
                                     <div className="p-4 space-y-2">
                                         <div className="flex justify-between items-start gap-2">
-                                            <h3 className="font-semibold text-gray-800 dark:text-white line-clamp-1 text-lg group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                            <h3 className="font-semibold text-foreground line-clamp-1 text-lg group-hover:text-primary transition-colors">
                                                 {product.name}
                                             </h3>
                                             <span className="font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded-lg text-sm whitespace-nowrap">
@@ -157,7 +157,7 @@ const ProductLibrary: React.FC = () => {
                                                 {product.category}
                                             </span>
                                         )}
-                                        <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 min-h-[2.5em]">
+                                        <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5em]">
                                             {product.description || 'No description available'}
                                         </p>
                                     </div>
@@ -219,7 +219,7 @@ const ProductLibrary: React.FC = () => {
                                 <Button onClick={() => setSelectedProduct(null)} variant="outline" className="flex-1">
                                     Close
                                 </Button>
-                                <Button className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border-0 shadow-lg shadow-blue-500/25">
+                                <Button className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground border-0 shadow-lg shadow-primary/25">
                                     Enquire Now
                                 </Button>
                             </div>

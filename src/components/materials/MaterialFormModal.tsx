@@ -4,10 +4,11 @@ import Input from '../ui/Input';
 import Select from '../ui/Select';
 import TextArea from '../ui/TextArea';
 import Button from '../ui/Button';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, PackageCheck, PackagePlus } from 'lucide-react';
 import { Material, MaterialCategory, Supplier } from './MaterialsPage';
 import { logActivity } from '@/lib/activityLogger';
 import { useUser } from '@/context/UserContext';
+import Card from '../ui/Card';
 
 interface MaterialFormModalProps {
   isOpen: boolean;
@@ -82,7 +83,6 @@ const MaterialFormModal: React.FC<MaterialFormModalProps> = ({
   ) => {
     const { id, value } = e.target;
     setFormData({ ...formData, [id]: value });
-    // Clear error when user starts typing
     if (error) setError(null);
   };
 
@@ -154,130 +154,150 @@ const MaterialFormModal: React.FC<MaterialFormModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={editingMaterial ? 'Edit Material' : 'Add New Material'}
+      title={null} // Custom title inside body
       size="2xl"
     >
-      <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+      <div className="flex items-center gap-3 mb-6 p-1">
+        <div className={`p-2 rounded-lg ${editingMaterial ? 'bg-blue-100 text-blue-600' : 'bg-primary-100 text-primary-600'}`}>
+          {editingMaterial ? <PackageCheck className="w-6 h-6" /> : <PackagePlus className="w-6 h-6" />}
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+            {editingMaterial ? 'Edit Material' : 'Add New Material'}
+          </h2>
+          <p className="text-sm text-gray-500">
+            {editingMaterial ? 'Update material details and properties.' : 'Enter details to track a new material in your inventory.'}
+          </p>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
-          <div className="flex items-center gap-2 p-3 bg-red-50 text-red-700 border border-red-200 rounded-md text-sm">
+          <div className="flex items-center gap-2 p-4 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm animate-in fade-in slide-in-from-top-2">
             <AlertCircle size={18} />
             <span>{error}</span>
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input
-            id="material_name"
-            label="Material Name *"
-            value={formData.material_name}
-            onChange={handleChange}
-            required
-            disabled={isLoading}
-            placeholder="e.g., A4 Paper, Black Ink Cartridge"
-          />
-          
-          <Select
-            id="category_id"
-            label="Category"
-            options={categoryOptions}
-            value={formData.category_id}
-            onChange={handleChange}
-            disabled={isLoading}
-            placeholder="Select category"
-          />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 border-b pb-2">Basic Info</h3>
+            <Input
+              id="material_name"
+              label="Material Name *"
+              value={formData.material_name}
+              onChange={handleChange}
+              required
+              disabled={isLoading}
+              placeholder="e.g., A4 Paper, Black Ink Cartridge"
+            />
+
+            <Select
+              id="category_id"
+              label="Category"
+              options={categoryOptions}
+              value={formData.category_id}
+              onChange={handleChange}
+              disabled={isLoading}
+              placeholder="Select category"
+            />
+
+            <TextArea
+              id="description"
+              label="Description"
+              value={formData.description}
+              onChange={handleChange}
+              disabled={isLoading}
+              placeholder="Brief description of the material..."
+              rows={3}
+            />
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 border-b pb-2">Inventory Details</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                id="current_quantity"
+                label="Current Quantity *"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.current_quantity}
+                onChange={handleChange}
+                required
+                disabled={isLoading}
+              />
+              <Select
+                id="unit_of_measurement"
+                label="Unit *"
+                options={unitOptions}
+                value={formData.unit_of_measurement}
+                onChange={handleChange}
+                required
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                id="cost_per_unit"
+                label="Cost per Unit (₹) *"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.cost_per_unit}
+                onChange={handleChange}
+                required
+                disabled={isLoading}
+              />
+              <Input
+                id="minimum_stock_level"
+                label="Min Stock Level *"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.minimum_stock_level}
+                onChange={handleChange}
+                required
+                disabled={isLoading}
+              />
+            </div>
+
+            <Input
+              id="storage_location"
+              label="Storage Location"
+              value={formData.storage_location}
+              onChange={handleChange}
+              disabled={isLoading}
+              placeholder="e.g., Warehouse A, Shelf 3"
+            />
+          </div>
         </div>
 
-        <TextArea
-          id="description"
-          label="Description"
-          value={formData.description}
-          onChange={handleChange}
-          disabled={isLoading}
-          placeholder="Brief description of the material..."
-          rows={2}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Select
-            id="supplier_id"
-            label="Supplier"
-            options={supplierOptions}
-            value={formData.supplier_id}
-            onChange={handleChange}
-            disabled={isLoading}
-            placeholder="Select supplier"
-          />
-          
-          <Input
-            id="storage_location"
-            label="Storage Location"
-            value={formData.storage_location}
-            onChange={handleChange}
-            disabled={isLoading}
-            placeholder="e.g., Warehouse A, Shelf 3"
-          />
+        <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg border border-gray-100 dark:border-gray-700">
+          <h3 className="text-sm font-medium text-gray-900 dark:text-gray-200 mb-3">Additional Details</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Select
+              id="supplier_id"
+              label="Supplier"
+              options={supplierOptions}
+              value={formData.supplier_id}
+              onChange={handleChange}
+              disabled={isLoading}
+              placeholder="Select supplier"
+            />
+            <Input
+              id="purchase_date"
+              label="Purchase Date"
+              type="date"
+              value={formData.purchase_date}
+              onChange={handleChange}
+              disabled={isLoading}
+            />
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Input
-            id="current_quantity"
-            label="Current Quantity *"
-            type="number"
-            step="0.01"
-            min="0"
-            value={formData.current_quantity}
-            onChange={handleChange}
-            required
-            disabled={isLoading}
-          />
-          
-          <Input
-            id="minimum_stock_level"
-            label="Minimum Stock Level *"
-            type="number"
-            step="0.01"
-            min="0"
-            value={formData.minimum_stock_level}
-            onChange={handleChange}
-            required
-            disabled={isLoading}
-          />
-          
-          <Select
-            id="unit_of_measurement"
-            label="Unit of Measurement *"
-            options={unitOptions}
-            value={formData.unit_of_measurement}
-            onChange={handleChange}
-            required
-            disabled={isLoading}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input
-            id="cost_per_unit"
-            label="Cost per Unit (₹) *"
-            type="number"
-            step="0.01"
-            min="0"
-            value={formData.cost_per_unit}
-            onChange={handleChange}
-            required
-            disabled={isLoading}
-          />
-          
-          <Input
-            id="purchase_date"
-            label="Purchase Date"
-            type="date"
-            value={formData.purchase_date}
-            onChange={handleChange}
-            disabled={isLoading}
-          />
-        </div>
-
-        <div className="flex justify-end gap-3 pt-4 border-t">
+        <div className="flex justify-end gap-3 pt-4 border-t dark:border-gray-700">
           <Button
             type="button"
             variant="outline"
@@ -290,12 +310,12 @@ const MaterialFormModal: React.FC<MaterialFormModalProps> = ({
             type="submit"
             variant="primary"
             disabled={isLoading}
+            className="w-full sm:w-auto min-w-[120px]"
           >
             {isLoading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              editingMaterial ? 'Update Material' : 'Save Material'
-            )}
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+            ) : null}
+            {editingMaterial ? 'Update Material' : 'Save Material'}
           </Button>
         </div>
       </form>

@@ -7,7 +7,12 @@ import Button from '../ui/Button';
 import ExpenseTable from './ExpenseTable';
 import ExpenseFormModal from './ExpenseFormModal';
 import ConfirmationModal from '../ui/ConfirmationModal';
-import { Plus, Wallet, TrendingUp, Loader2 } from 'lucide-react';
+import { Plus, Wallet, TrendingUp, Loader2, DollarSign, Tag, CreditCard } from 'lucide-react';
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart as RePieChart, Pie, Cell, Legend
+} from 'recharts';
+import { format, subDays, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 
 export interface Expense {
   id: string;
@@ -72,15 +77,15 @@ const Expenses: React.FC = () => {
     setExpenseToDelete(expense);
     setShowDeleteModal(true);
   };
-  
+
   const confirmDelete = async () => {
     if (!expenseToDelete) return;
-    
+
     const promise = supabase.from('expenses').delete().eq('id', expenseToDelete.id);
     await toast.promise(promise, {
-        loading: 'Deleting expense...',
-        success: 'Expense deleted successfully.',
-        error: (err) => err.message || "Failed to delete expense."
+      loading: 'Deleting expense...',
+      success: 'Expense deleted successfully.',
+      error: (err) => err.message || "Failed to delete expense."
     });
 
     const { error } = await promise;
@@ -91,29 +96,169 @@ const Expenses: React.FC = () => {
     setExpenseToDelete(null);
   };
 
-  const totalExpenses = useMemo(() => {
-    return expenses.reduce((sum, exp) => sum + exp.amount, 0);
+  // --- Statistics & Charts Data ---
+
+  const metrics = useMemo(() => {
+    const total = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+
+    // Monthly Expenses (Current Month)
+    const now = new Date();
+    const currentMonthExpenses = expenses.filter(exp =>
+      isWithinInterval(new Date(exp.date), {
+        start: startOfMonth(now),
+        end: endOfMonth(now)
+      })
+    ).reduce((sum, exp) => sum + exp.amount, 0);
+
+    // Group by Category
+    const byCategory = expenses.reduce((acc, exp) => {
+      acc[exp.expense_type] = (acc[exp.expense_type] || 0) + exp.amount;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Find Top Category
+    let topCategory = { name: 'N/A', amount: 0 };
+    Object.entries(byCategory).forEach(([name, amount]) => {
+      if (amount > topCategory.amount) {
+        topCategory = { name, amount };
+      }
+    });
+
+    // Chart Data: Categories
+    const categoryChartData = Object.entries(byCategory)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+
+    // Chart Data: Trend (Last 30 Days)
+    const trendMap = new Map<string, number>();
+    for (let i = 30; i >= 0; i--) {
+      trendMap.set(format(subDays(new Date(), i), 'MMM dd'), 0);
+    }
+    expenses.forEach(exp => {
+      const dateStr = format(new Date(exp.date), 'MMM dd');
+      if (trendMap.has(dateStr)) {
+        trendMap.set(dateStr, (trendMap.get(dateStr) || 0) + exp.amount);
+      }
+    });
+    const trendChartData = Array.from(trendMap.entries()).map(([date, amount]) => ({ date, amount }));
+
+    return { total, currentMonthExpenses, topCategory, categoryChartData, trendChartData };
   }, [expenses]);
+
+  const COLORS = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#3b82f6', '#8b5cf6', '#ec4899'];
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
       <Toaster position="top-right" />
+
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">💸 Expenses</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">Track and manage all your expenses.</p>
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <Wallet className="w-8 h-8 text-primary" />
+            Expense Management
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">Track and manage all your business expenses.</p>
         </div>
-        <Button onClick={() => { setEditingExpense(null); setShowFormModal(true); }} className="w-full sm:w-auto">
-          <Plus className="w-4 h-4 mr-2" /> Add Expense
+        <Button onClick={() => { setEditingExpense(null); setShowFormModal(true); }} className="w-full sm:w-auto shadow-lg hover:shadow-xl transition-all">
+          <Plus className="w-4 h-4 mr-2" /> Record Expense
         </Button>
       </div>
 
-      <Card>
-        <div className="p-4 text-center">
-            <p className="text-sm text-gray-500">Total Expenses Logged</p>
-            <p className="text-3xl font-bold text-red-600 dark:text-red-400">₹{totalExpenses.toLocaleString('en-IN')}</p>
-        </div>
-      </Card>
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="p-6 border-l-4 border-l-primary bg-gradient-to-br from-card to-primary/5">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Total Expenses</p>
+              <h3 className="text-3xl font-bold text-foreground mt-2">₹{metrics.total.toLocaleString('en-IN')}</h3>
+            </div>
+            <div className="p-3 bg-primary/10 rounded-lg text-primary">
+              <DollarSign size={24} />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6 border-l-4 border-l-orange-500 bg-gradient-to-br from-card to-orange-500/5">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">This Month</p>
+              <h3 className="text-3xl font-bold text-foreground mt-2">₹{metrics.currentMonthExpenses.toLocaleString('en-IN')}</h3>
+            </div>
+            <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg text-orange-600">
+              <TrendingUp size={24} />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6 border-l-4 border-l-purple-500 bg-gradient-to-br from-card to-purple-500/5">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Top Category</p>
+              <h3 className="text-2xl font-bold text-foreground mt-2 truncate max-w-[150px]" title={metrics.topCategory.name}>{metrics.topCategory.name}</h3>
+              <p className="text-xs text-muted-foreground mt-1">₹{metrics.topCategory.amount.toLocaleString('en-IN')}</p>
+            </div>
+            <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-purple-600">
+              <Tag size={24} />
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Trend Chart */}
+        <Card className="lg:col-span-2 p-6 flex flex-col h-[400px]">
+          <h3 className="text-lg font-semibold mb-4 text-foreground">Expense Trends (Last 30 Days)</h3>
+          <div className="w-full h-[300px] min-h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={metrics.trendChartData}>
+                <defs>
+                  <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
+                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} tickFormatter={(val) => `₹${val / 1000}k`} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: 'var(--popover)', borderRadius: '8px', border: '1px solid var(--border)' }}
+                  formatter={(val: number) => [`₹${val.toLocaleString()}`, 'Amount']}
+                />
+                <Area type="monotone" dataKey="amount" stroke="#ef4444" fillOpacity={1} fill="url(#colorExpense)" strokeWidth={2} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+
+        {/* Category Donut Chart */}
+        <Card className="p-6 h-[400px] flex flex-col">
+          <h3 className="text-lg font-semibold mb-4 text-foreground">Expenses by Category</h3>
+          <div className="w-full h-[300px] min-h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <RePieChart>
+                <Pie
+                  data={metrics.categoryChartData}
+                  cx="50%" cy="50%"
+                  innerRadius={60} outerRadius={80}
+                  paddingAngle={2}
+                  dataKey="value"
+                >
+                  {metrics.categoryChartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} strokeWidth={0} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{ backgroundColor: 'var(--popover)', borderRadius: '8px', border: '1px solid var(--border)' }}
+                  formatter={(val: number) => [`₹${val.toLocaleString()}`, 'Amount']}
+                />
+                <Legend verticalAlign="bottom" height={36} iconType="circle" />
+              </RePieChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      </div>
 
       <ExpenseTable
         expenses={expenses}

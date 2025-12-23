@@ -26,6 +26,7 @@ const LoadingFallback = () => (
 );
 
 // Lazy load all page components
+// Lazy load all page components
 const Dashboard = lazy(() => import('./components/dashboard/Dashboard'));
 const Orders = lazy(() => import('./components/orders/Orders'));
 const Expenses = lazy(() => import('./components/expenses/Expenses'));
@@ -55,8 +56,7 @@ const InsightsPage = lazy(() => import('./pages/ComprehensiveInsightsPage'));
 const ReportsPage = lazy(() => import('./pages/ReportsPage'));
 const BusinessInsights = lazy(() => import('./components/ai/BusinessInsights'));
 const WeeklyProgress = lazy(() => import('./components/enhancements/WeeklyProgress'));
-const SmartInventory = lazy(() => import('./components/inventory/SmartInventory'));
-const AdvancedCRM = lazy(() => import('./components/crm/AdvancedCRM'));
+
 const LoyaltyProgram = lazy(() => import('./components/loyalty/LoyaltyProgram'));
 const CustomerSupportPage = lazy(() => import('./components/admin/CustomerSupportPage'));
 const OrderChatAdminPage = lazy(() => import('./components/admin/OrderChatAdminPage'));
@@ -120,8 +120,7 @@ const router = createBrowserRouter(
         <Route path="/reports" element={Suspended(<ReportsPage />)} />
         <Route path="/business-insights" element={Suspended(<BusinessInsights />)} />
         <Route path="/enhancements" element={Suspended(<WeeklyProgress />)} />
-        <Route path="/smart-inventory" element={Suspended(<SmartInventory />)} />
-        <Route path="/advanced-crm" element={Suspended(<AdvancedCRM />)} />
+
         <Route path="/loyalty-program" element={Suspended(<LoyaltyProgram />)} />
         <Route path="/customer-support" element={Suspended(<CustomerSupportPage />)} />
         <Route path="/order-chat-admin" element={Suspended(<OrderChatAdminPage />)} />
@@ -152,42 +151,42 @@ function App() {
             <Toaster
               position="top-right"
               toastOptions={{
-              success: {
-                duration: 3000,
-                style: {
-                  background: 'hsl(var(--success))',
-                  color: 'hsl(var(--success-foreground))'
+                success: {
+                  duration: 3000,
+                  style: {
+                    background: 'hsl(var(--success))',
+                    color: 'hsl(var(--success-foreground))'
+                  },
+                  iconTheme: {
+                    primary: 'hsl(var(--success-foreground))',
+                    secondary: 'hsl(var(--success))',
+                  }
                 },
-                iconTheme: {
-                  primary: 'hsl(var(--success-foreground))',
-                  secondary: 'hsl(var(--success))',
-                }
-              },
-              error: {
-                duration: 5000,
-                style: {
-                  background: 'hsl(var(--destructive))',
-                  color: 'hsl(var(--destructive-foreground))'
+                error: {
+                  duration: 5000,
+                  style: {
+                    background: 'hsl(var(--destructive))',
+                    color: 'hsl(var(--destructive-foreground))'
+                  },
+                  iconTheme: {
+                    primary: 'hsl(var(--destructive-foreground))',
+                    secondary: 'hsl(var(--destructive))',
+                  }
                 },
-                iconTheme: {
-                  primary: 'hsl(var(--destructive-foreground))',
-                  secondary: 'hsl(var(--destructive))',
-                }
-              },
-              style: {
-                fontSize: '14px',
-                maxWidth: '400px',
-                padding: '12px 18px',
-                borderRadius: 'var(--radius)',
-              },
-            }}
-          />
-          <RouterProvider router={router} />
-          <PWAInstallPrompt />
-        </RealtimeProvider>
-      </SettingsProvider>
-    </UserProvider>
-  </ThemeProvider>
+                style: {
+                  fontSize: '14px',
+                  maxWidth: '400px',
+                  padding: '12px 18px',
+                  borderRadius: 'var(--radius)',
+                },
+              }}
+            />
+            <RouterProvider router={router} />
+            <PWAInstallPrompt />
+          </RealtimeProvider>
+        </SettingsProvider>
+      </UserProvider>
+    </ThemeProvider>
   );
 }
 

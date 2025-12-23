@@ -1,10 +1,10 @@
 // src/components/crm/AdvancedCRM.tsx
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { Users, Phone, Mail, Calendar, TrendingUp, Star, Plus, Search, Filter, UserPlus } from 'lucide-react';
+import { formatCurrency } from '@classic-offset/shared';
+import { Users, Phone, Mail, TrendingUp, Star, Search, UserPlus } from 'lucide-react';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
-import Modal from '../ui/Modal';
 import Input from '../ui/Input';
 import CustomerDetailModal from './CustomerDetailModal';
 import AddCustomerModal from './AddCustomerModal';
@@ -28,18 +28,6 @@ interface Customer {
   status: 'active' | 'inactive' | 'prospect';
 }
 
-interface CustomerInteraction {
-  id: string;
-  customer_id: string;
-  type: 'call' | 'email' | 'meeting' | 'order' | 'complaint' | 'follow_up';
-  subject: string;
-  description: string;
-  outcome: string;
-  next_action?: string;
-  created_at: string;
-  created_by: string;
-}
-
 interface CustomerAnalytics {
   totalCustomers: number;
   newThisMonth: number;
@@ -59,7 +47,6 @@ const AdvancedCRM: React.FC = () => {
   const [filterType, setFilterType] = useState<string>('all');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showInteractionModal, setShowInteractionModal] = useState(false);
 
   const fetchCustomers = async () => {
     setLoading(true);
@@ -72,8 +59,15 @@ const AdvancedCRM: React.FC = () => {
 
       if (customersError) throw customersError;
 
+      // Type for order data from database
+      interface OrderData {
+        customer_id: string;
+        total_amount: number | null;
+        created_at: string;
+      }
+
       // Then get order data separately (with error handling in case table doesn't exist)
-      let ordersData: any[] = [];
+      let ordersData: OrderData[] = [];
       try {
         const { data, error: ordersError } = await supabase
           .from('orders')
@@ -82,22 +76,37 @@ const AdvancedCRM: React.FC = () => {
         if (ordersError) {
           console.warn('Orders table not found or accessible:', ordersError);
         } else {
-          ordersData = data || [];
+          ordersData = (data || []) as OrderData[];
         }
       } catch (ordersFetchError) {
         console.warn('Could not fetch orders data:', ordersFetchError);
         // Continue without order data
       }
 
+      // Type for raw customer data from database
+      interface RawCustomer {
+        id: string;
+        name: string;
+        email: string;
+        phone: string;
+        company: string;
+        customer_type?: Customer['customer_type'];
+        created_at: string;
+        notes: string;
+        follow_up_date?: string;
+        communication_preference?: 'email' | 'phone' | 'whatsapp';
+        status?: 'active' | 'inactive' | 'prospect';
+      }
+
       // Enrich customer data with analytics
-      const enrichedCustomers: Customer[] = customersData?.map((customer: any) => {
+      const enrichedCustomers: Customer[] = (customersData as RawCustomer[])?.map((customer) => {
         const customerOrders = ordersData?.filter(order => order.customer_id === customer.id) || [];
         const totalOrders = customerOrders.length;
-        const totalSpent = customerOrders.reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0);
-        const lastOrderDate = customerOrders.length > 0 
+        const totalSpent = customerOrders.reduce((sum: number, order) => sum + (order.total_amount || 0), 0);
+        const lastOrderDate = customerOrders.length > 0
           ? customerOrders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0].created_at
-          : null;
-        
+          : '';
+
         // Determine customer type based on spending and order history
         let customerType: Customer['customer_type'] = customer.customer_type || 'New';
         if (!customer.customer_type) {
@@ -112,13 +121,14 @@ const AdvancedCRM: React.FC = () => {
           total_spent: totalSpent,
           last_order_date: lastOrderDate,
           customer_type: customerType,
-          status: customer.status || 'active'
+          status: customer.status || 'active',
+          communication_preference: customer.communication_preference || 'phone'
         };
       }) || [];
 
       setCustomers(enrichedCustomers);
       setFilteredCustomers(enrichedCustomers);
-      
+
       // Calculate analytics
       calculateAnalytics(enrichedCustomers);
     } catch (error) {
@@ -132,7 +142,7 @@ const AdvancedCRM: React.FC = () => {
   const calculateAnalytics = (customerData: Customer[]) => {
     const now = new Date();
     const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    
+
     const analytics: CustomerAnalytics = {
       totalCustomers: customerData.length,
       newThisMonth: customerData.filter(c => new Date(c.created_at) >= thisMonth).length,
@@ -142,17 +152,18 @@ const AdvancedCRM: React.FC = () => {
       customerLifetimeValue: customerData.reduce((sum, c) => sum + c.total_spent, 0) / customerData.length || 0,
       retentionRate: ((customerData.length - customerData.filter(c => c.customer_type === 'Inactive').length) / customerData.length) * 100 || 0
     };
-    
+
     setAnalytics(analytics);
   };
 
   useEffect(() => {
     fetchCustomers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     let filtered = customers;
-    
+
     if (searchTerm) {
       filtered = filtered.filter(customer =>
         customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -160,11 +171,11 @@ const AdvancedCRM: React.FC = () => {
         customer.company.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    
+
     if (filterType !== 'all') {
       filtered = filtered.filter(customer => customer.customer_type.toLowerCase() === filterType);
     }
-    
+
     setFilteredCustomers(filtered);
   }, [searchTerm, filterType, customers]);
 
@@ -178,19 +189,12 @@ const AdvancedCRM: React.FC = () => {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
+  // formatCurrency is now imported from @classic-offset/shared
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -200,18 +204,18 @@ const AdvancedCRM: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Users className="w-8 h-8 text-blue-400" />
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <Users className="w-8 h-8 text-primary" />
             Advanced Customer Relationship Management
           </h1>
-          <p className="text-gray-400 mt-1">
+          <p className="text-muted-foreground mt-1">
             Week 3: Complete customer lifecycle management with analytics
           </p>
         </div>
         <div className="flex gap-2">
           <Button
             onClick={() => setShowAddModal(true)}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             <UserPlus className="w-4 h-4 mr-2" />
             Add Customer
@@ -222,50 +226,50 @@ const AdvancedCRM: React.FC = () => {
       {/* Analytics Cards */}
       {analytics && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="bg-gray-800 border-gray-700">
+          <Card className="bg-card border-border">
             <div className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-sm">Total Customers</p>
-                  <p className="text-2xl font-bold text-white">{analytics.totalCustomers}</p>
+                  <p className="text-muted-foreground text-sm">Total Customers</p>
+                  <p className="text-2xl font-bold text-card-foreground">{analytics.totalCustomers}</p>
                 </div>
-                <Users className="w-8 h-8 text-blue-400" />
+                <Users className="w-8 h-8 text-primary" />
               </div>
             </div>
           </Card>
 
-          <Card className="bg-gray-800 border-gray-700">
+          <Card className="bg-card border-border">
             <div className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-sm">New This Month</p>
-                  <p className="text-2xl font-bold text-green-400">+{analytics.newThisMonth}</p>
+                  <p className="text-muted-foreground text-sm">New This Month</p>
+                  <p className="text-2xl font-bold text-success">+{analytics.newThisMonth}</p>
                 </div>
-                <TrendingUp className="w-8 h-8 text-green-400" />
+                <TrendingUp className="w-8 h-8 text-success" />
               </div>
             </div>
           </Card>
 
-          <Card className="bg-gray-800 border-gray-700">
+          <Card className="bg-card border-border">
             <div className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-sm">VIP Customers</p>
-                  <p className="text-2xl font-bold text-yellow-400">{analytics.vipCustomers}</p>
+                  <p className="text-muted-foreground text-sm">VIP Customers</p>
+                  <p className="text-2xl font-bold text-warning">{analytics.vipCustomers}</p>
                 </div>
-                <Star className="w-8 h-8 text-yellow-400" />
+                <Star className="w-8 h-8 text-warning" />
               </div>
             </div>
           </Card>
 
-          <Card className="bg-gray-800 border-gray-700">
+          <Card className="bg-card border-border">
             <div className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-sm">Avg. Order Value</p>
-                  <p className="text-2xl font-bold text-white">{formatCurrency(analytics.averageOrderValue)}</p>
+                  <p className="text-muted-foreground text-sm">Avg. Order Value</p>
+                  <p className="text-2xl font-bold text-card-foreground">{formatCurrency(analytics.averageOrderValue)}</p>
                 </div>
-                <TrendingUp className="w-8 h-8 text-green-400" />
+                <TrendingUp className="w-8 h-8 text-success" />
               </div>
             </div>
           </Card>
@@ -276,21 +280,21 @@ const AdvancedCRM: React.FC = () => {
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
               placeholder="Search customers..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-gray-800 border-gray-700 text-white"
+              className="pl-10 bg-background border-input text-foreground"
             />
           </div>
         </div>
-        
+
         <div className="flex gap-2">
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500"
+            className="px-4 py-2 bg-background border border-input rounded-lg text-foreground focus:ring-2 focus:ring-primary"
           >
             <option value="all">All Types</option>
             <option value="vip">VIP</option>
@@ -302,55 +306,55 @@ const AdvancedCRM: React.FC = () => {
       </div>
 
       {/* Customer List */}
-      <Card className="bg-gray-800 border-gray-700">
+      <Card className="bg-card border-border">
         <div className="p-6">
-          <h2 className="text-lg font-semibold text-white mb-4">Customer Directory</h2>
-          
+          <h2 className="text-lg font-semibold text-card-foreground mb-4">Customer Directory</h2>
+
           <div className="space-y-4">
             {filteredCustomers.map((customer) => (
               <motion.div
                 key={customer.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-gray-700 rounded-lg p-4 cursor-pointer hover:bg-gray-600 transition-colors"
+                className="bg-muted/50 rounded-lg p-4 cursor-pointer hover:bg-muted transition-colors"
                 onClick={() => setSelectedCustomer(customer)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
-                      <span className="text-white font-semibold">
+                    <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
+                      <span className="text-primary font-semibold">
                         {customer.name.charAt(0).toUpperCase()}
                       </span>
                     </div>
-                    
+
                     <div>
-                      <h3 className="text-white font-medium">{customer.name}</h3>
-                      <p className="text-gray-400 text-sm">{customer.company}</p>
+                      <h3 className="text-card-foreground font-medium">{customer.name}</h3>
+                      <p className="text-muted-foreground text-sm">{customer.company}</p>
                       <div className="flex items-center space-x-2 mt-1">
-                        <Mail className="w-3 h-3 text-gray-400" />
-                        <span className="text-gray-400 text-xs">{customer.email}</span>
-                        <Phone className="w-3 h-3 text-gray-400 ml-2" />
-                        <span className="text-gray-400 text-xs">{customer.phone}</span>
+                        <Mail className="w-3 h-3 text-muted-foreground" />
+                        <span className="text-muted-foreground text-xs">{customer.email}</span>
+                        <Phone className="w-3 h-3 text-muted-foreground ml-2" />
+                        <span className="text-muted-foreground text-xs">{customer.phone}</span>
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="text-right">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCustomerTypeColor(customer.customer_type)}`}>
                       {customer.customer_type}
                     </span>
-                    <p className="text-white font-semibold mt-1">{formatCurrency(customer.total_spent)}</p>
-                    <p className="text-gray-400 text-sm">{customer.total_orders} orders</p>
+                    <p className="text-card-foreground font-semibold mt-1">{formatCurrency(customer.total_spent)}</p>
+                    <p className="text-muted-foreground text-sm">{customer.total_orders} orders</p>
                   </div>
                 </div>
               </motion.div>
             ))}
           </div>
-          
+
           {filteredCustomers.length === 0 && (
             <div className="text-center py-8">
-              <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-400">No customers found</p>
+              <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">No customers found</p>
             </div>
           )}
         </div>

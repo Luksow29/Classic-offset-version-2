@@ -4,12 +4,12 @@ import { supabase } from '@/lib/supabaseClient';
 import { useUser } from '@/context/UserContext';
 import { logActivity } from '@/lib/activityLogger';
 import toast from 'react-hot-toast';
-import { 
-    Check, 
-    User, 
-    Package, 
-    ClipboardList, 
-    CreditCard, 
+import {
+    Check,
+    User,
+    Package,
+    ClipboardList,
+    CreditCard,
     FileText,
     Loader2
 } from 'lucide-react';
@@ -39,10 +39,10 @@ const initialFormState = {
     // Customer
     customerId: '',
     customerName: '',
-    
+
     // Order Type
     orderType: '',
-    
+
     // Specs
     productId: '',
     quantity: '500',
@@ -55,7 +55,7 @@ const initialFormState = {
     totalAmount: '0',
     deliveryDate: '',
     urgency: 'Normal',
-    
+
     // Payment & Design
     amountReceived: '0',
     paymentMethod: 'Cash',
@@ -123,8 +123,8 @@ const UnifiedOrderWizard: React.FC<UnifiedOrderWizardProps> = ({ onSuccess }) =>
                 design_needed: formData.designNeeded === 'Yes',
                 designer_id: formData.designNeeded === 'Yes' && formData.designerId ? formData.designerId : null,
                 delivery_date: formData.deliveryDate,
-                notes: formData.urgency !== 'Normal' 
-                    ? `[${formData.urgency.toUpperCase()}] ${formData.notes}` 
+                notes: formData.urgency !== 'Normal'
+                    ? `[${formData.urgency.toUpperCase()}] ${formData.notes}`
                     : formData.notes,
                 status: formData.designNeeded === 'Yes' ? 'Awaiting Content' : 'Processing',
                 user_id: user.id
@@ -287,9 +287,9 @@ const UnifiedOrderWizard: React.FC<UnifiedOrderWizardProps> = ({ onSuccess }) =>
             {/* Loading Overlay */}
             {loading && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-xl flex items-center gap-4">
-                        <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
-                        <span className="text-lg font-medium">Creating Order...</span>
+                    <div className="bg-card p-6 rounded-xl shadow-xl flex items-center gap-4">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                        <span className="text-lg font-medium text-foreground">Creating Order...</span>
                     </div>
                 </div>
             )}
@@ -298,9 +298,9 @@ const UnifiedOrderWizard: React.FC<UnifiedOrderWizardProps> = ({ onSuccess }) =>
             <div className="relative">
                 <div className="flex justify-between items-center">
                     {/* Progress Line */}
-                    <div className="absolute top-5 left-0 w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full -z-10">
-                        <div 
-                            className="h-full bg-primary-500 rounded-full transition-all duration-500"
+                    <div className="absolute top-5 left-0 w-full h-1 bg-muted rounded-full -z-10">
+                        <div
+                            className="h-full bg-primary rounded-full transition-all duration-500"
                             style={{ width: `${(currentStep / (visibleSteps.length - 1)) * 100}%` }}
                         />
                     </div>
@@ -311,19 +311,19 @@ const UnifiedOrderWizard: React.FC<UnifiedOrderWizardProps> = ({ onSuccess }) =>
                         const Icon = step.icon;
 
                         return (
-                            <div 
-                                key={step.id} 
-                                className="flex flex-col items-center gap-2 bg-white dark:bg-gray-900 px-2"
+                            <div
+                                key={step.id}
+                                className="flex flex-col items-center gap-2 bg-card px-2"
                             >
                                 <div
                                     className={`
                                         w-10 h-10 rounded-full flex items-center justify-center border-2 
                                         transition-all duration-300 shadow-sm
-                                        ${isCompleted 
-                                            ? 'bg-primary-500 border-primary-500 text-white' 
-                                            : isCurrent 
-                                                ? 'bg-primary-100 dark:bg-primary-900/50 border-primary-500 text-primary-600 dark:text-primary-400' 
-                                                : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400'
+                                        ${isCompleted
+                                            ? 'bg-primary border-primary text-primary-foreground'
+                                            : isCurrent
+                                                ? 'bg-primary/10 border-primary text-primary'
+                                                : 'bg-card border-border text-muted-foreground'
                                         }
                                     `}
                                 >
@@ -331,7 +331,7 @@ const UnifiedOrderWizard: React.FC<UnifiedOrderWizardProps> = ({ onSuccess }) =>
                                 </div>
                                 <span className={`
                                     text-xs font-medium hidden sm:block
-                                    ${isCurrent ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500'}
+                                    ${isCurrent ? 'text-primary' : 'text-muted-foreground'}
                                 `}>
                                     {step.label}
                                 </span>

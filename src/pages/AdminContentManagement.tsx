@@ -417,21 +417,22 @@ const AdminContentManagement: React.FC = () => {
 
       {/* Tabs Navigation */}
       <div className="border-b border-gray-200 dark:border-gray-700">
-        <nav className="-mb-px flex space-x-6 overflow-x-auto">
+        <nav className="-mb-px flex space-x-2 sm:space-x-6 overflow-x-auto scrollbar-hide">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => handleTabSelect(tab.id as TabId)}
-                className={`flex items-center gap-2 px-1 py-3 text-sm font-medium whitespace-nowrap border-b-2
+                className={`flex items-center justify-center sm:justify-start gap-2 px-3 sm:px-1 py-3 text-sm font-medium border-b-2 transition-colors
                   ${activeTab === tab.id
                     ? 'border-primary-600 text-primary-600 dark:text-primary-400'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
+                title={tab.label}
               >
-                <Icon size={16} />
-                {tab.label}
+                <Icon size={18} className="flex-shrink-0" />
+                <span className="hidden sm:inline whitespace-nowrap">{tab.label}</span>
               </button>
             );
           })}

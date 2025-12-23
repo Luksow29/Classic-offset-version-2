@@ -69,14 +69,13 @@ const Sidebar: React.FC<SidebarProps> = ({
       items: [
         { name: 'Overview', path: '/', icon: <BarChart3 size={18} /> },
         { name: 'Insights', path: '/insights', icon: <Lightbulb size={18} /> },
-        { name: 'Business Insights', path: '/business-insights', icon: <Brain size={18} /> },
+        { name: 'Operations Control', path: '/business-insights', icon: <ActivitySquare size={18} /> },
       ],
     },
     {
       name: 'Orders',
       icon: <Package size={20} />,
       items: [
-        { name: 'New Job', path: '/jobs/new', icon: <PlusBase size={18} />, requiredRoles: ['owner', 'manager', 'office'] },
         { name: 'Order Management', path: '/orders', icon: <FileText size={18} /> },
         { name: 'Invoices', path: '/invoices', icon: <FileSignature size={18} /> },
         { name: 'Status Overview', path: '/status-overview', icon: <Clock size={18} /> },
@@ -97,7 +96,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       items: [
         { name: 'Stock', path: '/stock', icon: <Boxes size={18} /> },
         { name: 'Materials', path: '/materials', icon: <Briefcase size={18} /> },
-        { name: 'Smart Inventory', path: '/smart-inventory', icon: <Zap size={18} /> },
+
         { name: 'Products', path: '/products', icon: <Package size={18} /> },
       ],
     },
@@ -106,7 +105,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: <Users size={20} />,
       items: [
         { name: 'Customer Management', path: '/customers', icon: <UserCircle size={18} /> },
-        { name: 'Advanced CRM', path: '/advanced-crm', icon: <Users size={18} /> },
         { name: 'Loyalty Program', path: '/loyalty-program', icon: <Award size={18} /> },
       ],
     },
@@ -200,9 +198,9 @@ const Sidebar: React.FC<SidebarProps> = ({
       transition={{ duration: 0.3 }}
     >
       {/* Header with glassmorphism */}
-      <div className="flex items-center justify-between h-16 px-4 border-b border-white/20 dark:border-white/10 flex-shrink-0 bg-gradient-to-r from-blue-50/50 to-emerald-50/50 dark:from-blue-950/50 dark:to-emerald-950/50 backdrop-blur-sm">
+      <div className="flex items-center justify-between h-16 px-4 border-b border-white/20 dark:border-white/10 flex-shrink-0 bg-gradient-to-r from-background/50 to-muted/50 backdrop-blur-sm">
         <motion.h1
-          className={`text-xl font-display font-black bg-gradient-to-r from-gray-900 via-blue-800 to-emerald-800 dark:from-white dark:via-blue-300 dark:to-emerald-300 bg-clip-text text-transparent tracking-tight transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}
+          className={`text-xl font-display font-black text-foreground tracking-tight transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}
           animate={{ opacity: isCollapsed ? 0 : 1 }}
           transition={{ duration: 0.2 }}
         >
@@ -271,10 +269,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                 whileTap={{ scale: 0.98 }}
               >
                 <motion.span
-                  className="flex items-center justify-center p-2 rounded-lg bg-gradient-to-br from-blue-500/10 to-emerald-500/10 group-hover:from-blue-500/20 group-hover:to-emerald-500/20 transition-all duration-200"
+                  className="flex items-center justify-center p-2 rounded-lg bg-gradient-to-br from-primary/10 to-accent/10 group-hover:from-primary/20 group-hover:to-accent/20 transition-all duration-200"
                   whileHover={{ rotate: 5 }}
                 >
-                  {group.icon}
+                  {React.cloneElement(group.icon, { className: 'text-primary' })}
                 </motion.span>
                 {!isCollapsed && (
                   <>
@@ -298,7 +296,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     animate={isCollapsed ? {} : { height: 'auto', opacity: 1 }}
                     exit={isCollapsed ? {} : { height: 0, opacity: 0 }}
                     transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className={`space-y-1 overflow-hidden ${isCollapsed ? '' : 'pl-4 border-l-2 border-gradient-to-b from-blue-200 to-emerald-200 dark:from-blue-800 dark:to-emerald-800 ml-4'}`}
+                    className={`space-y-1 overflow-hidden ${isCollapsed ? '' : 'pl-4 border-l-2 border-border ml-4'}`}
                   >
                     {filteredItems.map((item, itemIndex) => (
                       <motion.div
@@ -313,15 +311,15 @@ const Sidebar: React.FC<SidebarProps> = ({
                           className={({ isActive }) => twMerge(
                             'flex items-center px-4 py-3 my-1 rounded-xl text-sm font-sans transition-all duration-200 group relative overflow-hidden',
                             isActive
-                              ? 'bg-gradient-to-r from-blue-500/20 to-emerald-500/20 text-blue-700 dark:text-blue-300 font-semibold shadow-lg shadow-blue-500/20 border border-blue-200/50 dark:border-blue-800/50'
-                              : 'text-gray-600 dark:text-gray-400 hover:bg-white/40 dark:hover:bg-gray-800/40 hover:text-gray-900 dark:hover:text-gray-100',
+                              ? 'bg-gradient-to-r from-primary/10 to-accent/10 text-primary font-semibold shadow-lg shadow-primary/10 border border-primary/20'
+                              : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground',
                             isCollapsed && 'justify-center'
                           )}
                           title={isCollapsed ? item.name : undefined}
                         >
                           {/* Active indicator */}
                           <motion.div
-                            className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-emerald-500 rounded-r-full"
+                            className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full"
                             initial={{ scaleY: 0 }}
                             animate={{ scaleY: location.pathname === item.path ? 1 : 0 }}
                             transition={{ duration: 0.2 }}
@@ -358,15 +356,15 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* Enhanced footer with glassmorphism */}
       {!isCollapsed && (
         <motion.div
-          className="p-4 text-xs text-gray-500 dark:text-gray-400 border-t border-white/20 dark:border-white/10 bg-gradient-to-r from-blue-50/30 to-emerald-50/30 dark:from-blue-950/30 dark:to-emerald-950/30 backdrop-blur-sm"
+          className="p-4 text-xs text-muted-foreground border-t border-white/20 dark:border-white/10 bg-gradient-to-r from-muted/30 to-background backdrop-blur-sm"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.2 }}
         >
-          <p className="font-display font-semibold text-gray-700 dark:text-gray-300 mb-1">Classic Offset v2.0.0</p>
+          <p className="font-display font-semibold text-foreground mb-1">Classic Offset v2.0.0</p>
           <p className="font-sans">© 2025 All rights reserved</p>
-          <div className="mt-2 flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+          <div className="mt-2 flex items-center gap-1 text-success">
+            <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
             <span className="font-medium">System Online</span>
           </div>
         </motion.div>
