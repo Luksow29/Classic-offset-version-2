@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
-import { Globe, Loader2, Languages } from 'lucide-react';
+import { Globe, Loader2, Languages, Clock, Calendar, Coins } from 'lucide-react';
 import { useSettings } from '@/context/SettingsContext';
+import toast from 'react-hot-toast';
 
 const LocalizationSettings: React.FC = () => {
   const { settings, updateSettings, loading } = useSettings();
@@ -30,19 +32,15 @@ const LocalizationSettings: React.FC = () => {
   }, [settings]);
 
   const languages = [
-    { code: 'en', name: 'English' },
-    { code: 'ta', name: 'Tamil (தமிழ்)' },
-    { code: 'hi', name: 'Hindi (हिन्दी)' },
-    { code: 'te', name: 'Telugu (తెలుగు)' },
-    { code: 'ml', name: 'Malayalam (മലയാളം)' },
-    { code: 'kn', name: 'Kannada (ಕನ್ನಡ)' }
+    { code: 'en', name: 'English', native: 'English' },
+    { code: 'ta', name: 'Tamil', native: 'தமிழ்' },
   ];
 
   const dateFormats = [
-    { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY (31/12/2025)' },
-    { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY (12/31/2025)' },
-    { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD (2025-12-31)' },
-    { value: 'DD-MMM-YYYY', label: 'DD-MMM-YYYY (31-Dec-2025)' }
+    { value: 'DD/MM/YYYY', label: '31/12/2025' },
+    { value: 'MM/DD/YYYY', label: '12/31/2025' },
+    { value: 'YYYY-MM-DD', label: '2025-12-31' },
+    { value: 'DD-MMM-YYYY', label: '31-Dec-2025' }
   ];
 
   const timeFormats = [
@@ -66,7 +64,6 @@ const LocalizationSettings: React.FC = () => {
 
   const handleSaveSettings = async () => {
     setSaving(true);
-
     try {
       await updateSettings({
         language_preference: localSettings.language,
@@ -75,16 +72,28 @@ const LocalizationSettings: React.FC = () => {
         currency: localSettings.currency,
         timezone: localSettings.timezone,
       });
+      toast.success("Localization settings saved");
     } catch (error) {
       console.error('Error saving localization settings:', error);
+      toast.error("Failed to save settings");
     } finally {
       setSaving(false);
     }
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.3, staggerChildren: 0.05 } }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { opacity: 1, y: 0 }
+  };
+
   if (loading) {
     return (
-      <Card className="p-6">
+      <Card>
         <div className="flex justify-center items-center h-40">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
@@ -93,143 +102,134 @@ const LocalizationSettings: React.FC = () => {
   }
 
   return (
-    <Card className="p-4 sm:p-6">
-      <div className="space-y-8">
-        {/* Language */}
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="max-w-4xl mx-auto space-y-4 md:space-y-6 pb-20 md:pb-0"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between px-1">
         <div>
-          <h3 className="text-lg font-medium mb-4">Language</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {languages.map(lang => (
-              <div
-                key={lang.code}
-                className={`p-4 border rounded-lg cursor-pointer transition-all ${localSettings.language === lang.code ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}
-                onClick={() => setLocalSettings({ ...localSettings, language: lang.code })}
-              >
-                <div className="flex items-center gap-2">
-                  <Languages className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">{lang.name}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+          <h2 className="text-lg md:text-xl font-bold tracking-tight">Localization</h2>
+          <p className="text-xs md:text-sm text-muted-foreground">Language, region, and formats</p>
+        </div>
+        <div className="p-2 bg-primary/10 rounded-full text-primary">
+          <Globe className="w-4 h-4" />
+        </div>
+      </div>
+
+      {/* Language Selection */}
+      <motion.div variants={itemVariants} className="bg-card border border-border rounded-xl p-3 md:p-4 shadow-sm">
+        <div className="flex items-center gap-2 mb-3">
+          <Languages className="w-4 h-4 text-primary" />
+          <h3 className="font-semibold text-sm">Language</h3>
         </div>
 
-        {/* Date & Time Format */}
+        <div className="grid grid-cols-2 gap-3">
+          {languages.map(lang => (
+            <button
+              key={lang.code}
+              onClick={() => setLocalSettings({ ...localSettings, language: lang.code })}
+              className={`
+                        relative flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all
+                        ${localSettings.language === lang.code
+                  ? 'border-primary bg-primary/5 text-primary'
+                  : 'border-border hover:border-primary/50 text-muted-foreground hover:text-foreground'}
+                    `}
+            >
+              <span className="text-sm font-bold">{lang.name}</span>
+              <span className="text-xs opacity-80">{lang.native}</span>
+              {localSettings.language === lang.code && (
+                <motion.div layoutId="lang-check" className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary" />
+              )}
+            </button>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* Regional Formats */}
+      <motion.div variants={itemVariants} className="bg-card border border-border rounded-xl p-3 md:p-4 shadow-sm space-y-4">
         <div>
-          <h3 className="text-lg font-medium mb-4">Date & Time Format</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium mb-2">Date Format</label>
+          <div className="flex items-center gap-2 mb-3">
+            <Calendar className="w-4 h-4 text-orange-500" />
+            <h3 className="font-semibold text-sm">Date & Time</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase font-semibold text-muted-foreground ml-1">Date Format</label>
               <select
                 value={localSettings.dateFormat}
                 onChange={(e) => setLocalSettings({ ...localSettings, dateFormat: e.target.value })}
-                className="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full text-xs h-9 px-3 bg-background border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
               >
-                {dateFormats.map(format => (
-                  <option key={format.value} value={format.value}>{format.label}</option>
+                {dateFormats.map(f => (
+                  <option key={f.value} value={f.value}>{f.label}</option>
                 ))}
               </select>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Time Format</label>
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase font-semibold text-muted-foreground ml-1">Time Format</label>
               <select
                 value={localSettings.timeFormat}
                 onChange={(e) => setLocalSettings({ ...localSettings, timeFormat: e.target.value })}
-                className="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full text-xs h-9 px-3 bg-background border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
               >
-                {timeFormats.map(format => (
-                  <option key={format.value} value={format.value}>{format.label}</option>
+                {timeFormats.map(f => (
+                  <option key={f.value} value={f.value}>{f.label}</option>
                 ))}
               </select>
             </div>
           </div>
         </div>
 
-        {/* Currency & Timezone */}
-        <div>
-          <h3 className="text-lg font-medium mb-4">Currency & Timezone</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium mb-2">Currency</label>
+        <div className="pt-2 border-t border-border/50">
+          <div className="flex items-center gap-2 mb-3">
+            <Coins className="w-4 h-4 text-emerald-500" />
+            <h3 className="font-semibold text-sm">Regional</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase font-semibold text-muted-foreground ml-1">Currency</label>
               <select
                 value={localSettings.currency}
                 onChange={(e) => setLocalSettings({ ...localSettings, currency: e.target.value })}
-                className="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full text-xs h-9 px-3 bg-background border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
               >
-                {currencies.map(curr => (
-                  <option key={curr.code} value={curr.code}>{curr.symbol} - {curr.name}</option>
+                {currencies.map(c => (
+                  <option key={c.code} value={c.code}>{c.symbol} - {c.name}</option>
                 ))}
               </select>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Timezone</label>
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase font-semibold text-muted-foreground ml-1">Timezone</label>
               <select
                 value={localSettings.timezone}
                 onChange={(e) => setLocalSettings({ ...localSettings, timezone: e.target.value })}
-                className="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full text-xs h-9 px-3 bg-background border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
               >
-                {timezones.map(tz => (
-                  <option key={tz.value} value={tz.value}>{tz.label}</option>
+                {timezones.map(t => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
                 ))}
               </select>
             </div>
           </div>
         </div>
+      </motion.div>
 
-        {/* Preview */}
-        <div>
-          <h3 className="text-lg font-medium mb-4">Preview</h3>
-          <div className="p-4 bg-muted/50 rounded-lg">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm font-medium mb-1">Date & Time</p>
-                <p className="text-muted-foreground">
-                  {new Date().toLocaleDateString(
-                    localSettings.language === 'en' ? 'en-US' : localSettings.language === 'ta' ? 'ta-IN' : 'en-IN',
-                    {
-                      year: 'numeric',
-                      month: localSettings.dateFormat.includes('MMM') ? 'short' : 'numeric',
-                      day: 'numeric',
-                      hour: 'numeric',
-                      minute: 'numeric',
-                      hour12: localSettings.timeFormat === '12h'
-                    }
-                  )}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-sm font-medium mb-1">Currency</p>
-                <p className="text-muted-foreground">
-                  {new Intl.NumberFormat(
-                    localSettings.language === 'en' ? 'en-US' : localSettings.language === 'ta' ? 'ta-IN' : 'en-IN',
-                    {
-                      style: 'currency',
-                      currency: localSettings.currency
-                    }
-                  ).format(1234.56)}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex justify-end">
-          <Button onClick={handleSaveSettings} disabled={saving}>
-            {saving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              'Save Localization Settings'
-            )}
-          </Button>
-        </div>
+      <div className="flex justify-end pt-2">
+        <Button onClick={handleSaveSettings} disabled={saving} className="w-full md:w-auto h-9 text-xs shadow-sm">
+          {saving ? (
+            <>
+              <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            'Save Preferences'
+          )}
+        </Button>
       </div>
-    </Card>
+    </motion.div>
   );
 };
 

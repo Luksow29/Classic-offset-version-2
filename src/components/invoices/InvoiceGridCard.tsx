@@ -33,66 +33,66 @@ const InvoiceGridCard: React.FC<InvoiceGridCardProps> = ({ invoice }) => {
             layout
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            whileHover={{ y: -5, boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}
-            className="group relative bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col shadow-sm transition-all duration-300 hover:border-primary/50"
+            whileHover={{ y: -3, boxShadow: '0 15px 20px -5px rgba(0, 0, 0, 0.1), 0 8px 8px -5px rgba(0, 0, 0, 0.04)' }}
+            className="group relative bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col shadow-sm transition-all duration-300 hover:border-primary/50"
         >
-            <div className="p-5 flex-grow space-y-4">
-                {/* Header */}
-                <div className="flex justify-between items-start">
+            <div className="p-3 sm:p-5 flex-grow space-y-2 sm:space-y-4">
+                {/* Header - Compact */}
+                <div className="flex justify-between items-start gap-2">
                     <div>
-                        <Link to={`/invoices/${invoice.order_id}`} className="text-lg font-bold text-gray-900 dark:text-white hover:text-primary transition-colors flex items-center gap-2">
-                            <FileText size={18} className="text-primary" />
+                        <Link to={`/invoices/${invoice.order_id}`} className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white hover:text-primary transition-colors flex items-center gap-1 sm:gap-2">
+                            <FileText size={14} className="sm:w-[18px] sm:h-[18px] text-primary" />
                             #{invoice.order_id}
                         </Link>
                         {invoice.order_date && (
-                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
-                                <Calendar size={12} />
+                            <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 flex items-center gap-1">
+                                <Calendar size={10} className="sm:w-3 sm:h-3" />
                                 {new Date(invoice.order_date).toLocaleDateString()}
                             </div>
                         )}
                     </div>
-                    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${status.color}`}>
-                        <StatusIcon size={12} />
+                    <div className={`flex items-center gap-1 px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold border ${status.color}`}>
+                        <StatusIcon size={10} className="sm:w-3 sm:h-3" />
                         {status.label}
                     </div>
                 </div>
 
-                {/* Customer */}
-                <div className="bg-gray-50 dark:bg-gray-700/30 p-3 rounded-xl flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                {/* Customer - Compact */}
+                <div className="bg-gray-50 dark:bg-gray-700/30 p-2 sm:p-3 rounded-lg sm:rounded-xl flex items-center gap-2 sm:gap-3">
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-[10px] sm:text-xs shadow-sm flex-shrink-0">
                         {invoice.customer_name ? invoice.customer_name.charAt(0).toUpperCase() : 'U'}
                     </div>
-                    <div className="overflow-hidden">
-                        <div className="font-semibold text-sm text-gray-900 dark:text-white truncate">{invoice.customer_name || 'Unknown'}</div>
+                    <div className="overflow-hidden flex-1 min-w-0">
+                        <div className="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white truncate">{invoice.customer_name || 'Unknown'}</div>
                         {invoice.customer_phone && (
-                            <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
-                                <Phone size={10} /> {invoice.customer_phone}
+                            <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5 truncate">
+                                <Phone size={8} className="sm:w-[10px] sm:h-[10px] flex-shrink-0" /> {invoice.customer_phone}
                             </div>
                         )}
                     </div>
                 </div>
 
-                {/* Amount Details */}
-                <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/30">
-                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total</div>
-                        <div className="font-bold text-gray-900 dark:text-white">₹{invoice.total_amount?.toLocaleString()}</div>
+                {/* Amount Details - Compact */}
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                    <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-gray-50 dark:bg-gray-700/30">
+                        <div className="text-[8px] sm:text-xs text-gray-500 dark:text-gray-400 mb-0.5">Total</div>
+                        <div className="font-bold text-xs sm:text-base text-gray-900 dark:text-white">₹{invoice.total_amount?.toLocaleString()}</div>
                     </div>
-                    <div className={`p-3 rounded-xl border ${invoice.balance_due > 0 ? 'bg-red-50/50 border-red-100 dark:bg-red-900/10 dark:border-red-900/30' : 'bg-green-50/50 border-green-100 dark:bg-green-900/10 dark:border-green-900/30'}`}>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{invoice.balance_due > 0 ? 'Balance Due' : 'Status'}</div>
-                        <div className={`font-bold ${invoice.balance_due > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                    <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl border ${invoice.balance_due > 0 ? 'bg-red-50/50 border-red-100 dark:bg-red-900/10 dark:border-red-900/30' : 'bg-green-50/50 border-green-100 dark:bg-green-900/10 dark:border-green-900/30'}`}>
+                        <div className="text-[8px] sm:text-xs text-gray-500 dark:text-gray-400 mb-0.5">{invoice.balance_due > 0 ? 'Balance Due' : 'Status'}</div>
+                        <div className={`font-bold text-xs sm:text-base ${invoice.balance_due > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                             {invoice.balance_due > 0 ? `₹${invoice.balance_due.toLocaleString()}` : 'Paid'}
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Footer */}
-            <div className="p-3 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-800">
+            {/* Footer - Compact */}
+            <div className="p-2 sm:p-3 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-800">
                 <Link to={`/invoices/${invoice.order_id}`} className="block">
-                    <Button variant="ghost" className="w-full justify-between group-hover:bg-white dark:group-hover:bg-gray-700 group-hover:shadow-sm transition-all">
-                        <span className="text-sm font-medium">View Invoice</span>
-                        <Eye size={16} className="text-gray-400 group-hover:text-primary transition-colors" />
+                    <Button variant="ghost" size="sm" className="w-full justify-between text-xs sm:text-sm group-hover:bg-white dark:group-hover:bg-gray-700 group-hover:shadow-sm transition-all py-1.5 sm:py-2">
+                        <span className="font-medium">View</span>
+                        <Eye size={14} className="sm:w-4 sm:h-4 text-gray-400 group-hover:text-primary transition-colors" />
                     </Button>
                 </Link>
             </div>

@@ -167,39 +167,38 @@ const Expenses: React.FC = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="p-6 border-l-4 border-l-primary bg-gradient-to-br from-card to-primary/5">
+        <Card className="p-2 sm:p-4 lg:p-6 border-l-2 sm:border-l-4 border-l-primary bg-gradient-to-br from-card to-primary/5 rounded-xl">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Total Expenses</p>
-              <h3 className="text-3xl font-bold text-foreground mt-2">₹{metrics.total.toLocaleString('en-IN')}</h3>
+              <p className="text-[8px] sm:text-xs lg:text-sm font-medium text-muted-foreground uppercase">Total</p>
+              <h3 className="text-sm sm:text-xl lg:text-3xl font-bold text-foreground mt-0.5 sm:mt-2">₹{(metrics.total / 1000).toFixed(0)}k</h3>
             </div>
-            <div className="p-3 bg-primary/10 rounded-lg text-primary">
-              <DollarSign size={24} />
+            <div className="p-1.5 sm:p-3 bg-primary/10 rounded-lg text-primary">
+              <DollarSign size={14} className="sm:w-6 sm:h-6" />
             </div>
           </div>
         </Card>
 
-        <Card className="p-6 border-l-4 border-l-orange-500 bg-gradient-to-br from-card to-orange-500/5">
+        <Card className="p-2 sm:p-4 lg:p-6 border-l-2 sm:border-l-4 border-l-orange-500 bg-gradient-to-br from-card to-orange-500/5 rounded-xl">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">This Month</p>
-              <h3 className="text-3xl font-bold text-foreground mt-2">₹{metrics.currentMonthExpenses.toLocaleString('en-IN')}</h3>
+              <p className="text-[8px] sm:text-xs lg:text-sm font-medium text-muted-foreground uppercase">Month</p>
+              <h3 className="text-sm sm:text-xl lg:text-3xl font-bold text-foreground mt-0.5 sm:mt-2">₹{(metrics.currentMonthExpenses / 1000).toFixed(0)}k</h3>
             </div>
-            <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg text-orange-600">
-              <TrendingUp size={24} />
+            <div className="p-1.5 sm:p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg text-orange-600">
+              <TrendingUp size={14} className="sm:w-6 sm:h-6" />
             </div>
           </div>
         </Card>
 
-        <Card className="p-6 border-l-4 border-l-purple-500 bg-gradient-to-br from-card to-purple-500/5">
+        <Card className="p-2 sm:p-4 lg:p-6 border-l-2 sm:border-l-4 border-l-purple-500 bg-gradient-to-br from-card to-purple-500/5 rounded-xl">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Top Category</p>
-              <h3 className="text-2xl font-bold text-foreground mt-2 truncate max-w-[150px]" title={metrics.topCategory.name}>{metrics.topCategory.name}</h3>
-              <p className="text-xs text-muted-foreground mt-1">₹{metrics.topCategory.amount.toLocaleString('en-IN')}</p>
+              <p className="text-[8px] sm:text-xs lg:text-sm font-medium text-muted-foreground uppercase">Top</p>
+              <h3 className="text-xs sm:text-lg lg:text-2xl font-bold text-foreground mt-0.5 sm:mt-2 truncate max-w-[60px] sm:max-w-[150px]" title={metrics.topCategory.name}>{metrics.topCategory.name}</h3>
             </div>
-            <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-purple-600">
-              <Tag size={24} />
+            <div className="p-1.5 sm:p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-purple-600">
+              <Tag size={14} className="sm:w-6 sm:h-6" />
             </div>
           </div>
         </Card>

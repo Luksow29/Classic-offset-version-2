@@ -5,8 +5,7 @@ import Input from '../ui/Input';
 import Button from '../ui/Button';
 import TextArea from '../ui/TextArea';
 import { Loader2, PackageMinus, CheckCircle2, AlertCircle } from 'lucide-react';
-import { db } from '@/lib/firebaseClient';
-import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+// Firebase imports removed
 import { useUser } from '@/context/UserContext';
 import { logActivity } from '@/lib/activityLogger';
 import toast from 'react-hot-toast';
@@ -146,25 +145,27 @@ const UseStockForm: React.FC = () => {
         const oneDayAgo = new Date();
         oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
-        const q = query(
-          collection(db, "notifications"),
-          where("type", "==", "low_stock"),
-          where("relatedId", "==", selected.id),
-          where("timestamp", ">", oneDayAgo)
-        );
+        const { data: existingNotifs } = await supabase
+          .from('admin_notifications')
+          .select('id')
+          .eq('type', 'low_stock')
+          .eq('related_id', selected.id)
+          .gt('created_at', oneDayAgo.toISOString());
 
-        const existingNotifs = await getDocs(q);
-
-        if (existingNotifs.empty) {
+        if (!existingNotifs || existingNotifs.length === 0) {
           const notifMessage = `Stock for "${selected.item_name}" is low (${newBalance} ${selected.unit_of_measurement} remaining).`;
-          await addDoc(collection(db, "notifications"), {
+
+          await supabase.from('admin_notifications').insert({
             message: notifMessage,
             type: 'low_stock',
-            relatedId: selected.id,
-            timestamp: serverTimestamp(),
-            read: false,
-            triggeredBy: 'System',
+            title: 'Low Stock Alert',
+            related_id: selected.id,
+            created_at: new Date().toISOString(),
+            is_read: false,
+            triggered_by: 'System',
+            link_to: '/stock'
           });
+
           toast.success('Low stock alert created');
         }
       }
@@ -246,8 +247,8 @@ const UseStockForm: React.FC = () => {
 
           {message && (
             <div className={`p-3 rounded-md flex items-center gap-2 text-sm ${message.type === 'success'
-                ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+              ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+              : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300'
               }`}>
               {message.type === 'success' ? (
                 <CheckCircle2 className="w-4 h-4 shrink-0" />

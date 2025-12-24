@@ -222,20 +222,20 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders, isLoading, onRefresh,
         totalResults={filteredAndSortedOrders.length}
       />
 
-      <div className="flex justify-between items-center mb-4">
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          Showing {filteredAndSortedOrders.length} orders
+      <div className="flex justify-between items-center mb-2 sm:mb-4">
+        <p className="text-[10px] sm:text-sm text-gray-500 dark:text-gray-400">
+          {filteredAndSortedOrders.length} orders
         </p>
-        <div className="flex gap-2">
-          <Button onClick={onRefresh} variant="outline" size="sm">
-            <RefreshCw className="w-4 h-4 mr-2" /> Refresh
+        <div className="flex gap-1 sm:gap-2">
+          <Button onClick={onRefresh} variant="outline" size="sm" className="px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm">
+            <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" /><span className="hidden sm:inline">Refresh</span>
           </Button>
-          <Button onClick={exportToCSV} variant="outline" size="sm">
-            <Download className="w-4 h-4 mr-2" /> Export
+          <Button onClick={exportToCSV} variant="outline" size="sm" className="px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm">
+            <Download className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" /><span className="hidden sm:inline">Export</span>
           </Button>
           {selectedOrders.length > 0 && (
-            <Button onClick={() => setShowBulkModal(true)} variant="primary" size="sm">
-              Bulk Actions ({selectedOrders.length})
+            <Button onClick={() => setShowBulkModal(true)} variant="primary" size="sm" className="px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm">
+              Bulk ({selectedOrders.length})
             </Button>
           )}
         </div>

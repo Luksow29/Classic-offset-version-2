@@ -5,6 +5,7 @@ import Card from '../ui/Card';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 import Modal from '../ui/Modal';
+import SafeImage from '../ui/SafeImage';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Product {
@@ -126,10 +127,11 @@ const ProductLibrary: React.FC = () => {
                                 >
                                     <div className="relative aspect-[4/3] overflow-hidden bg-gray-100 dark:bg-gray-900">
                                         {product.image_url ? (
-                                            <img
+                                            <SafeImage
                                                 src={getImageUrl(product.image_url)!}
                                                 alt={product.name}
                                                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                                width={400}
                                             />
                                         ) : (
                                             <div className="flex items-center justify-center h-full text-gray-300">
@@ -179,10 +181,11 @@ const ProductLibrary: React.FC = () => {
                     <div className="grid md:grid-cols-2 gap-6">
                         <div className="aspect-square bg-gray-100 dark:bg-gray-900 rounded-xl overflow-hidden shadow-inner">
                             {selectedProduct.image_url ? (
-                                <img
+                                <SafeImage
                                     src={getImageUrl(selectedProduct.image_url)!}
                                     alt={selectedProduct.name}
                                     className="w-full h-full object-cover"
+                                    priority={true}
                                 />
                             ) : (
                                 <div className="flex items-center justify-center h-full text-gray-300">

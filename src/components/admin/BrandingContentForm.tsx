@@ -75,7 +75,7 @@ const BrandingContentForm: React.FC<BrandingContentFormProps> = ({ sectionName }
     try {
       const dataToSave = {
         section_name: sectionName,
-        content: content.trim() || null, 
+        content: content.trim() || null,
       };
 
       if (contentId) {
@@ -90,7 +90,7 @@ const BrandingContentForm: React.FC<BrandingContentFormProps> = ({ sectionName }
         if (insertError) throw insertError;
         toast.success('Content added successfully!', { id: 'saveContentToast' });
         const { data: newContentData } = await supabase.from('site_content').select('id').eq('section_name', sectionName).single();
-        if(newContentData) setContentId(newContentData.id);
+        if (newContentData) setContentId(newContentData.id);
       }
     } catch (err: any) {
       console.error('Failed to save content:', err.message);
@@ -123,8 +123,8 @@ const BrandingContentForm: React.FC<BrandingContentFormProps> = ({ sectionName }
 
   const modules = {
     toolbar: [
-      [{ 'header': '1' }, { 'header': '2' }, { 'font': [] }],
-      [{ size: [] }],
+      [{ 'header': '1' }, { 'header': '2' }, { 'font': [] as string[] }],
+      [{ size: [] as string[] }],
       ['bold', 'italic', 'underline', 'strike', 'blockquote'],
       [{ 'list': 'ordered' }, { 'list': 'bullet' }, { 'indent': '-1' }, { 'indent': '+1' }],
       ['link', 'image', 'video'],
@@ -145,10 +145,10 @@ const BrandingContentForm: React.FC<BrandingContentFormProps> = ({ sectionName }
         <label htmlFor="content" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Content (HTML allowed)
         </label>
-        <ReactQuill 
+        <ReactQuill
           theme="snow"
-          value={content} 
-          onChange={setContent} 
+          value={content}
+          onChange={setContent}
           modules={modules}
           formats={formats}
           placeholder="Enter your branding content here. HTML tags are allowed."

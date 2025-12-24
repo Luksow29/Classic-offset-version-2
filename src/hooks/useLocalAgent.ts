@@ -269,7 +269,7 @@ export const useLocalAgent = (options: UseLocalAgentOptions = {}): UseLocalAgent
       }
 
       // Create a contextual prompt
-      const defaultPrompts = {
+      const defaultPrompts: Record<string, string> = {
         'recent-orders': 'Show me a summary of recent orders with key details',
         'due-payments': 'Show me the due payments list with customer details and amounts',
         'daily-briefing': 'Give me today\'s business briefing',

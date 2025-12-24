@@ -3,6 +3,17 @@ import { supabase } from '@/lib/supabaseClient';
 import type { Session, User } from '@supabase/supabase-js';
 import { normalizeStaffRole, type StaffRole } from '@/lib/rbac';
 
+interface DBUser {
+  id: string;
+  name: string;
+  role: string | null;
+  email: string;
+  phone: string | null;
+  address: string | null;
+  company: string | null;
+  bio: string | null;
+}
+
 interface UserProfile {
   id: string; // public.users அட்டவணையில் id உள்ளது
   name: string;
@@ -33,8 +44,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // பயனர் சுயவிவரத்தைப் பெறுவதற்கான ஃபங்ஷனை வரையறுக்கவும்
   const fetchUserProfile = useCallback(async (supabaseUser: User) => {
-    setLoading(true);
+    // Only set loading if we don't have a profile yet (initial load)
+    // This prevents "flashing" or re-rendering loading states during background refreshes (tab switch)
+    if (!userProfile) {
+      setLoading(true);
+    }
     try {
+      // Use a generic query if possible, or cast the result clearly once
       const { data, error } = await supabase
         .from('users') // public.users அட்டவணையிலிருந்து சுயவிவரத்தைப் பெறவும்
         .select('id, name, role, email, phone, address, company, bio') // அனைத்து காலங்களையும் தேர்ந்தெடுக்கவும்
@@ -53,10 +69,14 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return; // பிழை ஏற்பட்டால், மேலும் தொடராமல் திரும்பு
       }
 
-      if (data) {
-        const normalizedRole = normalizeStaffRole((data as any).role);
+      const userData = data as DBUser | null;
+
+      if (userData) {
+        const normalizedRole = normalizeStaffRole(userData.role);
+        // Destructure to separate role from the rest safely
+        const { role, ...rest } = userData;
         setUserProfile({
-          ...(data as Omit<UserProfile, 'role'>),
+          ...rest,
           role: normalizedRole,
         });
       } else {
@@ -69,7 +89,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: supabaseUser.email || '',
         });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Unexpected error in fetchUserProfile:", err);
       // எதிர்பாராத பிழை ஏற்பட்டால்
       setUserProfile({ id: supabaseUser.id, name: 'Error User', role: null, email: supabaseUser.email || '' });
@@ -79,7 +99,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []); // dependencies இல் எதுவும் இல்லை, ஏனெனில் இது supabase மற்றும் state ஐ மட்டுமே பயன்படுத்துகிறது
 
   useEffect(() => {
-    console.log('[TEST] UserProvider useEffect is running...');
+    // console.log('[TEST] UserProvider useEffect is running...');
 
     // ஆரம்ப அமர்வைப் பெறவும் (page refresh இல்)
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -94,19 +114,23 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // அங்கீகார நிலையில் ஏற்படும் மாற்றங்களைக் கண்காணித்தல்
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        console.log(`[TEST] onAuthStateChange triggered. Event: ${_event}`);
+      (event, session) => {
+        // console.log(`[TEST] onAuthStateChange triggered. Event: ${event}`);
+
+        // Update session/user state immediately
         setSession(session);
         setUser(session?.user ?? null);
 
-        // ✅ உண்மையான சுயவிவரம் பெறும் தர்க்கத்தை செயல்படுத்துதல்
-        if (session?.user) {
-          fetchUserProfile(session.user); // பயனர் உள்நுழைந்தால் சுயவிவரத்தைப் பெறவும்
-        } else {
-          setUserProfile(null); // பயனர் வெளியேறினால் சுயவிவரத்தை நீக்கவும்
-          setLoading(false); // loading ஐ நிறுத்து
+        // Only fetch profile on relevant events to avoid unnecessary network calls/reloads on focus
+        // TOKEN_REFRESHED often happens on tab focus but shouldn't require a full profile refetch if we have data
+        if (session?.user && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'USER_UPDATED' || !userProfile)) {
+          fetchUserProfile(session.user);
+        } else if (!session?.user) {
+          // User signed out
+          setUserProfile(null);
+          setLoading(false);
         }
-        // console.log('[TEST] Loading finished.'); // இந்த லாக் இனி தேவைப்படாது, loading ஆனது fetchUserProfile இல் நிர்வகிக்கப்படுகிறது
+        // For TOKEN_REFRESHED with existing profile, we do nothing (keep existing profile), effectively "stable" state.
       }
     );
 
@@ -115,7 +139,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [fetchUserProfile]); // fetchUserProfile ஐ dependency ஆகச் சேர்க்கவும்
 
-  const value = { session, user, userProfile, loading };
+  const value = React.useMemo(() => ({
+    session,
+    user,
+    userProfile,
+    loading
+  }), [session, user, userProfile, loading]);
 
   if (loading && !session) { // ஆரம்ப loading க்காக
     return (

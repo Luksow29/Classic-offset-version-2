@@ -19,14 +19,14 @@ const BusinessInsights: React.FC = () => {
 
   if (isLoading || !data) {
     return (
-      <div className="p-6 space-y-6 max-w-[1600px] mx-auto min-h-screen">
-        <div className="flex justify-between items-center">
-          <div className="h-10 w-64 bg-muted animate-pulse rounded-lg"></div>
-          <div className="h-10 w-32 bg-muted animate-pulse rounded-lg"></div>
+      <div className="p-2 sm:p-6 space-y-4 max-w-[1600px] mx-auto min-h-screen">
+        <div className="flex justify-between items-center gap-2">
+          <div className="h-8 sm:h-10 w-48 sm:w-64 bg-muted animate-pulse rounded-lg"></div>
+          <div className="h-8 sm:h-10 w-20 sm:w-32 bg-muted animate-pulse rounded-lg"></div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-3 gap-2 sm:gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-32 bg-muted animate-pulse rounded-3xl"></div>
+            <div key={i} className="h-20 sm:h-32 bg-muted animate-pulse rounded-xl sm:rounded-3xl"></div>
           ))}
         </div>
       </div>
@@ -59,64 +59,63 @@ const BusinessInsights: React.FC = () => {
   const MetricCard = ({ title, value, subtext, icon: Icon, colorClass, onClick }: any) => (
     <Card
       onClick={onClick}
-      className={`p-6 relative overflow-hidden border-border/60 bg-card/40 backdrop-blur-sm cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/5 group ${onClick ? 'cursor-pointer' : ''}`}
+      className={`p-2 sm:p-4 lg:p-6 relative overflow-hidden border-border/60 bg-card/40 backdrop-blur-sm cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/5 group rounded-xl sm:rounded-2xl ${onClick ? 'cursor-pointer' : ''}`}
     >
-      <div className={`absolute top-0 right-0 p-3 opacity-10 ${colorClass} group-hover:scale-110 transition-transform`}>
-        <Icon size={80} />
+      <div className={`absolute top-0 right-0 p-1 sm:p-3 opacity-10 ${colorClass} group-hover:scale-110 transition-transform`}>
+        <Icon size={40} className="sm:w-20 sm:h-20" />
       </div>
       <div className="relative z-10">
-        <div className={`p-2 w-fit rounded-xl mb-3 ${colorClass.replace('text-', 'bg-').replace('500', '500/10')} text-${colorClass.split('-')[1]}-500`}>
-          <Icon size={20} />
+        <div className={`p-1.5 sm:p-2 w-fit rounded-lg sm:rounded-xl mb-1 sm:mb-3 ${colorClass.replace('text-', 'bg-').replace('500', '500/10')} text-${colorClass.split('-')[1]}-500`}>
+          <Icon size={14} className="sm:w-5 sm:h-5" />
         </div>
-        <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">{title}</p>
-        <h3 className="text-3xl font-bold mt-1 font-display">{value}</h3>
-        <p className="text-xs text-muted-foreground mt-2">{subtext}</p>
+        <p className="text-[8px] sm:text-xs lg:text-sm font-medium text-muted-foreground uppercase tracking-wide truncate">{title}</p>
+        <h3 className="text-lg sm:text-2xl lg:text-3xl font-bold mt-0.5 sm:mt-1 font-display">{value}</h3>
+        <p className="text-[8px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-2 hidden sm:block">{subtext}</p>
       </div>
       {onClick && (
-        <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity text-primary">
-          <MousePointerClick size={16} />
+        <div className="absolute bottom-2 right-2 sm:bottom-4 sm:right-4 opacity-0 group-hover:opacity-100 transition-opacity text-primary">
+          <MousePointerClick size={12} className="sm:w-4 sm:h-4" />
         </div>
       )}
     </Card>
   );
 
   return (
-    <div className="p-6 lg:p-10 space-y-8 max-w-[1600px] mx-auto min-h-screen bg-transparent">
+    <div className="p-2 sm:p-6 lg:p-10 space-y-4 sm:space-y-8 max-w-[1600px] mx-auto min-h-screen bg-transparent">
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-3 bg-primary/10 rounded-2xl text-primary">
-              <Activity size={24} />
-            </div>
-            <h1 className="text-3xl font-display font-bold text-foreground">Operations Control Center</h1>
+      {/* Header - Compact on Mobile */}
+      <div className="flex items-center justify-between gap-2 px-1 sm:px-0">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="p-2 sm:p-3 bg-primary/10 rounded-xl sm:rounded-2xl text-primary">
+            <Activity size={18} className="sm:w-6 sm:h-6" />
           </div>
-          <p className="text-muted-foreground ml-1">
-            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-xs font-medium border border-emerald-500/20">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          <div>
+            <h1 className="text-lg sm:text-2xl lg:text-3xl font-display font-bold text-foreground">Operations Control</h1>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[9px] sm:text-xs font-medium border border-emerald-500/20">
+                <span className="relative flex h-1.5 w-1.5 sm:h-2 sm:w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 sm:h-2 sm:w-2 bg-emerald-500"></span>
+                </span>
+                Live
               </span>
-              Live Updates Active
-            </span>
-            <span className="mx-2 text-border">|</span>
-            Monitor speed, throughput, and identify bottlenecks.
-          </p>
+            </div>
+          </div>
         </div>
         <Button
           onClick={() => refetch()}
           variant="outline"
           disabled={isRefetching}
-          className="gap-2"
+          className="gap-1 sm:gap-2 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm"
+          size="sm"
         >
-          <RefreshCw className={`w-4 h-4 ${isRefetching ? 'animate-spin' : ''}`} />
-          {isRefetching ? 'Updating...' : 'Refresh'}
+          <RefreshCw className={`w-3 h-3 sm:w-4 sm:h-4 ${isRefetching ? 'animate-spin' : ''}`} />
+          <span className="hidden sm:inline">{isRefetching ? 'Updating...' : 'Refresh'}</span>
         </Button>
       </div>
 
-      {/* Hero Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Hero Metrics Grid - 3 columns on all screens */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 lg:gap-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <MetricCard
             title="Avg. Turnaround"
@@ -130,9 +129,9 @@ const BusinessInsights: React.FC = () => {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <MetricCard
-            title="Weekly Throughput"
+            title="Weekly Done"
             value={operations.throughputWeekly}
-            subtext="Orders completed this week"
+            subtext="Completed this week"
             icon={CheckCircle2}
             colorClass="text-emerald-500"
             onClick={() => navigate('/orders?status=Completed')}
@@ -141,9 +140,9 @@ const BusinessInsights: React.FC = () => {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
           <MetricCard
-            title="Active Bottlenecks"
+            title="Bottlenecks"
             value={operations.bottleneckCount}
-            subtext="Orders stuck > 48h"
+            subtext="Stuck > 48h"
             icon={AlertOctagon}
             colorClass={operations.bottleneckCount > 0 ? "text-rose-500" : "text-gray-400"}
             onClick={handleBottleneckClick}
@@ -151,37 +150,37 @@ const BusinessInsights: React.FC = () => {
         </motion.div>
       </div>
 
-      {/* Insights / Action List */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+      {/* Insights / Action List - Stack on mobile */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6 lg:gap-8">
 
         {/* Recent Alerts (Now Interactive) */}
-        <Card className="p-6 border-border/60">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-bold flex items-center gap-2">
-              <Zap className="w-5 h-5 text-amber-500" />
+        <Card className="p-3 sm:p-6 border-border/60 rounded-xl sm:rounded-2xl">
+          <div className="flex items-center justify-between mb-3 sm:mb-6">
+            <h3 className="text-sm sm:text-lg font-bold flex items-center gap-2">
+              <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500" />
               Operational Alerts
             </h3>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-2 sm:space-y-4">
             {insights.filter(i => i.metric !== 'Growth').length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">No critical alerts. Operations running smoothly.</p>
+              <p className="text-muted-foreground text-center py-6 sm:py-8 text-xs sm:text-base">No critical alerts. Operations running smoothly.</p>
             ) : (
               insights.filter(i => i.metric !== 'Growth').map((insight, idx) => (
                 <div
                   key={idx}
                   onClick={() => handleAlertClick(insight)}
-                  className="flex gap-4 p-4 rounded-xl bg-muted/30 border border-border/40 hover:bg-muted/50 transition-colors cursor-pointer group"
+                  className="flex gap-2 sm:gap-4 p-2 sm:p-4 rounded-lg sm:rounded-xl bg-muted/30 border border-border/40 hover:bg-muted/50 transition-colors cursor-pointer group"
                 >
-                  <div className={`mt-1 p-2 rounded-full h-fit transition-transform group-hover:scale-110 ${insight.impact === 'high' ? 'bg-rose-500/10 text-rose-500' : 'bg-blue-500/10 text-blue-500'
+                  <div className={`mt-0.5 p-1.5 sm:p-2 rounded-full h-fit transition-transform group-hover:scale-110 ${insight.impact === 'high' ? 'bg-rose-500/10 text-rose-500' : 'bg-blue-500/10 text-blue-500'
                     }`}>
-                    <AlertOctagon size={18} />
+                    <AlertOctagon size={14} className="sm:w-[18px] sm:h-[18px]" />
                   </div>
-                  <div className="flex-1">
-                    <h4 className="font-semibold flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-xs sm:text-base font-semibold flex items-center gap-1 sm:gap-2 truncate">
                       {insight.title}
-                      {insight.actionable && <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity text-primary" />}
+                      {insight.actionable && <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity text-primary" />}
                     </h4>
-                    <p className="text-sm text-muted-foreground">{insight.description}</p>
+                    <p className="text-[10px] sm:text-sm text-muted-foreground line-clamp-2">{insight.description}</p>
                   </div>
                 </div>
               ))
@@ -190,35 +189,36 @@ const BusinessInsights: React.FC = () => {
         </Card>
 
         {/* Bottleneck Breaker */}
-        <Card className="p-6 border-border/60 bg-gradient-to-br from-card to-muted/20">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-bold flex items-center gap-2">
-              <AlignLeft className="w-5 h-5 text-primary" />
+        <Card className="p-3 sm:p-6 border-border/60 bg-gradient-to-br from-card to-muted/20 rounded-xl sm:rounded-2xl">
+          <div className="flex items-center justify-between mb-3 sm:mb-6">
+            <h3 className="text-sm sm:text-lg font-bold flex items-center gap-2">
+              <AlignLeft className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
               Bottleneck Breaker
             </h3>
           </div>
 
           {operations.bottleneckCount > 0 ? (
-            <div className="bg-rose-500/5 border border-rose-500/20 rounded-xl p-6 text-center">
-              <AlertOctagon className="w-12 h-12 text-rose-500 mx-auto mb-3" />
-              <h4 className="text-xl font-bold text-rose-700 dark:text-rose-400">Action Required</h4>
-              <p className="text-rose-600/80 dark:text-rose-300/80 mb-4">
-                You have {operations.bottleneckCount} orders that are delayed.
+            <div className="bg-rose-500/5 border border-rose-500/20 rounded-lg sm:rounded-xl p-3 sm:p-6 text-center">
+              <AlertOctagon className="w-8 h-8 sm:w-12 sm:h-12 text-rose-500 mx-auto mb-2 sm:mb-3" />
+              <h4 className="text-sm sm:text-xl font-bold text-rose-700 dark:text-rose-400">Action Required</h4>
+              <p className="text-rose-600/80 dark:text-rose-300/80 mb-3 sm:mb-4 text-xs sm:text-base">
+                {operations.bottleneckCount} orders delayed.
               </p>
               <Button
                 onClick={handleBottleneckClick}
-                className="w-full sm:w-auto bg-rose-500 hover:bg-rose-600 text-white border-0"
+                className="w-full bg-rose-500 hover:bg-rose-600 text-white border-0 text-xs sm:text-sm"
+                size="sm"
               >
-                View Stuck Orders <ArrowRight className="w-4 h-4 ml-2" />
+                View Stuck Orders <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-2" />
               </Button>
             </div>
           ) : (
-            <div className="text-center py-10">
-              <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle2 size={32} />
+            <div className="text-center py-6 sm:py-10">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-4">
+                <CheckCircle2 size={24} className="sm:w-8 sm:h-8" />
               </div>
-              <h4 className="font-bold">All Clear!</h4>
-              <p className="text-muted-foreground">No orders are currently stuck. Great job!</p>
+              <h4 className="font-bold text-sm sm:text-base">All Clear!</h4>
+              <p className="text-muted-foreground text-xs sm:text-base">No orders stuck.</p>
             </div>
           )}
         </Card>

@@ -30,13 +30,27 @@ const reportOptions = [
   { value: 'invoice_report', label: 'Invoice Report' },
 ];
 
+interface ReportFilters {
+  startDate: string;
+  endDate: string;
+  orderStatus: string;
+  searchTerm: string;
+  sinceDate: string;
+  customerName: string;
+  orderId: string;
+  customerPhone: string;
+  customerTag: string;
+  paymentMethod: string;
+  paymentStatus: string;
+}
+
 const ReportsPage: React.FC<ReportsPageDrilldownProps> = ({ drilldownType, drilldownFilters, isDrilldown }) => {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const initialType = (drilldownType as ReportType) || (params.get('type') as ReportType) || 'profit_loss';
 
   const [reportType, setReportType] = useState<ReportType>(initialType);
-  const [filters, setFilters] = useState<any>({
+  const [filters, setFilters] = useState<ReportFilters>({
     startDate: '',
     endDate: '',
     orderStatus: '',
@@ -99,14 +113,22 @@ const ReportsPage: React.FC<ReportsPageDrilldownProps> = ({ drilldownType, drill
   };
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFilters(prev => ({ ...prev, [e.target.id]: e.target.value }));
+    setFilters((prev: ReportFilters) => ({ ...prev, [e.target.id]: e.target.value }));
   };
 
   const clearFilters = () => {
     setFilters({
-      startDate: '', endDate: '', orderStatus: '', searchTerm: '',
-      sinceDate: '', customerName: '', orderId: '',
-      customerPhone: '', customerTag: '', paymentMethod: '', paymentStatus: ''
+      startDate: '',
+      endDate: '',
+      orderStatus: '',
+      searchTerm: '',
+      sinceDate: '',
+      customerName: '',
+      orderId: '',
+      customerPhone: '',
+      customerTag: '',
+      paymentMethod: '',
+      paymentStatus: ''
     });
     setCurrentPage(1);
     setReportData(null);
@@ -128,7 +150,7 @@ const ReportsPage: React.FC<ReportsPageDrilldownProps> = ({ drilldownType, drill
         }));
         // Map raw data to simpler objects for generic table if needed, or keep standard
         headers = ['Order ID', 'Date', 'Customer', 'Total', 'Due', 'Status'];
-        queryData = (queryData || []).map(inv => ({
+        queryData = (queryData || []).map((inv: any) => ({
           id: inv.order_id,
           date: new Date(inv.order_date).toLocaleDateString(),
           customer: inv.customer_name,
@@ -147,7 +169,7 @@ const ReportsPage: React.FC<ReportsPageDrilldownProps> = ({ drilldownType, drill
         if (customerError) throw customerError;
 
         headers = ['Name', 'Phone', 'Email', 'Address', 'Joined Date'];
-        queryData = (data || []).map(c => ({
+        queryData = (data || []).map((c: any) => ({
           name: c.name,
           phone: c.phone,
           email: c.email || '-',
@@ -167,7 +189,7 @@ const ReportsPage: React.FC<ReportsPageDrilldownProps> = ({ drilldownType, drill
         if (payError) throw payError;
 
         headers = ['Date', 'Customer', 'Method', 'Status', 'Amount'];
-        queryData = (data || []).map(p => ({
+        queryData = (data || []).map((p: any) => ({
           date: new Date(p.payment_date).toLocaleDateString(),
           customer: (p.customers as any)?.name || 'Unknown',
           method: p.payment_method,
@@ -206,7 +228,7 @@ const ReportsPage: React.FC<ReportsPageDrilldownProps> = ({ drilldownType, drill
         if (dueError) throw dueError;
 
         headers = ['Order ID', 'Customer', 'Due Amount', 'Due Date'];
-        queryData = (data || []).map(item => ({
+        queryData = (data || []).map((item: any) => ({
           orderId: item.order_id || item.id,
           customer: item.customer_name || item.name || 'Unknown',
           amount: `₹${(item.balance_due || item.due_amount || 0).toLocaleString('en-IN')}`,
@@ -295,20 +317,23 @@ const ReportsPage: React.FC<ReportsPageDrilldownProps> = ({ drilldownType, drill
   }
 
   return (
-    <div className="p-6 space-y-6 pb-20">
-      {/* Premium Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 to-cyan-600 p-8 text-white shadow-2xl">
+    <div className="p-2 sm:p-4 lg:p-6 space-y-3 sm:space-y-6 pb-20">
+      {/* Premium Header - Compact on Mobile */}
+      <div className="relative overflow-hidden rounded-xl sm:rounded-3xl bg-gradient-to-r from-blue-600 to-cyan-600 p-4 sm:p-8 text-white shadow-xl sm:shadow-2xl">
         <div className="absolute top-0 right-0 p-4 opacity-10">
-          <BarChart className="w-64 h-64" />
+          <BarChart className="w-32 h-32 sm:w-64 sm:h-64" />
         </div>
-        <div className="relative z-10">
-          <h1 className="text-3xl font-bold tracking-tight text-white mb-2 flex items-center gap-3">
-            <Sparkles className="w-6 h-6 text-yellow-300 animate-pulse" />
-            Reports Center
-          </h1>
-          <p className="text-blue-100 font-medium max-w-xl">
-            Gain insights into your business performance, track financials, and analyze customer trends.
-          </p>
+        <div className="relative z-10 flex items-center gap-2 sm:block">
+          <Sparkles className="w-4 h-4 sm:w-6 sm:h-6 text-yellow-300 animate-pulse sm:hidden" />
+          <div>
+            <h1 className="text-lg sm:text-3xl font-bold tracking-tight text-white sm:mb-2 flex items-center gap-2 sm:gap-3">
+              <Sparkles className="hidden sm:block w-6 h-6 text-yellow-300 animate-pulse" />
+              Reports
+            </h1>
+            <p className="text-blue-100 font-medium text-[10px] sm:text-base hidden sm:block max-w-xl">
+              Gain insights into your business performance.
+            </p>
+          </div>
         </div>
       </div>
 

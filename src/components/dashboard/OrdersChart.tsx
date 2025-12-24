@@ -22,11 +22,11 @@ const OrdersChart: React.FC<OrdersChartProps> = ({ data = [] }) => {
 
   const chartStats = useMemo(() => {
     if (!data.length) return { total: 0, average: 0, peak: 0 };
-    
+
     const total = data.reduce((sum, item) => sum + item.order_count, 0);
     const average = total / data.length;
     const peak = Math.max(...data.map(item => item.order_count));
-    
+
     return { total, average, peak };
   }, [data]);
 
@@ -35,7 +35,7 @@ const OrdersChart: React.FC<OrdersChartProps> = ({ data = [] }) => {
       ['Day', 'Orders'],
       ...data.map(item => [item.day, item.order_count])
     ].map(row => row.join(',')).join('\n');
-    
+
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -64,7 +64,7 @@ const OrdersChart: React.FC<OrdersChartProps> = ({ data = [] }) => {
     if (active && payload && payload.length) {
       const data = payload[0];
       return (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border border-white/20 dark:border-gray-700/50 rounded-xl p-4 shadow-xl"
@@ -83,39 +83,37 @@ const OrdersChart: React.FC<OrdersChartProps> = ({ data = [] }) => {
   };
 
   return (
-    <div className="space-y-3 sm:space-y-4">
-      {/* Chart Stats - Mobile Responsive */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-          <div className="text-xs sm:text-sm">
+    <div className="space-y-2 sm:space-y-4">
+      {/* Chart Stats - Ultra Compact on Mobile */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-3 text-[10px] sm:text-sm">
+          <span>
             <span className="text-gray-500 dark:text-gray-400 font-sans">Total: </span>
             <span className="font-display font-semibold text-gray-900 dark:text-white">{chartStats.total}</span>
-          </div>
-          <div className="text-xs sm:text-sm">
+          </span>
+          <span>
             <span className="text-gray-500 dark:text-gray-400 font-sans">Avg: </span>
             <span className="font-display font-semibold text-gray-900 dark:text-white">{chartStats.average.toFixed(1)}</span>
-          </div>
+          </span>
         </div>
-        
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={exportData}
-            className="flex items-center gap-1 text-xs sm:text-sm"
-          >
-            <Download className="w-3 h-3" />
-            <span className="hidden sm:inline">Export</span>
-          </Button>
-        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={exportData}
+          className="flex items-center gap-1 text-[10px] sm:text-sm px-2 py-1 sm:px-3 sm:py-2"
+        >
+          <Download className="w-3 h-3" />
+          <span className="hidden sm:inline">Export</span>
+        </Button>
       </div>
 
       {/* Chart Container with mobile-optimized height */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="h-48 sm:h-64 md:h-80"
+        className="h-40 sm:h-56 md:h-72"
       >
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
@@ -130,31 +128,31 @@ const OrdersChart: React.FC<OrdersChartProps> = ({ data = [] }) => {
           >
             <defs>
               <linearGradient id="orderGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
-                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
+                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
               </linearGradient>
             </defs>
-            
-            <CartesianGrid 
-              strokeDasharray="3 3" 
+
+            <CartesianGrid
+              strokeDasharray="3 3"
               strokeOpacity={0.1}
               className="opacity-30"
             />
-            <XAxis 
-              dataKey="day" 
-              tick={{ fontSize: 12, fontFamily: 'Inter' }} 
-              axisLine={false} 
+            <XAxis
+              dataKey="day"
+              tick={{ fontSize: 12, fontFamily: 'Inter' }}
+              axisLine={false}
               tickLine={false}
               className="text-gray-600 dark:text-gray-400"
             />
-            <YAxis 
-              tick={{ fontSize: 12, fontFamily: 'Inter' }} 
-              axisLine={false} 
+            <YAxis
+              tick={{ fontSize: 12, fontFamily: 'Inter' }}
+              axisLine={false}
               tickLine={false}
               className="text-gray-600 dark:text-gray-400"
             />
             <Tooltip content={<CustomTooltip />} />
-            <Bar 
+            <Bar
               dataKey="order_count"
               fill="url(#orderGradient)"
               radius={[4, 4, 0, 0]}
@@ -162,8 +160,8 @@ const OrdersChart: React.FC<OrdersChartProps> = ({ data = [] }) => {
               onClick={(data, index) => setSelectedBar(index)}
             >
               {data.map((entry, index) => (
-                <Cell 
-                  key={`cell-${index}`} 
+                <Cell
+                  key={`cell-${index}`}
                   fill={getBarColor(index)}
                   className="transition-all duration-200 cursor-pointer"
                 />
@@ -172,7 +170,7 @@ const OrdersChart: React.FC<OrdersChartProps> = ({ data = [] }) => {
           </BarChart>
         </ResponsiveContainer>
       </motion.div>
-      
+
       {/* Selected Bar Details */}
       {selectedBar !== null && (
         <motion.div

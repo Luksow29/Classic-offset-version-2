@@ -146,48 +146,48 @@ const StatusOverview: React.FC = () => {
   }, [orders, statusFilter, searchTerm]);
 
   return (
-    <div className="p-4 sm:p-8 space-y-8 max-w-7xl mx-auto">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div>
-          <h1 className="text-3xl font-display font-bold text-gray-900 dark:text-white tracking-tight flex items-center gap-3">
-            <motion.div
-              className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/25 cursor-pointer"
-              whileHover={{ scale: 1.05, rotate: 5 }}
-              whileTap={{ scale: 0.95 }}
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ type: "spring", stiffness: 400, damping: 17 }}
-            >
-              <Clock size={24} strokeWidth={2.5} className="animate-pulse-slow" />
-            </motion.div>
-            Status Overview
-          </h1>
-          <p className="mt-2 text-base text-gray-500 dark:text-gray-400 font-medium">Realtime timeline of active print jobs.</p>
+    <div className="p-2 sm:p-4 lg:p-8 space-y-3 sm:space-y-6 lg:space-y-8 max-w-7xl mx-auto">
+      {/* Header Section - Compact on Mobile */}
+      <div className="flex items-center justify-between gap-2 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <motion.div
+            className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-primary flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/25 cursor-pointer"
+            whileHover={{ scale: 1.05, rotate: 5 }}
+            whileTap={{ scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+          >
+            <Clock size={16} className="sm:w-6 sm:h-6" strokeWidth={2.5} />
+          </motion.div>
+          <div>
+            <h1 className="text-lg sm:text-2xl lg:text-3xl font-display font-bold text-gray-900 dark:text-white tracking-tight">
+              Status Overview
+            </h1>
+            <p className="text-[10px] sm:text-sm text-gray-500 dark:text-gray-400 hidden sm:block">Realtime timeline of active print jobs.</p>
+          </div>
         </div>
 
-        <div className="w-full md:w-auto flex flex-col sm:flex-row gap-3">
-          <div className="relative group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors" size={18} />
-            <input
-              type="search"
-              placeholder="Search Order# or Customer..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full sm:w-64 pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
-            />
-          </div>
+        <div className="relative group">
+          <Search className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors w-3.5 h-3.5 sm:w-[18px] sm:h-[18px]" />
+          <input
+            type="search"
+            placeholder="Search..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-28 sm:w-64 pl-7 sm:pl-10 pr-2 sm:pr-4 py-1.5 sm:py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg sm:rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
+          />
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex flex-wrap items-center gap-2 p-1 bg-gray-100/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 w-fit">
+      {/* Filter Tabs - Compact on Mobile */}
+      <div className="flex flex-wrap items-center gap-1 sm:gap-2 p-0.5 sm:p-1 bg-gray-100/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-lg sm:rounded-xl border border-gray-200/50 dark:border-gray-700/50 w-fit">
         {statuses.map(status => (
           <button
             key={status}
             onClick={() => setStatusFilter(status)}
             className={`
-                    relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
+                    relative px-2 py-1 sm:px-4 sm:py-2 rounded-md sm:rounded-lg text-[10px] sm:text-sm font-medium transition-all duration-200
                     ${statusFilter === status
                 ? 'text-primary-700 dark:text-primary-300'
                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50'}
@@ -196,7 +196,7 @@ const StatusOverview: React.FC = () => {
             {statusFilter === status && (
               <motion.div
                 layoutId="activeTab"
-                className="absolute inset-0 bg-white dark:bg-gray-700 rounded-lg shadow-sm border border-gray-200/50 dark:border-gray-600"
+                className="absolute inset-0 bg-white dark:bg-gray-700 rounded-md sm:rounded-lg shadow-sm border border-gray-200/50 dark:border-gray-600"
                 transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
               />
             )}

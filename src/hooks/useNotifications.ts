@@ -64,8 +64,9 @@ export function useNotifications() {
     fetchNotifications();
 
     // Subscribe to realtime changes
+    const channelName = `notifications-${user.id}`;
     channel = supabase
-      .channel('public:notifications')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -75,24 +76,30 @@ export function useNotifications() {
           filter: `user_id=eq.${user.id}`,
         },
         (payload: any) => {
-          console.log('Notification event received:', payload);
+          console.log('[useNotifications] Realtime event:', payload);
           if (payload.eventType === 'INSERT') {
             const newNotification = payload.new as Notification;
             setNotifications((prev) => [newNotification, ...prev]);
             setUnreadCount((prev) => prev + 1);
+            // Show toast for new notification? Optional
           } else if (payload.eventType === 'UPDATE') {
             const updatedNotification = payload.new as Notification;
             setNotifications((prev) =>
               prev.map((n) => (n.id === updatedNotification.id ? updatedNotification : n))
             );
-            // Re-fetch count to be accurate
-             fetchNotifications(); 
+            // Re-fetch count to be accurate if read status changed
+            if (updatedNotification.is_read) {
+                 setUnreadCount(prev => Math.max(0, prev - 1));
+            }
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`[useNotifications] Subscription status for ${channelName}:`, status);
+      });
 
     return () => {
+      console.log(`[useNotifications] Unsubscribing from ${channelName}`);
       supabase.removeChannel(channel);
     };
   }, [user]);

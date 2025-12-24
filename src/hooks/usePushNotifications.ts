@@ -319,6 +319,15 @@ export const usePushNotifications = (userId?: string) => {
   useEffect(() => {
     if (userId && state.isSupported) {
       checkSubscription();
+      
+      // Attempt to update the service worker to ensure latest logic
+      if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistration().then(reg => {
+              if (reg) {
+                  reg.update().catch(err => console.log('SW update check failed:', err));
+              }
+          });
+      }
     }
   }, [userId, state.isSupported, checkSubscription]);
 

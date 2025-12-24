@@ -1,23 +1,23 @@
 // src/components/dashboard/ActivityLogFeed.tsx
 import React, { useState, useEffect } from 'react';
-import { db } from '@/lib/firebaseClient';
-import { collection, query, orderBy, onSnapshot, limit } from 'firebase/firestore';
+import { supabase } from '@/lib/supabaseClient';
 import timeAgo from '@/lib/timeAgo';
 import Card from '@/components/ui/Card';
 import { motion } from 'framer-motion';
 
 // Correctly import individual icons from lucide-react
-import List from 'lucide-react/dist/esm/icons/list';
-import Activity from 'lucide-react/dist/esm/icons/activity';
-import User from 'lucide-react/dist/esm/icons/user';
-import Clock from 'lucide-react/dist/esm/icons/clock';
+// Correctly import individual icons from lucide-react
+import { List, Activity, User, Clock } from 'lucide-react';
 
 
 interface ActivityLog {
   id: string;
-  message: string;
-  user: string;
-  timestamp: any;
+  action_type: string;
+  details: {
+    message?: string;
+    user_name?: string;
+  };
+  created_at: string;
 }
 
 const containerVariants = {
@@ -48,18 +48,33 @@ const ActivityLogFeed: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const q = query(collection(db, "activity_logs"), orderBy("timestamp", "desc"), limit(15));
-    
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const activitiesData: ActivityLog[] = [];
-      querySnapshot.forEach((doc) => {
-        activitiesData.push({ id: doc.id, ...doc.data() } as ActivityLog);
-      });
-      setActivities(activitiesData);
-      setLoading(false);
-    });
+    const fetchActivities = async () => {
+      const { data } = await supabase
+        .from('activity_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(15);
 
-    return () => unsubscribe();
+      if (data) setActivities(data as ActivityLog[]);
+      setLoading(false);
+    };
+
+    fetchActivities();
+
+    const channel = supabase
+      .channel('activity_logs_feed')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'activity_logs' },
+        (payload) => {
+          setActivities((prev) => [payload.new as ActivityLog, ...prev.slice(0, 14)]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   if (loading) {
@@ -72,35 +87,35 @@ const ActivityLogFeed: React.FC = () => {
 
   return (
     <Card>
-        <div className="p-4 border-b dark:border-gray-700 flex items-center gap-2">
-            <List size={18} />
-            <h3 className="font-display font-semibold tracking-tight">Live Team Activity</h3>
-        </div>
-        <div className="max-h-96 overflow-y-auto p-2">
+      <div className="p-2 sm:p-4 border-b dark:border-gray-700 flex items-center gap-2">
+        <List size={16} />
+        <h3 className="font-display font-semibold text-sm sm:text-base tracking-tight">Live Team Activity</h3>
+      </div>
+      <div className="max-h-64 sm:max-h-96 overflow-y-auto p-1 sm:p-2">
         {activities.length === 0 ? (
-          <p className="p-4 text-center text-gray-500 font-sans font-medium">No recent activities.</p>
+          <p className="p-4 text-center text-gray-500 font-sans font-medium text-sm">No recent activities.</p>
         ) : (
-          <motion.ul 
-            className="space-y-3"
+          <motion.ul
+            className="space-y-1.5 sm:space-y-3"
             variants={containerVariants}
             initial="hidden"
             animate="visible"
           >
             {activities.map(activity => (
-              <motion.li 
-                key={activity.id} 
-                className="flex items-start gap-3 p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700/50"
+              <motion.li
+                key={activity.id}
+                className="flex items-start gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700/50"
                 variants={itemVariants}
               >
-                <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded-full">
-                    <Activity size={16} className="text-gray-500"/>
+                <div className="bg-gray-100 dark:bg-gray-700 p-1.5 sm:p-2 rounded-full">
+                  <Activity size={12} className="text-gray-500 sm:w-4 sm:h-4" />
                 </div>
-                <div className="flex-1">
-                    <p className="text-sm font-sans text-gray-800 dark:text-gray-200 leading-relaxed">{activity.message}</p>
-                    <div className="flex items-center gap-4 text-xs font-sans font-medium text-gray-500 dark:text-gray-400 mt-1 tracking-wide">
-                        <div className="flex items-center gap-1.5"><User size={12}/> {activity.user}</div>
-                        <div className="flex items-center gap-1.5"><Clock size={12}/> {activity.timestamp ? timeAgo(activity.timestamp.toDate()) : 'just now'}</div>
-                    </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs sm:text-sm font-sans text-gray-800 dark:text-gray-200 leading-snug truncate">{activity.details?.message || 'Activity performed'}</p>
+                  <div className="flex items-center gap-2 sm:gap-4 text-[10px] sm:text-xs font-sans font-medium text-gray-500 dark:text-gray-400 mt-0.5 tracking-wide">
+                    <div className="flex items-center gap-1"><User size={10} /> {activity.details?.user_name || 'System'}</div>
+                    <div className="flex items-center gap-1"><Clock size={10} /> {activity.created_at ? timeAgo(activity.created_at) : 'just now'}</div>
+                  </div>
                 </div>
               </motion.li>
             ))}

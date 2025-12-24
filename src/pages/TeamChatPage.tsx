@@ -1,20 +1,17 @@
 // src/pages/TeamChatPage.tsx
 import React, { useState, useEffect, useRef, FormEvent } from 'react';
-import { db } from '@/lib/firebaseClient';
-import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, where, doc, updateDoc } from 'firebase/firestore';
+import { supabase } from '@/lib/supabaseClient';
 import { useUser } from '@/context/UserContext';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import calendar from 'dayjs/plugin/calendar';
 import AddChatRoomModal from '@/components/chat/AddChatRoomModal';
-import Input from '@/components/ui/Input'; // Import Input component
-import Button from '@/components/ui/Button'; // Import Button component
+import Input from '@/components/ui/Input';
+import Button from '@/components/ui/Button';
 
 // Correctly import individual icons from lucide-react
-import Send from 'lucide-react/dist/esm/icons/send';
-import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
-import PlusCircle from 'lucide-react/dist/esm/icons/plus-circle';
-import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
+// Correctly import individual icons from lucide-react
+import { Send, MessageSquare, PlusCircle, ArrowLeft } from 'lucide-react';
 
 dayjs.extend(relativeTime);
 dayjs.extend(calendar);
@@ -23,26 +20,25 @@ dayjs.extend(calendar);
 interface ChatRoom {
   id: string;
   topic: string;
-  createdBy: { id: string; name: string; role: string; };
-  createdAt: any;
-  lastMessage: string;
-  lastMessageAt: any;
+  created_by: { id: string; name: string; role: string; };
+  created_at: string;
+  last_message: string;
+  last_message_at: string;
 }
 
 interface ChatMessage {
   id: string;
-  roomId: string;
+  room_id: string;
   text: string;
-  createdAt: any;
-  userId: string;
-  userName: string;
-  userRole: string;
+  created_at: string;
+  user_id: string;
+  user_name: string;
+  user_role: string;
 }
 
 interface GroupedMessages {
   [date: string]: ChatMessage[];
 }
-
 
 // --- COMPONENT ---
 const TeamChatPage: React.FC = () => {
@@ -51,7 +47,7 @@ const TeamChatPage: React.FC = () => {
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [groupedMessages, setGroupedMessages] = useState<GroupedMessages>({});
   const [newMessage, setNewMessage] = useState('');
-  
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loadingRooms, setLoadingRooms] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
@@ -64,16 +60,45 @@ const TeamChatPage: React.FC = () => {
   // --- DATA FETCHING ---
   // Fetch chat rooms
   useEffect(() => {
-    const q = query(collection(db, 'chat_rooms'), orderBy('lastMessageAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const roomList: ChatRoom[] = [];
-      querySnapshot.forEach((doc) => {
-        roomList.push({ id: doc.id, ...doc.data() } as ChatRoom);
-      });
-      setRooms(roomList);
+    // Initial fetch
+    const fetchRooms = async () => {
+      const { data } = await supabase
+        .from('chat_rooms')
+        .select('*')
+        .order('last_message_at', { ascending: false });
+
+      if (data) setRooms(data as ChatRoom[]);
       setLoadingRooms(false);
-    });
-    return () => unsubscribe();
+    };
+
+    fetchRooms();
+
+    // Subscribe to changes
+    const roomChannel = supabase
+      .channel('chat_rooms_channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'chat_rooms' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setRooms((prev) => [payload.new as ChatRoom, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setRooms((prev) => {
+              const updated = payload.new as ChatRoom;
+              const filtered = prev.filter(r => r.id !== updated.id);
+              // Re-sort to put updated room at top
+              return [updated, ...filtered].sort((a, b) =>
+                new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()
+              );
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(roomChannel);
+    };
   }, []);
 
   // Fetch messages for the selected room
@@ -83,26 +108,58 @@ const TeamChatPage: React.FC = () => {
       return;
     }
     setLoadingMessages(true);
-    const q = query(
-      collection(db, 'team_chat_messages'),
-      where('roomId', '==', selectedRoomId),
-      orderBy('createdAt')
-    );
-    
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const msgs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatMessage));
-      const grouped = msgs.reduce((acc: GroupedMessages, msg) => {
-        const msgDate = dayjs(msg.createdAt?.toDate()).format('YYYY-MM-DD');
-        if (!acc[msgDate]) acc[msgDate] = [];
-        acc[msgDate].push(msg);
-        return acc;
-      }, {});
-      setGroupedMessages(grouped);
+
+    const fetchMessages = async () => {
+      const { data } = await supabase
+        .from('team_chat_messages')
+        .select('*')
+        .eq('room_id', selectedRoomId)
+        .order('created_at', { ascending: true });
+
+      if (data) processMessages(data as ChatMessage[]);
       setLoadingMessages(false);
-    });
-    return () => unsubscribe();
+    };
+
+    fetchMessages();
+
+    // Subscribe to new messages
+    const messageChannel = supabase
+      .channel(`room_${selectedRoomId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'team_chat_messages',
+          filter: `room_id=eq.${selectedRoomId}`
+        },
+        (payload) => {
+          const newMsg = payload.new as ChatMessage;
+          setGroupedMessages((prev) => {
+            const msgDate = dayjs(newMsg.created_at).format('YYYY-MM-DD');
+            return {
+              ...prev,
+              [msgDate]: [...(prev[msgDate] || []), newMsg],
+            };
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(messageChannel);
+    };
   }, [selectedRoomId]);
 
+  const processMessages = (msgs: ChatMessage[]) => {
+    const grouped = msgs.reduce((acc: GroupedMessages, msg) => {
+      const msgDate = dayjs(msg.created_at).format('YYYY-MM-DD');
+      if (!acc[msgDate]) acc[msgDate] = [];
+      acc[msgDate].push(msg);
+      return acc;
+    }, {});
+    setGroupedMessages(grouped);
+  };
 
   // --- HANDLERS ---
   const handleSendMessage = async (e: FormEvent) => {
@@ -110,26 +167,34 @@ const TeamChatPage: React.FC = () => {
     if (newMessage.trim() === '' || !selectedRoomId || !userProfile || !user) return;
 
     try {
+      const msgText = newMessage.trim();
+      setNewMessage(''); // Optimistic clear
+
       // 1. Add new message
-      await addDoc(collection(db, 'team_chat_messages'), {
-        roomId: selectedRoomId,
-        text: newMessage.trim(),
-        createdAt: serverTimestamp(),
-        userId: user.id,
-        userName: userProfile.name,
-        userRole: userProfile.role || 'Member',
+      const { error: msgError } = await supabase.from('team_chat_messages').insert({
+        room_id: selectedRoomId,
+        text: msgText,
+        user_id: user.id,
+        user_name: userProfile.name,
+        user_role: userProfile.role || 'Member',
       });
 
+      if (msgError) throw msgError;
+
       // 2. Update the room's last message
-      const roomRef = doc(db, 'chat_rooms', selectedRoomId);
-      await updateDoc(roomRef, {
-        lastMessage: newMessage.trim(),
-        lastMessageAt: serverTimestamp(),
-      });
-      
-      setNewMessage('');
+      const { error: roomError } = await supabase
+        .from('chat_rooms')
+        .update({
+          last_message: msgText,
+          last_message_at: new Date().toISOString(),
+        })
+        .eq('id', selectedRoomId);
+
+      if (roomError) console.error('Error updating room:', roomError);
+
     } catch (error) {
       console.error('Error sending message: ', error);
+      // Ideally show toast error here
     }
   };
 
@@ -141,6 +206,7 @@ const TeamChatPage: React.FC = () => {
   });
 
   // --- RENDER ---
+  // Note: Updated field names (topic, last_message, etc.) to match snake_case Supabase schema
   return (
     <>
       <AddChatRoomModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
@@ -164,8 +230,8 @@ const TeamChatPage: React.FC = () => {
                 className={`p-3 sm:p-4 border-b border-border cursor-pointer ${selectedRoomId === room.id ? 'bg-primary-50 dark:bg-primary-900/50' : 'hover:bg-gray-100 dark:hover:bg-zinc-700/50'}`}
               >
                 <h3 className="font-semibold text-gray-800 dark:text-white truncate">{room.topic}</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{room.lastMessage}</p>
-                <p className="text-xs text-gray-400 mt-1">{dayjs(room.lastMessageAt?.toDate()).fromNow()}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{room.last_message}</p>
+                <p className="text-xs text-gray-400 mt-1">{dayjs(room.last_message_at).fromNow()}</p>
               </div>
             ))}
           </div>
@@ -218,34 +284,33 @@ const TeamChatPage: React.FC = () => {
                       <span className="relative inline-block px-3 bg-gray-50 dark:bg-zinc-900 text-sm font-medium text-gray-500 rounded-full">{formatDateSeparator(date)}</span>
                     </div>
                     <div className="space-y-4">
-                    {groupedMessages[date].map(msg => {
-                      const isCurrentUser = msg.userId === user?.id;
-                      return (
-                        <div key={msg.id} className={`flex items-end gap-2 ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[85%] sm:max-w-md lg:max-w-lg p-3 rounded-2xl ${isCurrentUser ? 'bg-primary text-primary-foreground rounded-br-lg' : 'bg-card text-card-foreground rounded-bl-lg'}`}>
-                            {!isCurrentUser && (
-                              <p
-                                className={`text-xs font-bold mb-1 ${
-                                  String(msg.userRole || '')
+                      {groupedMessages[date].map(msg => {
+                        const isCurrentUser = msg.user_id === user?.id; // Note: user_id (snake_case)
+                        return (
+                          <div key={msg.id} className={`flex items-end gap-2 ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-[85%] sm:max-w-md lg:max-w-lg p-3 rounded-2xl ${isCurrentUser ? 'bg-primary text-primary-foreground rounded-br-lg' : 'bg-card text-card-foreground rounded-bl-lg'}`}>
+                              {!isCurrentUser && (
+                                <p
+                                  className={`text-xs font-bold mb-1 ${String(msg.user_role || '')
                                     .toLowerCase()
                                     .trim() === 'owner'
                                     ? 'text-red-400'
-                                    : String(msg.userRole || '')
-                                          .toLowerCase()
-                                          .trim() === 'manager'
+                                    : String(msg.user_role || '')
+                                      .toLowerCase()
+                                      .trim() === 'manager'
                                       ? 'text-blue-400'
                                       : 'text-green-400'
-                                }`}
-                              >
-                                {msg.userName} ({msg.userRole})
-                              </p>
-                            )}
-                            <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
-                            <p className="text-xs opacity-70 mt-1 text-right">{dayjs(msg.createdAt?.toDate()).format('h:mm A')}</p>
+                                    }`}
+                                >
+                                  {msg.user_name} ({msg.user_role})
+                                </p>
+                              )}
+                              <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                              <p className="text-xs opacity-70 mt-1 text-right">{dayjs(msg.created_at).format('h:mm A')}</p>
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
                     </div>
                   </div>
                 ))}

@@ -17,6 +17,7 @@ import {
 import { useResponsiveViewMode } from '../../hooks/useResponsiveViewMode';
 import StockGridCard from './StockGridCard';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRealtimeTable } from '@/hooks/useRealtimeTable';
 
 interface StockItem {
   id: string;
@@ -138,6 +139,26 @@ const ComprehensiveStockView: React.FC = () => {
   useEffect(() => {
     fetchStockData();
   }, []);
+
+  // Realtime Subscriptions
+  useRealtimeTable({
+    tableName: 'stock',
+    onInsert: () => fetchStockData(),
+    onUpdate: () => fetchStockData(),
+    onDelete: () => fetchStockData()
+  });
+
+  useRealtimeTable({
+    tableName: 'materials',
+    onInsert: () => fetchStockData(),
+    onUpdate: () => fetchStockData(),
+    onDelete: () => fetchStockData()
+  });
+
+  useRealtimeTable({
+    tableName: 'material_transactions',
+    onInsert: () => fetchStockData()
+  });
 
   // Get unique values for filters
   const filterOptions = useMemo(() => {

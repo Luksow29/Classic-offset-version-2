@@ -4,6 +4,7 @@ import { Loader2, ImageOff, ZoomIn, ChevronLeft, ChevronRight, AlertTriangle } f
 import Modal from '../ui/Modal';
 import Select from '../ui/Select'; // Select Component ஐச் சேர்க்கவும்
 import Button from '../ui/Button'; // Button Component ஐச் சேர்க்கவும்
+import SafeImage from '../ui/SafeImage';
 
 interface GalleryItem {
   id: string;
@@ -188,10 +189,11 @@ const ShowcaseGallery: React.FC<ShowcaseGalleryProps> = ({ refreshKey }) => {
             className="relative rounded-lg overflow-hidden shadow-lg transition-transform transform hover:scale-105 duration-300 group cursor-pointer"
             onClick={() => setSelectedImage(item)}
           >
-            <img
+            <SafeImage
               src={item.publicUrl}
               alt={item.title || item.category || 'Gallery Image'}
               className="w-full h-64 object-cover"
+              width={400} // Approximate width for grid
             />
             {/* Overlay for title/description on hover */}
             <div className="absolute inset-0 bg-black bg-opacity-40 flex items-end p-4 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -230,7 +232,12 @@ const ShowcaseGallery: React.FC<ShowcaseGalleryProps> = ({ refreshKey }) => {
           size="lg"
         >
           <div className="flex flex-col items-center space-y-4">
-            <img src={selectedImage.publicUrl} alt={selectedImage.title || 'Gallery Image'} className="max-w-full h-auto rounded-lg" />
+            <SafeImage
+              src={selectedImage.publicUrl}
+              alt={selectedImage.title || 'Gallery Image'}
+              className="max-w-full h-auto rounded-lg"
+              priority={true}
+            />
             {selectedImage.description && (
               <p className="text-sm text-foreground text-center">
                 {selectedImage.description}

@@ -1,7 +1,6 @@
 // src/components/chat/AddChatRoomModal.tsx
 import React, { useState } from 'react';
-import { db } from '@/lib/firebaseClient';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { supabase } from '@/lib/supabaseClient';
 import { useUser } from '@/context/UserContext';
 import Modal from '../ui/Modal';
 import Input from '../ui/Input';
@@ -28,17 +27,20 @@ const AddChatRoomModal: React.FC<AddChatRoomModalProps> = ({ isOpen, onClose }) 
 
     setLoading(true);
     try {
-      await addDoc(collection(db, 'chat_rooms'), {
+      const { error } = await supabase.from('chat_rooms').insert({
         topic: topic.trim(),
-        createdBy: {
+        created_by: {
           id: user.id,
           name: userProfile.name,
           role: userProfile.role,
         },
-        createdAt: serverTimestamp(),
-        lastMessage: `Chat room created by ${userProfile.name}`,
-        lastMessageAt: serverTimestamp(),
+        last_message: `Chat room created by ${userProfile.name}`,
+        // last_message_at not needed if default now(), but good to be explicit usually. 
+        // Supabase defaults handle created_at.
       });
+
+      if (error) throw error;
+
       toast.success('New chat room created!');
       setTopic('');
       onClose();

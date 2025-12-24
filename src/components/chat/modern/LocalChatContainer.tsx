@@ -90,8 +90,8 @@ export const LocalChatContainer: React.FC<LocalChatContainerProps> = ({ classNam
 
     // Dummy handlers for unsupported features in Local Agent
     const noOp = () => { };
-    const dummyExtract = (text: string) => [];
-    const dummySuggestions = (text: string) => [];
+    const dummyExtract = (text: string): any[] => [];
+    const dummySuggestions = (text: string): string[] => [];
 
     return (
         <div className={`flex flex-col h-full bg-transparent ${className}`}>

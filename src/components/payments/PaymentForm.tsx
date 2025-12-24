@@ -12,8 +12,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { logActivity } from '@/lib/activityLogger';
-import { db } from '@/lib/firebaseClient';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+// Firebase imports removed
 import { Customer } from '@/types';
 import { hasAnyStaffRole } from '@/lib/rbac';
 
@@ -194,13 +193,15 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ onSuccess }) => {
       await logActivity(activityMessage, userName);
 
       // Create notification
-      await addDoc(collection(db, "notifications"), {
+      await supabase.from('admin_notifications').insert({
         message: `Payment of ₹${amountPaid.toLocaleString('en-IN')} received for Order #${selectedOrder.id}.`,
         type: 'payment',
-        relatedId: selectedOrder.id,
-        timestamp: serverTimestamp(),
-        read: false,
-        triggeredBy: userName,
+        title: 'Payment Received',
+        related_id: String(selectedOrder.id),
+        created_at: new Date().toISOString(),
+        is_read: false,
+        triggered_by: userName,
+        link_to: `/orders/${selectedOrder.id}`
       });
 
       onSuccess();

@@ -7,14 +7,8 @@ import { handleSupabaseError } from '@/lib/supabaseErrorHandler';
 import { motion } from 'framer-motion';
 
 // Correctly import individual icons from lucide-react to enable tree-shaking
-import IndianRupee from 'lucide-react/dist/esm/icons/indian-rupee';
-import Users from 'lucide-react/dist/esm/icons/users';
-import ShoppingCart from 'lucide-react/dist/esm/icons/shopping-cart';
-import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
-import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
-import Zap from 'lucide-react/dist/esm/icons/zap';
-import Palette from 'lucide-react/dist/esm/icons/palette';
-import Mic from 'lucide-react/dist/esm/icons/mic';
+// Correctly import individual icons from lucide-react
+import { IndianRupee, Users, ShoppingCart, AlertTriangle, Loader2, Zap, Palette, Mic } from 'lucide-react';
 
 
 // Define the structure for the dashboard metrics
@@ -39,11 +33,11 @@ const InsightsPage: React.FC = () => {
       try {
         const { data, error } = await supabase.rpc('get_dashboard_metrics');
         if (error) {
-          const handledError = handleSupabaseError(error, { 
-            operation: 'rpc_call', 
-            table: 'get_dashboard_metrics' 
+          const handledError = handleSupabaseError(error, {
+            operation: 'rpc_call',
+            table: 'get_dashboard_metrics'
           }, false);
-          
+
           if (handledError) {
             console.warn('Dashboard metrics function not available, using fallback');
             // Use fallback metrics
@@ -51,11 +45,11 @@ const InsightsPage: React.FC = () => {
             return;
           }
         }
-        
+
         if (data && data.length > 0) {
-            setMetrics(data[0]);
+          setMetrics(data[0]);
         } else {
-            setMetrics({ total_revenue: 0, total_customers_count: 0, orders_due_count: 0, balance_due: 0 });
+          setMetrics({ total_revenue: 0, total_customers_count: 0, orders_due_count: 0, balance_due: 0 });
         }
       } catch (err: any) {
         console.error("Error fetching dashboard metrics:", err);
@@ -80,9 +74,9 @@ const InsightsPage: React.FC = () => {
   ] : [];
 
   const announcements = [
-      { icon: <Zap size={20} className="text-yellow-400"/>, text: "Gemini AI Integration: Ask complex questions in Tamil or English and get professional reports."},
-      { icon: <Mic size={20} className="text-red-400"/>, text: "Voice Input Enabled: Use the microphone icon in the chatbox to ask questions with your voice."},
-      { icon: <Palette size={20} className="text-blue-400"/>, text: "Interactive Cards: Click on any metric card above to get a detailed analysis of that metric."}
+    { icon: <Zap size={20} className="text-yellow-400" />, text: "Gemini AI Integration: Ask complex questions in Tamil or English and get professional reports." },
+    { icon: <Mic size={20} className="text-red-400" />, text: "Voice Input Enabled: Use the microphone icon in the chatbox to ask questions with your voice." },
+    { icon: <Palette size={20} className="text-blue-400" />, text: "Interactive Cards: Click on any metric card above to get a detailed analysis of that metric." }
   ];
 
   return (
@@ -93,24 +87,24 @@ const InsightsPage: React.FC = () => {
           Get real-time metrics and chat with your intelligent business analyst.
         </p>
       </motion.div>
-      
+
       {/* Announcements Section */}
       <div className="bg-gray-800/80 backdrop-blur-sm border border-gray-700 p-4 rounded-xl">
-          <h3 className="font-semibold text-lg text-white mb-3">🚀 What's New?</h3>
-          <div className="space-y-3">
-              {announcements.map((item, index) => (
-                  <motion.div 
-                    key={index}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2 + index * 0.1}}
-                    className="flex items-center gap-3 p-3 bg-gray-700/50 rounded-lg"
-                  >
-                      {item.icon}
-                      <span className="text-gray-300 text-sm">{item.text}</span>
-                  </motion.div>
-              ))}
-          </div>
+        <h3 className="font-semibold text-lg text-white mb-3">🚀 What's New?</h3>
+        <div className="space-y-3">
+          {announcements.map((item, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 + index * 0.1 }}
+              className="flex items-center gap-3 p-3 bg-gray-700/50 rounded-lg"
+            >
+              {item.icon}
+              <span className="text-gray-300 text-sm">{item.text}</span>
+            </motion.div>
+          ))}
+        </div>
       </div>
 
 

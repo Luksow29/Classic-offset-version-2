@@ -210,105 +210,83 @@ const PaymentDashboard: React.FC = () => {
   if (!metrics) return null;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-3 sm:space-y-6">
+      {/* Header - Compact on Mobile */}
+      <div className="flex items-center justify-between gap-2">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-foreground">Financial Overview</h2>
-          <p className="text-muted-foreground">Track your revenue, pending payments, and cash flow.</p>
+          <h2 className="text-base sm:text-2xl font-bold tracking-tight text-foreground">Financial</h2>
+          <p className="text-muted-foreground text-[10px] sm:text-sm hidden sm:block">Track revenue, pending payments, and cash flow.</p>
         </div>
         <select
           value={selectedPeriod}
           onChange={(e) => setSelectedPeriod(e.target.value)}
-          className="px-4 py-2 bg-card border border-border rounded-lg text-sm text-foreground focus:ring-2 focus:ring-primary/20 outline-none shadow-sm"
+          className="px-2 py-1 sm:px-4 sm:py-2 bg-card border border-border rounded-lg text-[10px] sm:text-sm text-foreground focus:ring-2 focus:ring-primary/20 outline-none shadow-sm"
         >
-          <option value="7">Last 7 Days</option>
-          <option value="30">Last 30 Days</option>
-          <option value="90">Last 90 Days</option>
-          <option value="365">This Year</option>
+          <option value="7">7 Days</option>
+          <option value="30">30 Days</option>
+          <option value="90">90 Days</option>
+          <option value="365">Year</option>
         </select>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-6 border-l-4 border-l-emerald-500 bg-gradient-to-br from-card to-emerald-500/5">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground mb-1">Total Collected</p>
-              <h3 className="text-2xl font-bold text-foreground">₹{metrics.totalReceived.toLocaleString()}</h3>
-              <div className="flex items-center mt-2 text-xs text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 w-fit px-2 py-0.5 rounded-full">
-                <TrendingUp size={12} className="mr-1" />
-                <span>+12.5% vs last period</span>
-              </div>
-            </div>
-            <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg text-emerald-600">
-              <Wallet size={20} />
+      {/* Stats Grid - 3 columns on mobile, 4 on desktop */}
+      <div className="grid grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
+        <Card className="p-2 sm:p-4 border-l-2 sm:border-l-4 border-l-emerald-500 bg-gradient-to-br from-card to-emerald-500/5 rounded-xl">
+          <div className="flex flex-col">
+            <p className="text-[8px] sm:text-xs font-medium text-muted-foreground uppercase">Collected</p>
+            <h3 className="text-sm sm:text-xl lg:text-2xl font-bold text-foreground mt-0.5">₹{(metrics.totalReceived / 1000).toFixed(0)}k</h3>
+            <div className="hidden sm:flex items-center mt-1 text-[10px] sm:text-xs text-emerald-600">
+              <TrendingUp size={10} className="mr-0.5" />
+              <span>+12.5%</span>
             </div>
           </div>
         </Card>
 
-        <Card className="p-6 border-l-4 border-l-amber-500 bg-gradient-to-br from-card to-amber-500/5">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground mb-1">Pending Dues</p>
-              <h3 className="text-2xl font-bold text-foreground">₹{metrics.pendingAmount.toLocaleString()}</h3>
-              <p className="text-xs text-amber-600 mt-2 font-medium">
-                {metrics.ordersByStatus.due + metrics.ordersByStatus.partial} orders pending
-              </p>
-            </div>
-            <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg text-amber-600">
-              <Clock size={20} />
-            </div>
+        <Card className="p-2 sm:p-4 border-l-2 sm:border-l-4 border-l-amber-500 bg-gradient-to-br from-card to-amber-500/5 rounded-xl">
+          <div className="flex flex-col">
+            <p className="text-[8px] sm:text-xs font-medium text-muted-foreground uppercase">Pending</p>
+            <h3 className="text-sm sm:text-xl lg:text-2xl font-bold text-foreground mt-0.5">₹{(metrics.pendingAmount / 1000).toFixed(0)}k</h3>
+            <p className="hidden sm:block text-[10px] sm:text-xs text-amber-600 mt-1">
+              {metrics.ordersByStatus.due + metrics.ordersByStatus.partial} orders
+            </p>
           </div>
         </Card>
 
-        <Card className="p-6 border-l-4 border-l-rose-500 bg-gradient-to-br from-card to-rose-500/5">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground mb-1">Overdue Amount</p>
-              <h3 className="text-2xl font-bold text-foreground">₹{metrics.overdueAmount.toLocaleString()}</h3>
-              <p className="text-xs text-rose-600 mt-2 font-medium">
-                Action required on {metrics.ordersByStatus.overdue} orders
-              </p>
-            </div>
-            <div className="p-2 bg-rose-100 dark:bg-rose-900/30 rounded-lg text-rose-600">
-              <AlertTriangle size={20} />
-            </div>
+        <Card className="p-2 sm:p-4 border-l-2 sm:border-l-4 border-l-rose-500 bg-gradient-to-br from-card to-rose-500/5 rounded-xl">
+          <div className="flex flex-col">
+            <p className="text-[8px] sm:text-xs font-medium text-muted-foreground uppercase">Overdue</p>
+            <h3 className="text-sm sm:text-xl lg:text-2xl font-bold text-rose-600 mt-0.5">₹{(metrics.overdueAmount / 1000).toFixed(0)}k</h3>
+            <p className="hidden sm:block text-[10px] sm:text-xs text-rose-600 mt-1">
+              {metrics.ordersByStatus.overdue} orders
+            </p>
           </div>
         </Card>
 
-        <Card className="p-6 border-l-4 border-l-blue-500 bg-gradient-to-br from-card to-blue-500/5">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground mb-1">Avg. Order Value</p>
-              <h3 className="text-2xl font-bold text-foreground">₹{Math.round(metrics.averageOrderValue).toLocaleString()}</h3>
-              <p className="text-xs text-blue-600 mt-2 font-medium">
-                Based on {metrics.totalOrders} total orders
-              </p>
-            </div>
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600">
-              <BarChart3 size={20} />
-            </div>
+        <Card className="p-2 sm:p-4 border-l-2 sm:border-l-4 border-l-blue-500 bg-gradient-to-br from-card to-blue-500/5 rounded-xl hidden lg:block">
+          <div className="flex flex-col">
+            <p className="text-[8px] sm:text-xs font-medium text-muted-foreground uppercase">Avg. Order</p>
+            <h3 className="text-sm sm:text-xl lg:text-2xl font-bold text-foreground mt-0.5">₹{Math.round(metrics.averageOrderValue / 1000).toFixed(0)}k</h3>
+            <p className="text-[10px] sm:text-xs text-blue-600 mt-1">
+              {metrics.totalOrders} orders
+            </p>
           </div>
         </Card>
       </div>
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Charts Section - Responsive */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-6">
         {/* Main Chart: Revenue Trend */}
-        <Card className="lg:col-span-2 p-6 flex flex-col h-[400px]">
-          <div className="flex items-center justify-between mb-6">
+        <Card className="lg:col-span-2 p-3 sm:p-6 flex flex-col h-[200px] sm:h-[400px]">
+          <div className="flex items-center justify-between mb-2 sm:mb-6">
             <div>
-              <h3 className="text-lg font-semibold text-foreground">Revenue Trends</h3>
-              <p className="text-sm text-muted-foreground">Daily payment collections over time</p>
+              <h3 className="text-sm sm:text-lg font-semibold text-foreground">Revenue</h3>
+              <p className="text-[10px] sm:text-sm text-muted-foreground hidden sm:block">Daily payment collections</p>
             </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 bg-primary rounded-full"></div> Revenue
-              </div>
+            <div className="flex items-center gap-1 text-[10px] sm:text-sm text-muted-foreground">
+              <div className="w-2 h-2 sm:w-3 sm:h-3 bg-primary rounded-full"></div><span className="hidden sm:inline">Revenue</span>
             </div>
           </div>
-          <div className="w-full h-[300px] min-h-[300px]">
+          <div className="w-full flex-1 min-h-[120px] sm:min-h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={metrics.revenueTrend}>
                 <defs>

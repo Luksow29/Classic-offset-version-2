@@ -119,6 +119,28 @@ const router = createBrowserRouter(
         <Route path="/order-chat-admin" element={Suspended(<CommunicationPage />)} />
 
         <Route path="/settings" element={Suspended(<SettingsPage />)} />
+
+        {/* Analytics & Intelligence Routes */}
+        <Route path="/insights" element={Suspended(<InsightsPage />)} />
+        <Route path="/business-insights" element={Suspended(<BusinessInsights />)} />
+        <Route path="/reports" element={Suspended(<ReportsPage />)} />
+        <Route path="/weekly-progress" element={Suspended(<WeeklyProgress />)} />
+
+        {/* AI Agent Routes */}
+        <Route path="/ai-agent" element={Suspended(<AIAgentPage />)} />
+        <Route path="/local-agent" element={Suspended(<LocalAgentPage />)} />
+
+        {/* Loyalty & Admin */}
+        <Route path="/loyalty-program" element={Suspended(<LoyaltyProgram />)} />
+        <Route
+          path="/admin/content"
+          element={Suspended(
+            <RequireRoles allowed={['owner']}>
+              <AdminContentManagement />
+            </RequireRoles>
+          )}
+        />
+
         {/* Job Creation Wizard */}
         <Route
           path="/jobs/new"

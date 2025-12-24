@@ -10,8 +10,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useUser } from '@/context/UserContext';
 import { Loader2, PlusCircle, User, Calendar, ShoppingBag, Palette, DollarSign, StickyNote, Calculator } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { db } from '@/lib/firebaseClient';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+// Removed unused Firebase imports
 import { logActivity } from '@/lib/activityLogger';
 import CustomerFormModal from '../customers/CustomerFormModal';
 import { Customer } from '@/types';
@@ -27,7 +26,7 @@ interface Product {
     category: string;
 }
 interface Employee {
-    id: string; 
+    id: string;
     name: string;
     job_role: string;
 }
@@ -40,9 +39,9 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
     const { user, userProfile } = useUser();
     const [products, setProducts] = useState<Product[]>([]);
     const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-    const [designers, setDesigners] = useState<Employee[]>([]); 
+    const [designers, setDesigners] = useState<Employee[]>([]);
     const [orderTypeOptions, setOrderTypeOptions] = useState<SelectOption[]>([]);
-    
+
     const [formData, setFormData] = useState({
         date: new Date().toISOString().split('T')[0],
         customerId: '',
@@ -73,16 +72,16 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
     useEffect(() => {
         const fetchInitialData = async () => {
             const { data: productsData, error: productsError } = await supabase.from('products').select('id, name, unit_price, category');
-            
+
             if (productsData) {
                 setProducts(productsData);
-                setFilteredProducts(productsData); 
+                setFilteredProducts(productsData);
 
                 // Dynamically create order type options from product categories
                 const categories = [...new Set(productsData.map(p => p.category))];
                 setOrderTypeOptions(categories.map(c => ({ value: c, label: c })));
             }
-            
+
             const { data: designersData } = await supabase.from('employees').select('id, name, job_role').eq('job_role', 'Designer').eq('is_active', true);
             setDesigners(designersData || []);
         };
@@ -93,7 +92,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
         const qty = parseInt(formData.quantity || '0');
         const rate = parseFloat(formData.rate || '0');
         const subtotal = qty * rate;
-        
+
         // Calculate service charge
         let serviceChargeAmount = 0;
         if (formData.serviceChargeType === 'percentage') {
@@ -101,11 +100,11 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
         } else if (formData.serviceChargeType === 'fixed') {
             serviceChargeAmount = parseFloat(formData.serviceChargeValue || '0');
         }
-        
+
         const totalAmount = subtotal + serviceChargeAmount;
-        
-        setFormData(prev => ({ 
-            ...prev, 
+
+        setFormData(prev => ({
+            ...prev,
             subtotal: subtotal.toFixed(2),
             serviceChargeAmount: serviceChargeAmount.toFixed(2),
             totalAmount: totalAmount.toFixed(2)
@@ -116,7 +115,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
         setFilteredProducts(
             formData.orderType ? products.filter(p => p.category === formData.orderType) : products
         );
-        setFormData(prev => ({...prev, productId: '', rate: '0', subtotal: '0', serviceChargeAmount: '0', totalAmount: '0'}));
+        setFormData(prev => ({ ...prev, productId: '', rate: '0', subtotal: '0', serviceChargeAmount: '0', totalAmount: '0' }));
     }, [formData.orderType, products]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -145,24 +144,24 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
 
     const handleCustomerSelect = (customer: { id: string; name: string; phone: string } | null) => {
         if (customer) {
-            setFormData(prev => ({...prev, customerId: customer.id, customerName: customer.name}));
+            setFormData(prev => ({ ...prev, customerId: customer.id, customerName: customer.name }));
         } else {
-            setFormData(prev => ({...prev, customerId: '', customerName: ''}));
+            setFormData(prev => ({ ...prev, customerId: '', customerName: '' }));
         }
     }
-    
+
     const handleNewCustomerSuccess = (newCustomer: Customer) => {
         setCustomerListVersion(prevVersion => prevVersion + 1);
         handleCustomerSelect(newCustomer);
         setIsCustomerModalOpen(false);
     };
-    
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!user || !formData.customerId) { setError("A customer must be selected."); return; }
         if (!formData.deliveryDate) { setError("Delivery date is required."); return; }
         if (!formData.orderType || !formData.productId) { setError("Order type and product are required."); return; }
-        
+
         setLoading(true);
         setError(null);
 
@@ -194,23 +193,23 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
             const { data: newOrder, error: orderError } = await supabase.from('orders').insert(orderPayload).select().single();
             if (orderError) throw orderError;
             if (!newOrder) throw new Error("Failed to create order, no data returned.");
-            
+
             toast.success(`Order #${newOrder.id} created successfully!`);
 
             await logActivity(`Created new order #${newOrder.id} for ${formData.customerName}`, userProfile?.name);
-            
+
             if (parseFloat(formData.amountReceived) > 0) {
-              await supabase.from('payments').insert({
-                order_id: newOrder.id,
-                customer_id: formData.customerId,
-                amount_paid: parseFloat(formData.amountReceived),
-                payment_date: formData.date,
-                payment_method: formData.paymentMethod,
-                notes: 'Initial payment with order.',
-                created_by: user.id,
-              });
+                await supabase.from('payments').insert({
+                    order_id: newOrder.id,
+                    customer_id: formData.customerId,
+                    amount_paid: parseFloat(formData.amountReceived),
+                    payment_date: formData.date,
+                    payment_method: formData.paymentMethod,
+                    notes: 'Initial payment with order.',
+                    created_by: user.id,
+                });
             }
-            
+
             onSuccess();
         } catch (err: any) {
             toast.error(err.message || "Failed to create order.");
@@ -220,8 +219,8 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
         }
     };
 
-    const designNeededOptions = [ { value: 'Yes', label: 'Yes' }, { value: 'No', label: 'No' } ];
-    const paymentMethodOptions = [ { value: 'Cash', label: 'Cash' }, { value: 'UPI', label: 'UPI' }, { value: 'Bank Transfer', label: 'Bank Transfer' } ];
+    const designNeededOptions = [{ value: 'Yes', label: 'Yes' }, { value: 'No', label: 'No' }];
+    const paymentMethodOptions = [{ value: 'Cash', label: 'Cash' }, { value: 'UPI', label: 'UPI' }, { value: 'Bank Transfer', label: 'Bank Transfer' }];
 
     return (
         <>
@@ -236,7 +235,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
                         {error}
                     </div>
                 )}
-                
+
                 <Card className="p-0 overflow-hidden">
                     <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-b dark:border-gray-700 flex items-center gap-3">
                         <User className="w-5 h-5 text-gray-500" />
@@ -286,47 +285,47 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
                     </div>
                     <div className="p-6 space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <Select 
-                                id="serviceChargeType" 
-                                label="Service Charge Type" 
+                            <Select
+                                id="serviceChargeType"
+                                label="Service Charge Type"
                                 options={[
                                     { value: 'none', label: 'No Service Charge' },
                                     { value: 'percentage', label: 'Percentage (%)' },
                                     { value: 'fixed', label: 'Fixed Amount (₹)' }
-                                ]} 
-                                value={formData.serviceChargeType} 
-                                onChange={handleInputChange} 
+                                ]}
+                                value={formData.serviceChargeType}
+                                onChange={handleInputChange}
                             />
                             {formData.serviceChargeType !== 'none' && (
                                 <>
-                                    <Input 
-                                        id="serviceChargeValue" 
-                                        label={formData.serviceChargeType === 'percentage' ? 'Percentage (%)' : 'Fixed Amount (₹)'} 
-                                        type="number" 
+                                    <Input
+                                        id="serviceChargeValue"
+                                        label={formData.serviceChargeType === 'percentage' ? 'Percentage (%)' : 'Fixed Amount (₹)'}
+                                        type="number"
                                         step="0.01"
                                         min="0"
-                                        value={formData.serviceChargeValue} 
-                                        onChange={handleInputChange} 
+                                        value={formData.serviceChargeValue}
+                                        onChange={handleInputChange}
                                         placeholder={formData.serviceChargeType === 'percentage' ? 'e.g., 10' : 'e.g., 500'}
                                     />
-                                    <Input 
-                                        id="serviceChargeAmount" 
-                                        label="Service Charge (₹)" 
-                                        type="number" 
-                                        value={formData.serviceChargeAmount} 
-                                        readOnly 
-                                        className="bg-gray-100 dark:bg-gray-700" 
+                                    <Input
+                                        id="serviceChargeAmount"
+                                        label="Service Charge (₹)"
+                                        type="number"
+                                        value={formData.serviceChargeAmount}
+                                        readOnly
+                                        className="bg-gray-100 dark:bg-gray-700"
                                     />
                                 </>
                             )}
                         </div>
                         {formData.serviceChargeType !== 'none' && (
-                            <Input 
-                                id="serviceChargeDescription" 
-                                label="Service Charge Description" 
-                                type="text" 
-                                value={formData.serviceChargeDescription} 
-                                onChange={handleInputChange} 
+                            <Input
+                                id="serviceChargeDescription"
+                                label="Service Charge Description"
+                                type="text"
+                                value={formData.serviceChargeDescription}
+                                onChange={handleInputChange}
                                 placeholder="e.g., Rush order, Design consultation, Extra handling"
                             />
                         )}
@@ -338,13 +337,13 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
                         </div>
                     </div>
                 </Card>
-                
+
                 <Card className="p-0 overflow-hidden">
                     <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-b dark:border-gray-700 flex items-center gap-3">
                         <Palette className="w-5 h-5 text-gray-500" />
                         <h3 className="font-semibold text-lg text-gray-800 dark:text-gray-200">Design Details</h3>
                     </div>
-                     <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Select id="designNeeded" label="Design Needed?" options={designNeededOptions} value={formData.designNeeded} onChange={handleInputChange} />
                         {formData.designNeeded === 'Yes' && (
                             <Select
@@ -360,13 +359,13 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
                     </div>
                 </Card>
 
-                 <Card className="p-0 overflow-hidden">
+                <Card className="p-0 overflow-hidden">
                     <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-b dark:border-gray-700 flex items-center gap-3">
                         <DollarSign className="w-5 h-5 text-gray-500" />
                         <h3 className="font-semibold text-lg text-gray-800 dark:text-gray-200">Initial Payment</h3>
                     </div>
-                     <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Input id="amountReceived" label="Amount Received (₹)" type="number" value={formData.amountReceived} onChange={handleInputChange} placeholder="Enter advance amount"/>
+                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Input id="amountReceived" label="Amount Received (₹)" type="number" value={formData.amountReceived} onChange={handleInputChange} placeholder="Enter advance amount" />
                         <Select id="paymentMethod" label="Payment Method" options={paymentMethodOptions} value={formData.paymentMethod} onChange={handleInputChange} disabled={!formData.amountReceived || formData.amountReceived === '0'} />
                     </div>
                 </Card>
@@ -376,15 +375,15 @@ const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
                         <StickyNote className="w-5 h-5 text-gray-500" />
                         <h3 className="font-semibold text-lg text-gray-800 dark:text-gray-200">Additional Notes</h3>
                     </div>
-                     <div className="p-6">
+                    <div className="p-6">
                         <TextArea id="notes" label="Notes" value={formData.notes} onChange={handleInputChange} placeholder="Any special instructions or details about the order..." />
                     </div>
                 </Card>
-                
+
                 <div className="pt-4">
-                  <Button type="submit" size="lg" className="w-full" disabled={loading}>
-                      {loading ? <Loader2 className="animate-spin mx-auto" /> : 'Save Order'}
-                  </Button>
+                    <Button type="submit" size="lg" className="w-full" disabled={loading}>
+                        {loading ? <Loader2 className="animate-spin mx-auto" /> : 'Save Order'}
+                    </Button>
                 </div>
             </form>
         </>

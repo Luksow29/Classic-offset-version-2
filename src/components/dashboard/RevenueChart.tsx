@@ -16,7 +16,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data }) => {
 
   const formattedData = useMemo(() => {
     if (!data || data.length === 0) return [];
-    
+
     return data.map(item => ({
       ...item,
       date: format(parseISO(item.date), 'MMM d'),
@@ -27,11 +27,11 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data }) => {
 
   const chartStats = useMemo(() => {
     if (!formattedData.length) return { total: 0, average: 0, peak: 0 };
-    
+
     const total = formattedData.reduce((sum, item) => sum + item.value, 0);
     const average = total / formattedData.length;
     const peak = Math.max(...formattedData.map(item => item.value));
-    
+
     return { total, average, peak };
   }, [formattedData]);
 
@@ -44,7 +44,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data }) => {
       ['Date', 'Revenue'],
       ...formattedData.map(item => [item.fullDate, item.value])
     ].map(row => row.join(',')).join('\n');
-    
+
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -77,7 +77,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data }) => {
     if (active && payload && payload.length) {
       const data = payload[0];
       return (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border border-white/20 dark:border-gray-700/50 rounded-xl p-4 shadow-xl"
@@ -99,41 +99,39 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data }) => {
     }
     return null;
   };
-  
+
   return (
-    <div className="space-y-4">
-      {/* Chart Stats - Mobile Responsive */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-          <div className="text-xs sm:text-sm">
+    <div className="space-y-2 sm:space-y-4">
+      {/* Chart Stats - Ultra Compact on Mobile */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-3 text-[10px] sm:text-sm">
+          <span>
             <span className="text-gray-500 dark:text-gray-400 font-sans">Total: </span>
             <span className="font-display font-semibold text-gray-900 dark:text-white">₹{chartStats.total.toLocaleString()}</span>
-          </div>
-          <div className="text-xs sm:text-sm">
+          </span>
+          <span>
             <span className="text-gray-500 dark:text-gray-400 font-sans">Avg: </span>
             <span className="font-display font-semibold text-gray-900 dark:text-white">₹{chartStats.average.toLocaleString()}</span>
-          </div>
+          </span>
         </div>
-        
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={exportData}
-            className="flex items-center gap-1 text-xs sm:text-sm"
-          >
-            <Download className="w-3 h-3" />
-            <span className="hidden sm:inline">Export</span>
-          </Button>
-        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={exportData}
+          className="flex items-center gap-1 text-[10px] sm:text-sm px-2 py-1 sm:px-3 sm:py-2"
+        >
+          <Download className="w-3 h-3" />
+          <span className="hidden sm:inline">Export</span>
+        </Button>
       </div>
 
       {/* Chart Container with mobile-optimized height */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="h-64 sm:h-80 md:h-96"
+        className="h-48 sm:h-64 md:h-80"
       >
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
@@ -148,44 +146,44 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data }) => {
           >
             <defs>
               <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
+                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1} />
               </linearGradient>
             </defs>
-            
-            <CartesianGrid 
-              strokeDasharray="3 3" 
+
+            <CartesianGrid
+              strokeDasharray="3 3"
               strokeOpacity={0.1}
               className="opacity-30"
             />
-            <XAxis 
-              dataKey="date" 
-              tick={{ fontSize: 12, fontFamily: 'Inter' }} 
-              axisLine={false} 
+            <XAxis
+              dataKey="date"
+              tick={{ fontSize: 12, fontFamily: 'Inter' }}
+              axisLine={false}
               tickLine={false}
               className="text-gray-600 dark:text-gray-400"
             />
-            <YAxis 
-              tick={{ fontSize: 12, fontFamily: 'Inter' }} 
-              axisLine={false} 
+            <YAxis
+              tick={{ fontSize: 12, fontFamily: 'Inter' }}
+              axisLine={false}
               tickLine={false}
               tickFormatter={formatYAxis}
               className="text-gray-600 dark:text-gray-400"
             />
             <Tooltip content={<CustomTooltip />} />
-            <Line 
-              type="monotone" 
+            <Line
+              type="monotone"
               dataKey="value"
-              name="Revenue" 
+              name="Revenue"
               stroke="hsl(var(--primary))"
               strokeWidth={3}
-              dot={{ 
-                r: 4, 
+              dot={{
+                r: 4,
                 fill: 'hsl(var(--primary))',
                 strokeWidth: 2,
                 stroke: '#fff'
               }}
-              activeDot={{ 
+              activeDot={{
                 r: 8,
                 stroke: 'hsl(var(--primary))',
                 strokeWidth: 3,
@@ -196,7 +194,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data }) => {
           </LineChart>
         </ResponsiveContainer>
       </motion.div>
-      
+
       {/* Selected Data Point Details */}
       {selectedDataPoint && (
         <motion.div

@@ -5,22 +5,8 @@ import Input from '@/components/ui/Input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 
 // Correctly import individual icons from lucide-react to enable tree-shaking
-import Bot from 'lucide-react/dist/esm/icons/bot';
-import LineChart from 'lucide-react/dist/esm/icons/line-chart';
-import Users from 'lucide-react/dist/esm/icons/users';
-import PenSquare from 'lucide-react/dist/esm/icons/pen-square';
-import Edit from 'lucide-react/dist/esm/icons/edit';
-import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
-import ShoppingCart from 'lucide-react/dist/esm/icons/shopping-cart';
-import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw';
-import BrainCircuit from 'lucide-react/dist/esm/icons/brain-circuit';
-import Sparkles from 'lucide-react/dist/esm/icons/sparkles';
-import Zap from 'lucide-react/dist/esm/icons/zap';
-import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
-import Clock from 'lucide-react/dist/esm/icons/clock';
-import Shield from 'lucide-react/dist/esm/icons/shield';
-import Search from 'lucide-react/dist/esm/icons/search';
-import Filter from 'lucide-react/dist/esm/icons/filter';
+// Correctly import individual icons from lucide-react to enable tree-shaking
+import { Bot, LineChart, Users, PenSquare, Edit, MessageSquare, ShoppingCart, RefreshCw, BrainCircuit, Sparkles, Zap, TrendingUp, Clock, Shield, Search, Filter } from 'lucide-react';
 
 // Complete list of ALL AI abilities organized by category
 const abilityCategories = [

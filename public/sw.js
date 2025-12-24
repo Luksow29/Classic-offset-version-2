@@ -18,7 +18,7 @@ const STATIC_CACHE_URLS = [
 // Install event - cache static resources
 self.addEventListener('install', (event) => {
   console.log('SW: Installing...');
-  
+
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
@@ -29,7 +29,7 @@ self.addEventListener('install', (event) => {
         console.error('SW: Failed to cache static resources:', error);
       })
   );
-  
+
   // Force activation of new service worker
   self.skipWaiting();
 });
@@ -37,7 +37,7 @@ self.addEventListener('install', (event) => {
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
   console.log('SW: Activating...');
-  
+
   event.waitUntil(
     caches.keys()
       .then((cacheNames) => {
@@ -62,23 +62,29 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Handle API requests
-  if (url.pathname.includes('/rest/v1/') || url.hostname.includes('supabase')) {
+  // Handle API requests (GET only for caching)
+  if ((url.pathname.includes('/rest/v1/') || url.hostname.includes('supabase')) && request.method === 'GET') {
     event.respondWith(
       caches.open(API_CACHE_NAME)
         .then((cache) => {
           return fetch(request)
             .then((response) => {
               // Cache successful GET requests for 5 minutes
-              if (request.method === 'GET' && response.ok) {
+              if (response.ok) {
                 const responseClone = response.clone();
                 cache.put(request, responseClone);
               }
               return response;
             })
             .catch(() => {
-              // Return cached version if available
-              return cache.match(request);
+              // Return cached version if available, or return a 408/504 if not found
+              // This prevents "Failed to convert value to Response"
+              return cache.match(request).then(response => {
+                return response || new Response(JSON.stringify({ error: 'Network error and no cache available' }), {
+                  status: 503,
+                  headers: { 'Content-Type': 'application/json' }
+                });
+              });
             });
         })
     );
@@ -92,7 +98,7 @@ self.addEventListener('fetch', (event) => {
         if (response) {
           return response;
         }
-        
+
         return fetch(request)
           .catch(() => {
             // Return offline page for navigation requests
@@ -107,7 +113,7 @@ self.addEventListener('fetch', (event) => {
 // Push event - handle incoming push notifications
 self.addEventListener('push', (event) => {
   console.log('SW: Push notification received:', event);
-  
+
   let notificationData = {
     title: 'Classic Offset',
     body: 'You have a new notification',
@@ -122,7 +128,7 @@ self.addEventListener('push', (event) => {
     try {
       const pushData = event.data.json();
       console.log('SW: Push data:', pushData);
-      
+
       notificationData = {
         title: pushData.title || notificationData.title,
         body: pushData.message || pushData.body || notificationData.body,
@@ -179,7 +185,7 @@ self.addEventListener('push', (event) => {
 // Notification click event
 self.addEventListener('notificationclick', (event) => {
   console.log('SW: Notification clicked:', event);
-  
+
   const notification = event.notification;
   const action = event.action;
   const data = notification.data || {};
@@ -189,7 +195,7 @@ self.addEventListener('notificationclick', (event) => {
 
   // Handle different actions
   let url = '/';
-  
+
   if (action === 'view_order' && data.orderId) {
     url = `/orders/${data.orderId}`;
   } else if (action === 'view_chat' && data.orderId) {
@@ -220,7 +226,7 @@ self.addEventListener('notificationclick', (event) => {
         return client;
       }
     }
-    
+
     // Open new window
     if (clients.openWindow) {
       return clients.openWindow(url);
@@ -233,10 +239,10 @@ self.addEventListener('notificationclick', (event) => {
 // Notification close event
 self.addEventListener('notificationclose', (event) => {
   console.log('SW: Notification closed:', event);
-  
+
   // Optional: Track notification dismissals
   const data = event.notification.data || {};
-  
+
   if (data.notificationId) {
     // Could send analytics about dismissed notifications
     console.log('SW: Notification dismissed:', data.notificationId);
@@ -246,7 +252,7 @@ self.addEventListener('notificationclose', (event) => {
 // Background sync event
 self.addEventListener('sync', (event) => {
   console.log('SW: Background sync triggered:', event.tag);
-  
+
   if (event.tag === 'order-sync') {
     event.waitUntil(syncOrders());
   } else if (event.tag === 'message-sync') {
@@ -259,22 +265,22 @@ self.addEventListener('sync', (event) => {
 // Message event - handle messages from main thread
 self.addEventListener('message', (event) => {
   console.log('SW: Message received:', event.data);
-  
+
   const { type, data } = event.data;
-  
+
   switch (type) {
     case 'SKIP_WAITING':
       self.skipWaiting();
       break;
-      
+
     case 'CACHE_URLS':
       event.waitUntil(cacheUrls(data.urls));
       break;
-      
+
     case 'CLEAR_CACHE':
       event.waitUntil(clearCache(data.cacheName));
       break;
-      
+
     case 'GET_CACHE_SIZE':
       event.waitUntil(getCacheSize().then(size => {
         event.ports[0].postMessage(size);
@@ -301,7 +307,7 @@ function getDefaultActions(notificationType) {
         icon: '/icons/view.png'
       });
       break;
-      
+
     case 'payment_received':
       actions.unshift({
         action: 'view_payment',
@@ -309,7 +315,7 @@ function getDefaultActions(notificationType) {
         icon: '/icons/payment.png'
       });
       break;
-      
+
     case 'chat_message':
       actions.unshift({
         action: 'view_chat',

@@ -19,7 +19,7 @@ const testRAGSystem = async () => {
     
     // Test 2: Direct API Call to Edge Function
     console.log('\n🔌 Test 2: Edge Function Direct Call');
-    const testDataService = async (operation, params = {}) => {
+    const testDataService = async (operation: string, params: any = {}) => {
       const response = await fetch('https://ytnsjmbhgwcuwmnflncl.supabase.co/functions/v1/local-ai-rag', {
         method: 'POST',
         headers: {

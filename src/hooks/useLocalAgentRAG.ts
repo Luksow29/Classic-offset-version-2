@@ -320,7 +320,7 @@ export const useLocalAgentRAG = (options: UseLocalAgentRAGOptions = {}): UseLoca
   const runQuickBusinessQuery = useCallback(async (queryType: string) => {
     if (isLoading || isStreaming) return;
 
-    const queryLabels = {
+    const queryLabels: Record<string, string> = {
       'daily-briefing': 'Get daily business briefing',
       'all-customers': 'Show all customers', 
       'top-customers': 'Show top 5 customers',

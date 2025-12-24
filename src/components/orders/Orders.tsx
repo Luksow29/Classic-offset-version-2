@@ -9,6 +9,7 @@ import { useUser } from '@/context/UserContext';
 import { hasAnyStaffRole } from '@/lib/rbac';
 import { supabase } from '@/lib/supabaseClient';
 import { OrdersTableOrder } from '@/types';
+import { useRealtimeTable } from '@/hooks/useRealtimeTable';
 
 const Orders: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'add' | 'manage'>('manage');
@@ -81,6 +82,19 @@ const Orders: React.FC = () => {
     fetchOrders();
   }, [fetchOrders]);
 
+  // Realtime Subscriptions
+  useRealtimeTable({
+    tableName: 'orders',
+    onInsert: () => { console.log('New order received, refreshing...'); fetchOrders(); },
+    onUpdate: () => { console.log('Order updated, refreshing...'); fetchOrders(); },
+    onDelete: () => { console.log('Order deleted, refreshing...'); fetchOrders(); }
+  });
+
+  useRealtimeTable({
+    tableName: 'order_status_log',
+    onInsert: () => { console.log('Status update received, refreshing...'); fetchOrders(); }
+  });
+
   useEffect(() => {
     if (highlightOrderId) {
       setActiveTab('manage');
@@ -102,41 +116,41 @@ const Orders: React.FC = () => {
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-400/10 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2" />
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <div className="relative max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-3 sm:py-8 space-y-3 sm:space-y-8">
 
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-              <Package className="w-8 h-8 text-primary" />
+        {/* Header - Compact on Mobile */}
+        <div className="flex items-center justify-between gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="p-2 sm:p-3 bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+              <Package className="w-5 h-5 sm:w-8 sm:h-8 text-primary" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Orders</h1>
-              <p className="text-gray-500 dark:text-gray-400 mt-1">Manage and track all customer orders</p>
+              <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Orders</h1>
+              <p className="text-[10px] sm:text-sm text-gray-500 dark:text-gray-400 hidden sm:block">Manage and track all customer orders</p>
             </div>
           </div>
 
-          <div className="flex items-center bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
+          <div className="flex items-center bg-gray-100 dark:bg-gray-800 p-0.5 sm:p-1 rounded-lg sm:rounded-xl">
             <button
               onClick={() => setActiveTab('manage')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'manage'
-                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+              className={`flex items-center gap-1 sm:gap-2 px-2 py-1.5 sm:px-4 sm:py-2 rounded-md sm:rounded-lg text-xs sm:text-sm font-medium transition-all ${activeTab === 'manage'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
                 }`}
             >
-              <List size={18} />
-              Manage
+              <List size={14} className="sm:w-[18px] sm:h-[18px]" />
+              <span className="hidden sm:inline">Manage</span>
             </button>
             {canCreateOrder && (
               <button
                 onClick={() => setActiveTab('add')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'add'
-                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+                className={`flex items-center gap-1 sm:gap-2 px-2 py-1.5 sm:px-4 sm:py-2 rounded-md sm:rounded-lg text-xs sm:text-sm font-medium transition-all ${activeTab === 'add'
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
                   }`}
               >
-                <Plus size={18} />
-                Create Order
+                <Plus size={14} className="sm:w-[18px] sm:h-[18px]" />
+                <span className="hidden sm:inline">Create</span>
               </button>
             )}
           </div>

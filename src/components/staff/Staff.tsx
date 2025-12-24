@@ -108,18 +108,18 @@ const Staff: React.FC = () => {
     }));
 
     return (
-        <div className="p-4 sm:p-6 space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Staff Management</h1>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">Monitor employee performance and daily logs</p>
+        <div className="p-2 sm:p-4 lg:p-6 space-y-3 sm:space-y-6">
+            <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 sm:gap-3">
+                    <ClipboardList className="w-5 h-5 sm:w-8 sm:h-8 text-primary" />
+                    <div>
+                        <h1 className="text-lg sm:text-2xl font-bold text-gray-800 dark:text-white">Staff</h1>
+                        <p className="text-gray-500 dark:text-gray-400 text-[10px] sm:text-sm hidden sm:block">Employee performance</p>
+                    </div>
                 </div>
-                <div className="flex gap-2">
-                    <Button onClick={handleCreateEmployee}>
-                        <Plus className="w-4 h-4 mr-2" /> Add Employee
-                    </Button>
-                    <Button variant="outline" onClick={() => toast('Feature coming soon!')}>
-                        <ClipboardList className="w-4 h-4 mr-2" /> Add Log
+                <div className="flex gap-1 sm:gap-2">
+                    <Button onClick={handleCreateEmployee} size="sm" className="px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm">
+                        <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1" /><span className="hidden sm:inline">Add</span>
                     </Button>
                 </div>
             </div>

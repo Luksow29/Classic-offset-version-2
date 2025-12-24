@@ -83,7 +83,7 @@ const SettingsContext = createContext<SettingsContextType>({
   loading: true,
   error: null,
   updateSettings: async () => false,
-  refreshSettings: async () => {},
+  refreshSettings: async () => { },
 });
 
 // Apply settings to the DOM
@@ -112,24 +112,24 @@ const applySettingsToDOM = (settings: UserSettings) => {
     large: '18px',
   };
   document.documentElement.style.fontSize = fontSizeMap[settings.font_size] || '16px';
-  
+
   // Apply reduced motion
   if (settings.reduced_motion) {
     document.documentElement.classList.add('reduce-motion');
   } else {
     document.documentElement.classList.remove('reduce-motion');
   }
-  
+
   // Apply high contrast
   if (settings.high_contrast) {
     document.documentElement.classList.add('high-contrast');
   } else {
     document.documentElement.classList.remove('high-contrast');
   }
-  
+
   // Apply color scheme
   document.documentElement.setAttribute('data-color-scheme', settings.color_scheme);
-  
+
   console.log('[SettingsContext] Applied settings:', {
     theme: settings.theme_preference,
     fontSize: settings.font_size,
@@ -169,16 +169,16 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             ...defaultSettings,
             user_id: user.id,
           };
-          
+
           const { error: insertError } = await supabase
             .from('user_settings')
             .insert([newSettings]);
-            
+
           if (insertError) {
             console.error('[SettingsContext] Error creating default settings:', insertError);
             throw insertError;
           }
-          
+
           setSettings(newSettings);
           applySettingsToDOM(newSettings);
         } else {
@@ -193,7 +193,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       console.error('[SettingsContext] Error fetching settings:', err);
       setError(errorMessage);
-      
+
       // Fall back to default settings
       const fallbackSettings = {
         ...defaultSettings,
@@ -227,7 +227,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const updatedSettings = { ...settings, ...newSettings };
       setSettings(updatedSettings);
       applySettingsToDOM(updatedSettings);
-      
+
       toast.success('Settings saved!');
       return true;
     } catch (err: unknown) {
@@ -248,14 +248,16 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [user?.id, fetchSettings]);
 
+  const value = React.useMemo(() => ({
+    settings,
+    loading,
+    error,
+    updateSettings,
+    refreshSettings: fetchSettings,
+  }), [settings, loading, error, updateSettings, fetchSettings]);
+
   return (
-    <SettingsContext.Provider value={{
-      settings,
-      loading,
-      error,
-      updateSettings,
-      refreshSettings: fetchSettings,
-    }}>
+    <SettingsContext.Provider value={value}>
       {children}
     </SettingsContext.Provider>
   );

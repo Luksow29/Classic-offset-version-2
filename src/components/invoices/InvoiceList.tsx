@@ -132,84 +132,64 @@ const InvoiceList: React.FC = () => {
   }
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-[1600px] mx-auto pb-20">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white flex items-center gap-3">
-            <FileText className="w-8 h-8 text-primary" />
-            Invoices & Billing
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Manage payments, track revenue, and view invoice history.</p>
+    <div className="p-2 sm:p-4 lg:p-6 space-y-3 sm:space-y-6 max-w-[1600px] mx-auto pb-20">
+      {/* Header - Compact on Mobile */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <FileText className="w-5 h-5 sm:w-8 sm:h-8 text-primary" />
+          <div>
+            <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-800 dark:text-white">Invoices</h1>
+            <p className="text-gray-500 dark:text-gray-400 text-[10px] sm:text-sm hidden sm:block">Manage payments and track revenue.</p>
+          </div>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-5 border-l-4 border-l-primary bg-gradient-to-br from-white to-primary/5 dark:from-gray-800 dark:to-primary/10">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Revenue</p>
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">₹{stats.totalRevenue.toLocaleString()}</h3>
-            </div>
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <FileText className="w-5 h-5 text-primary" />
-            </div>
+      {/* Stats Cards - 3 columns on mobile, 4 on desktop */}
+      <div className="grid grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
+        <Card className="p-2 sm:p-4 border-l-2 sm:border-l-4 border-l-primary bg-gradient-to-br from-white to-primary/5 dark:from-gray-800 dark:to-primary/10 rounded-xl">
+          <div className="flex flex-col">
+            <p className="text-[8px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Revenue</p>
+            <h3 className="text-sm sm:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white mt-0.5">₹{(stats.totalRevenue / 1000).toFixed(0)}k</h3>
           </div>
         </Card>
-        <Card className="p-5 border-l-4 border-l-green-500 bg-gradient-to-br from-white to-green-50 dark:from-gray-800 dark:to-green-900/10">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Collected</p>
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">₹{stats.collected.toLocaleString()}</h3>
-            </div>
-            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-              <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
-            </div>
+        <Card className="p-2 sm:p-4 border-l-2 sm:border-l-4 border-l-green-500 bg-gradient-to-br from-white to-green-50 dark:from-gray-800 dark:to-green-900/10 rounded-xl lg:block hidden">
+          <div className="flex flex-col">
+            <p className="text-[8px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Collected</p>
+            <h3 className="text-sm sm:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white mt-0.5">₹{(stats.collected / 1000).toFixed(0)}k</h3>
           </div>
         </Card>
-        <Card className="p-5 border-l-4 border-l-red-500 bg-gradient-to-br from-white to-red-50 dark:from-gray-800 dark:to-red-900/10">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Outstanding</p>
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">₹{stats.outstanding.toLocaleString()}</h3>
-            </div>
-            <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
-              <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
-            </div>
+        <Card className="p-2 sm:p-4 border-l-2 sm:border-l-4 border-l-red-500 bg-gradient-to-br from-white to-red-50 dark:from-gray-800 dark:to-red-900/10 rounded-xl">
+          <div className="flex flex-col">
+            <p className="text-[8px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Outstanding</p>
+            <h3 className="text-sm sm:text-xl lg:text-2xl font-bold text-red-600 dark:text-red-400 mt-0.5">₹{(stats.outstanding / 1000).toFixed(0)}k</h3>
           </div>
         </Card>
-        <Card className="p-5 border-l-4 border-l-orange-500 bg-gradient-to-br from-white to-orange-50 dark:from-gray-800 dark:to-orange-900/10">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Pending Invoices</p>
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.pendingCount}</h3>
-            </div>
-            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-              <Clock className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-            </div>
+        <Card className="p-2 sm:p-4 border-l-2 sm:border-l-4 border-l-orange-500 bg-gradient-to-br from-white to-orange-50 dark:from-gray-800 dark:to-orange-900/10 rounded-xl">
+          <div className="flex flex-col">
+            <p className="text-[8px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Pending</p>
+            <h3 className="text-sm sm:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white mt-0.5">{stats.pendingCount}</h3>
           </div>
         </Card>
       </div>
 
-      {/* Controls */}
-      <Card className="overflow-visible">
-        <div className="p-4 flex flex-col md:flex-row justify-between gap-4">
+      {/* Controls - Compact on Mobile */}
+      <Card className="overflow-visible rounded-xl">
+        <div className="p-2 sm:p-4 flex flex-col sm:flex-row justify-between gap-2 sm:gap-4">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
             <Input
               placeholder="Search customer, phone or order ID..."
-              className="pl-9"
+              className="pl-7 sm:pl-9 text-xs sm:text-sm py-1.5 sm:py-2"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-1 sm:gap-2 items-center overflow-x-auto">
             {['All', 'Paid', 'Partial', 'Due'].map((status) => (
               <button
                 key={status}
                 onClick={() => setFilterStatus(status as any)}
-                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${filterStatus === status
+                className={`px-2 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-sm font-medium rounded-md sm:rounded-lg transition-colors whitespace-nowrap ${filterStatus === status
                   ? 'bg-primary text-white shadow-sm'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                   }`}
@@ -217,21 +197,21 @@ const InvoiceList: React.FC = () => {
                 {status}
               </button>
             ))}
-            <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-2" />
-            <div className="flex p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
+            <div className="w-px h-4 sm:h-6 bg-gray-200 dark:bg-gray-700 mx-1 sm:mx-2" />
+            <div className="flex p-0.5 sm:p-1 bg-gray-100 dark:bg-gray-800 rounded-md sm:rounded-lg">
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-gray-700 shadow text-primary' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                className={`p-1 sm:p-1.5 rounded transition-all ${viewMode === 'list' ? 'bg-white dark:bg-gray-700 shadow text-primary' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
                 title="List View"
               >
-                <List size={18} />
+                <List size={14} className="sm:w-[18px] sm:h-[18px]" />
               </button>
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-gray-700 shadow text-primary' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                className={`p-1 sm:p-1.5 rounded transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-gray-700 shadow text-primary' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
                 title="Grid View"
               >
-                <LayoutGrid size={18} />
+                <LayoutGrid size={14} className="sm:w-[18px] sm:h-[18px]" />
               </button>
             </div>
           </div>

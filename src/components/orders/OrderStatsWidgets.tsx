@@ -55,34 +55,34 @@ const OrderStatsWidgets: React.FC<OrderStatsProps> = ({ orders }) => {
     }, [orders]);
 
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 mb-3 sm:mb-6">
             {stats.map((stat, index) => (
                 <motion.div
                     key={stat.label}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.1 }}
-                    whileHover={{ y: -5 }}
-                    className="relative overflow-hidden bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-lg shadow-gray-200/50 dark:shadow-black/20 border border-gray-100 dark:border-gray-700/50 cursor-default group"
+                    whileHover={{ y: -3 }}
+                    className={`relative overflow-hidden bg-white dark:bg-gray-800 p-2 sm:p-4 rounded-xl sm:rounded-2xl shadow-md sm:shadow-lg shadow-gray-200/50 dark:shadow-black/20 border border-gray-100 dark:border-gray-700/50 cursor-default group ${index === 3 ? 'hidden lg:block' : ''}`}
                 >
                     {/* Background Decorative Blob */}
-                    <div className={`absolute -right-6 -top-6 w-24 h-24 rounded-full bg-gradient-to-br ${stat.color} opacity-10 blur-xl group-hover:scale-150 transition-transform duration-500`} />
+                    <div className={`absolute -right-4 -top-4 sm:-right-6 sm:-top-6 w-16 h-16 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br ${stat.color} opacity-10 blur-xl group-hover:scale-150 transition-transform duration-500`} />
 
-                    <div className="flex items-start justify-between relative z-10">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                                {stat.label}
-                            </p>
-                            <h3 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
+                    <div className="flex flex-col relative z-10">
+                        <p className="text-[8px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase truncate">
+                            {stat.label.split(' ')[0]}
+                        </p>
+                        <div className="flex items-center justify-between mt-0.5 sm:mt-1">
+                            <h3 className="text-sm sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
                                 {stat.value}
                             </h3>
-                        </div>
-                        <div className={`p-3 rounded-xl bg-gradient-to-br ${stat.color} shadow-lg shadow-indigo-500/20 text-white`}>
-                            <stat.icon size={20} />
+                            <div className={`p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl bg-gradient-to-br ${stat.color} shadow-md text-white hidden sm:block`}>
+                                <stat.icon size={16} className="sm:w-5 sm:h-5" />
+                            </div>
                         </div>
                     </div>
 
-                    <div className="mt-4 flex items-center gap-2 text-sm relative z-10">
+                    <div className="mt-1 sm:mt-3 flex items-center gap-1 text-[8px] sm:text-xs relative z-10">
                         {stat.trend ? (
                             <span className={`font-semibold ${stat.trendUp ? 'text-green-500' : 'text-red-500'}`}>
                                 {stat.trend}
@@ -92,8 +92,8 @@ const OrderStatsWidgets: React.FC<OrderStatsProps> = ({ orders }) => {
                                 {stat.percentage}
                             </span>
                         )}
-                        <span className="text-gray-400 dark:text-gray-500">
-                            {stat.trend ? 'vs last week' : 'of total orders'}
+                        <span className="text-gray-400 dark:text-gray-500 hidden sm:inline">
+                            {stat.trend ? 'vs last week' : 'of total'}
                         </span>
                     </div>
                 </motion.div>

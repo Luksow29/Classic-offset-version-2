@@ -27,10 +27,10 @@ interface ConsolidatedMetricsData {
 }
 
 interface DashboardMetricsProps {
-    metricsData: ConsolidatedMetricsData | null;
-    loading: boolean;
-    error?: string | null;
-    onDrilldown?: (type: string, filters?: Record<string, string | number | boolean>) => void;
+  metricsData: ConsolidatedMetricsData | null;
+  loading: boolean;
+  error?: string | null;
+  onDrilldown?: (type: string, filters?: Record<string, string | number | boolean>) => void;
 }
 
 const DashboardMetrics: React.FC<DashboardMetricsProps> = ({ metricsData, loading, error, onDrilldown }) => {
@@ -81,9 +81,9 @@ const DashboardMetrics: React.FC<DashboardMetricsProps> = ({ metricsData, loadin
     { title: "Total Customers", value: <AnimatedCounter to={result.total_customers_count || 0} duration={3.4} />, icon: <Users size={22} className="text-blue-500" /> },
     { title: "Stock Alerts", value: <AnimatedCounter to={result.stock_alerts_count || 0} duration={3.6} />, icon: <AlertTriangle size={22} className="text-amber-500" /> }
   ];
-    
+
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-4">
       {formattedMetrics.map((metric, index) => {
         const reportType = metricsDrilldownMap[metric.title as string];
         return (
@@ -95,7 +95,7 @@ const DashboardMetrics: React.FC<DashboardMetricsProps> = ({ metricsData, loadin
             index={index}
             onClick={reportType && onDrilldown ? () => {
               console.log('[DashboardMetrics] Metric clicked:', metric.title, reportType);
-              onDrilldown(reportType, {/* Optionally pass filters here */});
+              onDrilldown(reportType, {/* Optionally pass filters here */ });
             } : undefined}
           />
         );

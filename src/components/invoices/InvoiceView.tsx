@@ -1,5 +1,6 @@
 import React from 'react';
 import { MapPin, Phone, Mail } from 'lucide-react';
+import SafeImage from '../ui/SafeImage';
 
 interface OrderDetails {
   id: number;
@@ -37,7 +38,7 @@ const InvoiceView: React.FC<InvoiceViewProps> = ({ order }) => {
         <div>
           {/* Logo */}
           <div className="flex items-center gap-4 mb-4">
-            <img
+            <SafeImage
               src="/classic-offset-logo.jpg"
               alt="Classic Offset Logo"
               className="w-20 h-20 object-contain rounded-full shadow-sm"

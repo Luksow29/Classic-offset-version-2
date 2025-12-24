@@ -1,24 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { db } from '@/lib/firebaseClient'; // Firebase Firestore ஐ இறக்குமதி செய்யவும்
-import { collection, query, orderBy, onSnapshot, updateDoc, doc } from 'firebase/firestore';
+import { supabase } from '@/lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import timeAgo from '@/lib/timeAgo';
 import { CheckCheck } from 'lucide-react';
 
 interface Notification {
-  id: string;
+  id: string; // text ID in Supabase
   message: string;
   type?: string;
   title?: string;
+  link_to?: string; // mapped from route
+  related_id?: string; // mapped from relatedId/orderId
+  triggered_by?: string;
+  created_at: string;
+  is_read: boolean;
+  // UI helpers
   route?: string;
-  relatedId?: string | number;
-  orderId?: string | number;
-  customerName?: string;
-  newStatus?: string;
-  triggeredBy?: string;
-  updatedBy?: string;
-  timestamp: any;
-  read: boolean;
+  titleDisplay?: string;
 }
 
 interface NotificationPanelProps {
@@ -30,20 +28,51 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const q = query(collection(db, "notifications"), orderBy("timestamp", "desc"));
-    
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const notificationsData: Notification[] = [];
-      querySnapshot.forEach((doc) => {
-        notificationsData.push({ id: doc.id, ...doc.data() } as Notification);
-      });
-      setNotifications(notificationsData);
-    });
+    // Initial fetch
+    const fetchNotifications = async () => {
+      const { data } = await supabase
+        .from('admin_notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
 
-    return () => unsubscribe();
+      if (data) {
+        setNotifications(data.map(mapNotification));
+      }
+    };
+
+    fetchNotifications();
+
+    // Subscribe to changes
+    const channel = supabase
+      .channel('admin_notifications_panel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'admin_notifications' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setNotifications((prev) => [mapNotification(payload.new), ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setNotifications((prev) =>
+              prev.map((n) => n.id === payload.new.id ? mapNotification(payload.new) : n)
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
-  
-  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const mapNotification = (data: any): Notification => ({
+    ...data,
+    route: data.link_to || data.route,
+    titleDisplay: data.title
+  });
+
+  const unreadCount = notifications.filter(n => !n.is_read).length;
 
   const getNotificationRoute = (notification: Notification) => {
     if (notification.route) return notification.route;
@@ -57,6 +86,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
   };
 
   const getNotificationTitle = (notification: Notification) => {
+    if (notification.titleDisplay) return notification.titleDisplay;
     if (notification.title) return notification.title;
     if (notification.type === 'payment') return 'Payment';
     if (notification.type === 'low_stock') return 'Low Stock';
@@ -64,28 +94,36 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
     if (notification.type === 'support_message') return 'Support';
     if (notification.type === 'order_chat_message') return 'Order Chat';
     if (notification.type === 'order_request') return 'Order Request';
-    if (notification.orderId) return `Order #${notification.orderId} Status`;
+    if (notification.related_id) return `Order #${notification.related_id} Status`;
     return 'Notification';
   };
 
 
   const handleNotificationClick = async (notification: Notification) => {
-    if (!notification.read) {
-      const notifRef = doc(db, "notifications", notification.id);
-      await updateDoc(notifRef, {
-        read: true
-      });
+    if (!notification.is_read) {
+      await supabase
+        .from('admin_notifications')
+        .update({ is_read: true })
+        .eq('id', notification.id);
+
+      // Optimistic
+      setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n));
     }
     navigate(getNotificationRoute(notification));
     onClose();
   };
 
   const markAllAsRead = async () => {
-    await Promise.all(
-      notifications
-        .filter((notification) => !notification.read)
-        .map((notification) => updateDoc(doc(db, "notifications", notification.id), { read: true }))
-    );
+    const unreadIds = notifications.filter(n => !n.is_read).map(n => n.id);
+    if (unreadIds.length === 0) return;
+
+    await supabase
+      .from('admin_notifications')
+      .update({ is_read: true })
+      .in('id', unreadIds);
+
+    // Optimistic
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
   };
 
   return (
@@ -104,13 +142,13 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
             <div
               key={notification.id}
               onClick={() => handleNotificationClick(notification)}
-              className={`p-3 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer ${!notification.read ? 'bg-primary-50 dark:bg-primary-900/20' : ''}`}
+              className={`p-3 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer ${!notification.is_read ? 'bg-primary-50 dark:bg-primary-900/20' : ''}`}
             >
               <p className="font-bold">{getNotificationTitle(notification)}</p>
               <p className="text-sm text-gray-600 dark:text-gray-300">{notification.message}</p>
               <p className="text-xs text-gray-400 mt-1">
-                {notification.timestamp
-                  ? timeAgo(typeof notification.timestamp?.toDate === 'function' ? notification.timestamp.toDate() : notification.timestamp)
+                {notification.created_at
+                  ? timeAgo(notification.created_at)
                   : 'just now'}
               </p>
             </div>

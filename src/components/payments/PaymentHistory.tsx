@@ -9,6 +9,7 @@ import {
   CheckCircle2, AlertCircle, Edit, Trash2, Plus
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { useRealtimeTable } from '@/hooks/useRealtimeTable';
 
 // Define the shape of the data
 interface PaymentHistoryEntry {
@@ -147,6 +148,14 @@ const PaymentHistory: React.FC = () => {
   useEffect(() => {
     fetchPaymentHistory();
   }, [fetchPaymentHistory]);
+
+  // Realtime Subscription
+  useRealtimeTable({
+    tableName: 'payment_history',
+    onInsert: () => fetchPaymentHistory(),
+    onUpdate: () => fetchPaymentHistory(),
+    onDelete: () => fetchPaymentHistory()
+  });
 
   const filteredHistory = useMemo(() => {
     if (!searchTerm) return history;

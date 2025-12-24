@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db } from '@/lib/firebaseClient';
-import { collection, query, orderBy, onSnapshot, updateDoc, doc } from 'firebase/firestore';
+import { supabase } from '@/lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import timeAgo from '@/lib/timeAgo';
 import { CheckCheck, Bell } from 'lucide-react';
@@ -8,19 +7,19 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 
 interface Notification {
-    id: string;
+    id: string; // text ID
     message: string;
     type?: string;
     title?: string;
+    link_to?: string; // mapped from route
+    related_id?: string; // mapped from relatedId/orderId
+    triggered_by?: string;
+    created_at: string;
+    is_read: boolean;
+    // Helper accessors for UI
     route?: string;
-    relatedId?: string | number;
-    orderId?: string | number;
-    customerName?: string;
-    newStatus?: string;
-    triggeredBy?: string;
-    updatedBy?: string;
-    timestamp: any;
-    read: boolean;
+    orderId?: string;
+    titleDisplay?: string;
 }
 
 const NotificationsPage: React.FC = () => {
@@ -28,18 +27,51 @@ const NotificationsPage: React.FC = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        const q = query(collection(db, "notifications"), orderBy("timestamp", "desc"));
+        // Initial fetch
+        const fetchNotifications = async () => {
+            const { data } = await supabase
+                .from('admin_notifications')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(50);
 
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
-            const notificationsData: Notification[] = [];
-            querySnapshot.forEach((doc) => {
-                notificationsData.push({ id: doc.id, ...doc.data() } as Notification);
-            });
-            setNotifications(notificationsData);
-        });
+            if (data) {
+                setNotifications(data.map(mapNotification));
+            }
+        };
 
-        return () => unsubscribe();
+        fetchNotifications();
+
+        // Subscribe to changes
+        const channel = supabase
+            .channel('admin_notifications_page')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'admin_notifications' },
+                (payload) => {
+                    if (payload.eventType === 'INSERT') {
+                        setNotifications((prev) => [mapNotification(payload.new), ...prev]);
+                    } else if (payload.eventType === 'UPDATE') {
+                        setNotifications((prev) =>
+                            prev.map((n) => n.id === payload.new.id ? mapNotification(payload.new) : n)
+                        );
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
+
+    const mapNotification = (data: any): Notification => ({
+        ...data,
+        route: data.link_to || data.route, // fallback if legacy
+        orderId: data.related_id,
+        // Calculate title for UI if not present
+        titleDisplay: data.title
+    });
 
     const getNotificationRoute = (notification: Notification) => {
         if (notification.route) return notification.route;
@@ -53,6 +85,7 @@ const NotificationsPage: React.FC = () => {
     };
 
     const getNotificationTitle = (notification: Notification) => {
+        if (notification.titleDisplay) return notification.titleDisplay;
         if (notification.title) return notification.title;
         if (notification.type === 'payment') return 'Payment';
         if (notification.type === 'low_stock') return 'Low Stock';
@@ -66,21 +99,30 @@ const NotificationsPage: React.FC = () => {
 
 
     const handleNotificationClick = async (notification: Notification) => {
-        if (!notification.read) {
-            const notifRef = doc(db, "notifications", notification.id);
-            await updateDoc(notifRef, {
-                read: true
-            });
+        if (!notification.is_read) {
+            await supabase
+                .from('admin_notifications')
+                .update({ is_read: true })
+                .eq('id', notification.id);
+
+            // Optimistic update
+            setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n));
         }
         navigate(getNotificationRoute(notification));
     };
 
     const markAllAsRead = async () => {
-        await Promise.all(
-            notifications
-                .filter((notification) => !notification.read)
-                .map((notification) => updateDoc(doc(db, "notifications", notification.id), { read: true }))
-        );
+        const unreadIds = notifications.filter(n => !n.is_read).map(n => n.id);
+        if (unreadIds.length === 0) return;
+
+        // Update in Supabase
+        await supabase
+            .from('admin_notifications')
+            .update({ is_read: true })
+            .in('id', unreadIds);
+
+        // Optimistic update
+        setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
     };
 
     return (
@@ -103,7 +145,7 @@ const NotificationsPage: React.FC = () => {
                     </div>
                 }
             >
-                <div className="h-[calc(100vh-14rem)] overflow-y-auto p-4">
+                <div className="h-[calc(100vh-14rem)] overflow-y-auto p-4 max-h-[600px]">
                     {notifications.length === 0 ? (
                         <div className="text-center py-12 text-muted-foreground">
                             <Bell className="h-12 w-12 mx-auto mb-4 opacity-20" />
@@ -115,16 +157,16 @@ const NotificationsPage: React.FC = () => {
                                 <div
                                     key={notification.id}
                                     onClick={() => handleNotificationClick(notification)}
-                                    className={`p-4 border rounded-lg hover:border-primary/50 transition-all cursor-pointer flex gap-4 ${!notification.read ? 'bg-primary/5 dark:bg-primary/10 border-primary/20' : 'bg-card'}`}
+                                    className={`p-4 border rounded-lg hover:border-primary/50 transition-all cursor-pointer flex gap-4 ${!notification.is_read ? 'bg-primary/5 dark:bg-primary/10 border-primary/20' : 'bg-card'}`}
                                 >
-                                    <div className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 ${!notification.read ? 'bg-primary' : 'bg-transparent'}`} />
+                                    <div className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 ${!notification.is_read ? 'bg-primary' : 'bg-transparent'}`} />
 
                                     <div className="flex-1 space-y-1">
                                         <div className="flex justify-between items-start">
                                             <p className="font-semibold text-base">{getNotificationTitle(notification)}</p>
                                             <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
-                                                {notification.timestamp
-                                                    ? timeAgo(typeof notification.timestamp?.toDate === 'function' ? notification.timestamp.toDate() : notification.timestamp)
+                                                {notification.created_at
+                                                    ? timeAgo(notification.created_at)
                                                     : 'just now'}
                                             </span>
                                         </div>

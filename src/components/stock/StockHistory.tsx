@@ -78,16 +78,16 @@ const StockHistory: React.FC = () => {
           .order('used_at', { ascending: false })
           .then(({ data, error }) => {
             if (error) throw error;
-            return (data || []).map((log: any) => ({
+            return (data || []).map((log: any): StockTransaction => ({
               id: `usage_${log.id}`,
               item_name: log.stock?.item_name || 'Unknown Item',
-              transaction_type: 'USAGE' as const,
+              transaction_type: 'USAGE',
               quantity: log.used_quantity,
               unit_of_measurement: 'pieces',
               used_for: log.used_for,
-              notes: undefined, // No notes column in stock_usage_log
+              notes: undefined,
               transaction_date: log.used_at,
-              source: 'existing_stock' as const,
+              source: 'existing_stock',
               category: log.stock?.category
             }));
           })

@@ -9,7 +9,7 @@ export default defineConfig({
     plugins: [
         react(),
         VitePWA({
-            registerType: 'autoUpdate',
+            registerType: 'prompt', // prompt for update instead of autoUpdate to prevent unexpected reloads
             includeAssets: ['icons/*.png', 'robots.txt', 'manifest.json'],
             manifest: false, // Use static manifest.json from public folder
             workbox: {

@@ -3,7 +3,7 @@ import { twMerge } from 'tailwind-merge';
 
 export interface TextAreaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   id: string;
-  label: string;
+  label?: string;
   error?: string;
   className?: string;
   helperText?: string;
@@ -19,12 +19,14 @@ const TextArea: React.FC<TextAreaProps> = ({
 }) => {
   return (
     <div className={twMerge("w-full", className)}>
-      <label 
-        htmlFor={id} 
-        className="block text-sm font-medium text-foreground mb-1.5"
-      >
-        {label} {props.required && <span className="text-destructive">*</span>}
-      </label>
+      {label && (
+        <label
+          htmlFor={id}
+          className="block text-sm font-medium text-foreground mb-1.5"
+        >
+          {label} {props.required && <span className="text-destructive">*</span>}
+        </label>
+      )}
       <textarea
         id={id}
         className={twMerge(`

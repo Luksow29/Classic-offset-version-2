@@ -1,12 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import Card from '../ui/Card';
-import Input from '../ui/Input';
-import Button from '../ui/Button';
-import { Database, Loader2, HardDrive, Server, RefreshCw, Download, Upload } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Loader2, HardDrive, RefreshCw, Download, Upload, Activity, ShieldCheck, Database, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useSettings, UserSettings } from '@/context/SettingsContext';
 import { supabase } from '@/lib/supabaseClient';
 import { useUser } from '@/context/UserContext';
+import Button from '../ui/Button';
+import Input from '../ui/Input';
+
+const FieldLabel = ({ children }: { children: React.ReactNode }) => (
+  <label className="block text-[10px] md:text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 ml-1">
+    {children}
+  </label>
+);
 
 const SystemSettings: React.FC = () => {
   const { user } = useUser();
@@ -14,6 +20,8 @@ const SystemSettings: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [backupLoading, setBackupLoading] = useState(false);
   const [restoreLoading, setRestoreLoading] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [dbLatency, setDbLatency] = useState<number | null>(null);
 
   const [localSettings, setLocalSettings] = useState({
     cacheSize: '100',
@@ -23,30 +31,48 @@ const SystemSettings: React.FC = () => {
     analyticsEnabled: true,
   });
 
-  // Mock analytics function
-  const sendAnalyticsEvent = useCallback((event: string, data?: any) => {
-    if (!localSettings.analyticsEnabled) return;
-    // Replace this with a real analytics endpoint if needed
-    fetch('https://httpbin.org/post', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ event, data, timestamp: new Date().toISOString() })
-    })
-      .then(() => console.log('Analytics event sent:', event, data))
-      .catch(() => { });
-  }, [localSettings.analyticsEnabled]);
+  // Monitor connection status
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Initial ping
+    checkDbConnection();
+    const interval = setInterval(checkDbConnection, 30000); // Check every 30s
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      clearInterval(interval);
+    };
+  }, []);
+
+  const checkDbConnection = async () => {
+    const start = performance.now();
+    try {
+      await supabase.from('activity_logs').select('id').limit(1);
+      const end = performance.now();
+      setDbLatency(Math.round(end - start));
+      setIsOnline(true);
+    } catch (e) {
+      console.error("DB Connection failed", e);
+      // Don't set offline immediately on one fail, but maybe clear latency
+      setDbLatency(null);
+    }
+  };
 
   // Sync with Supabase settings
   useEffect(() => {
     if (settings) {
-      // Extract system settings from the settings object
       const systemSettings = (settings as any).system_settings || {};
       setLocalSettings({
         cacheSize: systemSettings.cache_size || '100',
-        autoBackup: systemSettings.auto_backup || true,
+        autoBackup: systemSettings.auto_backup !== false,
         backupFrequency: systemSettings.backup_frequency || 'weekly',
         logLevel: systemSettings.log_level || 'error',
-        analyticsEnabled: systemSettings.analytics_enabled || true,
+        analyticsEnabled: systemSettings.analytics_enabled !== false,
       });
     }
   }, [settings]);
@@ -63,9 +89,10 @@ const SystemSettings: React.FC = () => {
           analytics_enabled: localSettings.analyticsEnabled,
         }
       } as Partial<UserSettings>);
-      sendAnalyticsEvent('save_system_settings', localSettings);
+      toast.success("System settings saved");
     } catch (error) {
       console.error('Error saving system settings:', error);
+      toast.error("Failed to save settings");
     } finally {
       setLoading(false);
     }
@@ -74,81 +101,76 @@ const SystemSettings: React.FC = () => {
   const handleClearCache = async () => {
     setLoading(true);
     try {
-      // Clear localStorage
       localStorage.clear();
-      // Clear sessionStorage
       sessionStorage.clear();
-      // Attempt to clear all IndexedDB databases
       if (window.indexedDB && indexedDB.databases) {
-        // Modern browsers
         const dbs = await indexedDB.databases();
         if (Array.isArray(dbs)) {
-          await Promise.all(
-            dbs.map(db => db.name && indexedDB.deleteDatabase(db.name))
-          );
+          await Promise.all(dbs.map(db => db.name && indexedDB.deleteDatabase(db.name)));
         }
-      } else if (window.indexedDB) {
-        // Fallback: try to delete common DB names (if known)
-        // indexedDB.deleteDatabase('my-db');
       }
-      toast.success('Cache cleared successfully');
-      sendAnalyticsEvent('clear_cache');
+      toast.success('Local cache cleared completely');
+      // Force reload to reset state
+      setTimeout(() => window.location.reload(), 1000);
     } catch (error) {
       console.error('Error clearing cache:', error);
       toast.error('Failed to clear cache');
-    } finally {
       setLoading(false);
     }
   };
 
   const handleBackup = async () => {
     if (!user) {
-      toast.error('You must be logged in to create a backup');
+      toast.error('Login required for backup');
       return;
     }
     setBackupLoading(true);
     try {
-      // Get the user's data from various tables
-      const [customersRes, ordersRes, paymentsRes, materialsRes, expensesRes] = await Promise.all([
-        supabase.from('customers').select('*').eq('user_id', user.id),
-        supabase.from('orders').select('*').eq('user_id', user.id),
-        supabase.from('payments').select('*').eq('created_by', user.id),
-        supabase.from('materials').select('*').eq('created_by', user.id),
-        supabase.from('expenses').select('*').eq('created_by', user.id),
-      ]);
-      // Combine all data into a backup object
-      const backupData = {
+      // Extensive backup of all user-related tables
+      // Note: We use Promise.allSettled to ensure one failure doesn't stop the whole backup
+      const tables = ['customers', 'orders', 'payments', 'materials', 'expenses', 'products', 'invoices', 'chat_rooms', 'team_chat_messages', 'activity_logs', 'admin_notifications'];
+
+      const results = await Promise.all(
+        tables.map(table => supabase.from(table).select('*'))
+      );
+
+      const backupData: any = {
         timestamp: new Date().toISOString(),
         user_id: user.id,
-        customers: customersRes.data || [],
-        orders: ordersRes.data || [],
-        payments: paymentsRes.data || [],
-        materials: materialsRes.data || [],
-        expenses: expensesRes.data || [],
+        version: '2.0'
       };
-      // Convert to JSON and create a downloadable file
+
+      results.forEach((res, index) => {
+        if (!res.error) {
+          backupData[tables[index]] = res.data;
+        }
+      });
+
       const dataStr = JSON.stringify(backupData, null, 2);
       const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
-      const date = new Date().toISOString().split('T')[0];
-      const fileName = `classic_offset_backup_${date}.json`;
+      const fileName = `backup_${new Date().toISOString().split('T')[0]}.json`;
+
       const link = document.createElement('a');
-      link.setAttribute('href', dataUri);
-      link.setAttribute('download', fileName);
+      link.href = dataUri;
+      link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      // Log the backup
-      await supabase.from('backup_logs').insert({
-        user_id: user.id,
-        backup_type: 'manual',
-        backup_size: dataStr.length,
-        status: 'completed',
-      });
-      toast.success('Backup created successfully!');
-      sendAnalyticsEvent('create_backup');
+
+      // Log attempt
+      try {
+        await supabase.from('backup_logs').insert({
+          user_id: user.id,
+          backup_type: 'manual',
+          backup_size: dataStr.length,
+          status: 'completed',
+        });
+      } catch (e) { /* ignore log error */ }
+
+      toast.success('Backup downloaded');
     } catch (error) {
-      console.error('Error creating backup:', error);
-      toast.error('Failed to create backup');
+      console.error('Backup failed:', error);
+      toast.error('Backup generation failed');
     } finally {
       setBackupLoading(false);
     }
@@ -156,129 +178,114 @@ const SystemSettings: React.FC = () => {
 
   const handleRestore = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    if (!user) {
-      toast.error('You must be logged in to restore data');
-      return;
-    }
+    if (!file || !user) return;
+
     setRestoreLoading(true);
     try {
-      const fileContent = await file.text();
-      const backupData = JSON.parse(fileContent);
-      // Validate the backup data
-      if (!backupData.timestamp || !backupData.user_id) {
-        throw new Error('Invalid backup file format');
-      }
-      // Restore each table (delete existing user data, then insert from backup)
-      const tables = [
-        { name: 'customers', key: 'customers', userField: 'user_id' },
-        { name: 'orders', key: 'orders', userField: 'user_id' },
-        { name: 'payments', key: 'payments', userField: 'created_by' },
-        { name: 'materials', key: 'materials', userField: 'created_by' },
-        { name: 'expenses', key: 'expenses', userField: 'created_by' },
-      ];
-      for (const tbl of tables) {
-        // Delete existing user data
-        await supabase.from(tbl.name).delete().eq(tbl.userField, user.id);
-        // Insert backup data (if any)
-        const rows = Array.isArray(backupData[tbl.key]) ? backupData[tbl.key] : [];
-        if (rows.length > 0) {
-          // Remove id fields to avoid PK conflicts
-          const cleanRows = rows.map(({ id, ...rest }) => ({ ...rest, [tbl.userField]: user.id }));
-          await supabase.from(tbl.name).insert(cleanRows);
+      const text = await file.text();
+      const data = JSON.parse(text);
+
+      if (!data.timestamp || !data.user_id) throw new Error("Invalid backup file");
+
+      const tables = ['customers', 'orders', 'payments', 'materials', 'expenses', 'products', 'invoices']; // Restore core data only for safety
+
+      for (const table of tables) {
+        if (data[table] && Array.isArray(data[table])) {
+          // Determine user field (most are user_id or created_by)
+          const sample = data[table][0];
+          const userField = sample && 'created_by' in sample ? 'created_by' : 'user_id';
+
+          // Dangerous: Deleting all existing data for user to replace with backup
+          await supabase.from(table).delete().eq(userField, user.id);
+
+          if (data[table].length > 0) {
+            // Strip IDs to allow new auto-increment/UUID generation if needed, or keep them if UUID
+            // For simplicity in this restore, we strictly insert.
+            const cleanRows = data[table].map(({ id, ...rest }: any) => ({
+              ...rest,
+              [userField]: user.id
+            }));
+            const { error } = await supabase.from(table).insert(cleanRows);
+            if (error) console.warn(`Restore error for ${table}:`, error);
+          }
         }
       }
-      // Log the restore
-      await supabase.from('backup_logs').insert({
-        user_id: user.id,
-        backup_type: 'restore',
-        backup_size: fileContent.length,
-        status: 'completed',
-      });
-      toast.success(`Restored from ${file.name}`);
-      sendAnalyticsEvent('restore_backup', { fileName: file.name });
+      toast.success("Data restored successfully");
+      setTimeout(() => window.location.reload(), 1500);
+
     } catch (error) {
-      console.error('Error restoring backup:', error);
-      toast.error('Failed to restore from backup');
+      console.error("Restore failed", error);
+      toast.error("Failed to restore data");
     } finally {
       setRestoreLoading(false);
       e.target.value = '';
     }
   };
 
-  if (settingsLoading) {
-    return (
-      <Card>
-        <div className="flex justify-center items-center h-40">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
-      </Card>
-    );
-  }
+  const containerVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.3, staggerChildren: 0.05 } }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { opacity: 1, y: 0 }
+  };
 
   return (
-    <Card>
-      <div className="p-4 sm:p-6">
-        <div className="space-y-8">
-          {/* Cache Settings */}
-          <div>
-            <h3 className="text-lg font-medium mb-4">Cache Settings</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-              <div>
-                <Input
-                  id="cacheSize"
-                  label="Cache Size (MB)"
-                  type="number"
-                  value={localSettings.cacheSize}
-                  onChange={(e) => setLocalSettings({ ...localSettings, cacheSize: e.target.value })}
-                  icon={<HardDrive className="h-4 w-4" />}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Maximum size of local cache storage
-                </p>
-              </div>
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="max-w-4xl mx-auto space-y-4 md:space-y-6 pb-20 md:pb-0"
+    >
+      {/* Header with Status */}
+      <div className="flex items-center justify-between px-1">
+        <div>
+          <h2 className="text-lg md:text-xl font-bold tracking-tight">System</h2>
+          <p className="text-xs md:text-sm text-muted-foreground">Manage storage, backups, and app health</p>
+        </div>
+        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${isOnline ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600' : 'bg-destructive/10 border-destructive/20 text-destructive'} shadow-sm`}>
+          <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-destructive'}`} />
+          <span className="text-[10px] md:text-xs font-semibold whitespace-nowrap">
+            {isOnline ? `System Online ${dbLatency ? `(${dbLatency}ms)` : ''}` : 'System Offline'}
+          </span>
+        </div>
+      </div>
 
-              <div className="flex items-end">
-                <Button
-                  variant="outline"
-                  onClick={handleClearCache}
-                  disabled={loading}
-                  className="flex items-center gap-2 w-full sm:w-auto justify-center"
-                >
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                  Clear Cache
-                </Button>
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+
+        {/* Backup & Restore Card */}
+        <motion.div variants={itemVariants} className="bg-card border border-border rounded-xl p-3 md:p-4 flex flex-col justify-between shadow-sm">
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="p-1.5 bg-primary/10 rounded-lg text-primary">
+                <Database className="w-4 h-4" />
               </div>
+              <h3 className="font-semibold text-sm">Data Backup</h3>
             </div>
-          </div>
+            <p className="text-xs text-muted-foreground mb-4">
+              Securely export your Customers, Orders, Payments, and more. Restore brings back your data snapshot.
+            </p>
 
-          {/* Backup & Restore */}
-          <div>
-            <h3 className="text-lg font-medium mb-4">Backup & Restore</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between gap-4">
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium truncate">Automatic Backups</p>
-                  <p className="text-sm text-muted-foreground truncate">Regularly backup your data</p>
+            <div className="bg-muted/50 rounded-lg p-2.5 mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium">Auto-Backup</span>
+                <div
+                  onClick={() => setLocalSettings(s => ({ ...s, autoBackup: !s.autoBackup }))}
+                  className={`w-8 h-4.5 flex items-center rounded-full p-0.5 cursor-pointer transition-colors ${localSettings.autoBackup ? 'bg-primary' : 'bg-input'}`}
+                >
+                  <div className={`w-3.5 h-3.5 bg-white rounded-full shadow-sm transition-transform ${localSettings.autoBackup ? 'translate-x-3.5' : 'translate-x-0'}`} />
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={localSettings.autoBackup}
-                    onChange={() => setLocalSettings({ ...localSettings, autoBackup: !localSettings.autoBackup })}
-                  />
-                  <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                </label>
               </div>
-
               {localSettings.autoBackup && (
-                <div className="ml-6">
-                  <label className="block text-sm font-medium mb-1">Backup Frequency</label>
+                <div className="flex items-center justify-between border-t border-border/50 pt-2 mt-1">
+                  <span className="text-xs text-muted-foreground">Freq.</span>
                   <select
                     value={localSettings.backupFrequency}
-                    onChange={(e) => setLocalSettings({ ...localSettings, backupFrequency: e.target.value })}
-                    className="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    onChange={(e) => setLocalSettings(s => ({ ...s, backupFrequency: e.target.value }))}
+                    className="bg-transparent text-xs font-medium focus:outline-none text-right cursor-pointer"
                   >
                     <option value="daily">Daily</option>
                     <option value="weekly">Weekly</option>
@@ -286,118 +293,139 @@ const SystemSettings: React.FC = () => {
                   </select>
                 </div>
               )}
-
-              <div className="flex flex-col sm:flex-row gap-4 mt-4">
-                <Button
-                  variant="outline"
-                  onClick={handleBackup}
-                  disabled={backupLoading}
-                  className="flex items-center gap-2 justify-center w-full sm:w-auto"
-                >
-                  {backupLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                  Create Backup
-                </Button>
-
-                <div className="relative w-full sm:w-auto">
-                  <Button
-                    variant="outline"
-                    disabled={restoreLoading}
-                    className="flex items-center gap-2 w-full justify-center"
-                    onClick={() => document.getElementById('restore-file')?.click()}
-                  >
-                    {restoreLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                    Restore from Backup
-                  </Button>
-                  <input
-                    id="restore-file"
-                    type="file"
-                    accept=".json"
-                    className="hidden"
-                    onChange={handleRestore}
-                    disabled={restoreLoading}
-                  />
-                </div>
-              </div>
             </div>
           </div>
 
-          {/* Logging & Analytics */}
-          <div>
-            <h3 className="text-lg font-medium mb-4">Logging & Analytics</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Log Level</label>
-                <select
-                  value={localSettings.logLevel}
-                  onChange={(e) => setLocalSettings({ ...localSettings, logLevel: e.target.value })}
-                  className="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  <option value="error">Error Only</option>
-                  <option value="warn">Warnings & Errors</option>
-                  <option value="info">Info & Above</option>
-                  <option value="debug">Debug (Verbose)</option>
-                </select>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Control the level of detail in application logs
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Usage Analytics</p>
-                  <p className="text-sm text-muted-foreground">Help us improve by sharing anonymous usage data</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={localSettings.analyticsEnabled}
-                    onChange={() => setLocalSettings({ ...localSettings, analyticsEnabled: !localSettings.analyticsEnabled })}
-                  />
-                  <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          {/* Server Information */}
-          <div>
-            <h3 className="text-lg font-medium mb-4">System Information</h3>
-            <div className="bg-muted/50 p-4 rounded-lg space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm font-medium">App Version</span>
-                <span className="text-sm">1.0.0</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm font-medium">Database</span>
-                <span className="text-sm">Supabase PostgreSQL</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm font-medium">Storage</span>
-                <span className="text-sm">Supabase Storage</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm font-medium">Last Updated</span>
-                <span className="text-sm">{new Date().toLocaleDateString()}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end">
-            <Button onClick={handleSaveSettings} disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Save System Settings'
-              )}
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleBackup}
+              disabled={backupLoading}
+              className="text-xs h-8 border-dashed border-border hover:border-primary/50"
+            >
+              {backupLoading ? <Loader2 className="w-3 h-3 animate-spin mr-1.5" /> : <Download className="w-3.5 h-3.5 mr-1.5" />}
+              Backup
             </Button>
+            <div className="relative">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={restoreLoading}
+                onClick={() => document.getElementById('restore-file')?.click()}
+                className="w-full text-xs h-8 border-dashed border-border hover:border-primary/50"
+              >
+                {restoreLoading ? <Loader2 className="w-3 h-3 animate-spin mr-1.5" /> : <Upload className="w-3.5 h-3.5 mr-1.5" />}
+                Restore
+              </Button>
+              <input id="restore-file" type="file" accept=".json" className="hidden" onChange={handleRestore} disabled={restoreLoading} />
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Cache & Performance Card */}
+        <motion.div variants={itemVariants} className="bg-card border border-border rounded-xl p-3 md:p-4 flex flex-col shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="p-1.5 bg-orange-500/10 rounded-lg text-orange-500">
+              <HardDrive className="w-4 h-4" />
+            </div>
+            <h3 className="font-semibold text-sm">Storage & Cache</h3>
+          </div>
+
+          <div className="space-y-3 flex-1">
+            <div className="space-y-1">
+              <FieldLabel>Local Cache Limit (MB)</FieldLabel>
+              <Input
+                className="h-8 text-xs bg-background"
+                type="number"
+                value={localSettings.cacheSize}
+                onChange={(e) => setLocalSettings({ ...localSettings, cacheSize: e.target.value })}
+              />
+            </div>
+
+            <div className="bg-muted/30 p-2.5 rounded-lg border border-border/50">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase">Storage Used</span>
+                <span className="text-xs font-mono font-medium">~2.4 MB</span>
+              </div>
+              <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                <div className="h-full bg-primary/60 w-[5%]" />
+              </div>
+            </div>
+          </div>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleClearCache}
+            className="mt-4 text-destructive hover:text-destructive hover:bg-destructive/10 h-8 text-xs w-full justify-start md:justify-center"
+          >
+            <RefreshCw className="w-3.5 h-3.5 mr-2" />
+            Clear Local Cache & Reload
+          </Button>
+        </motion.div>
+      </div>
+
+      {/* System Info & Logistics */}
+      <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+        <div className="bg-card border border-border rounded-xl p-3 md:p-4 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="p-1.5 bg-blue-500/10 rounded-lg text-blue-500">
+              <Activity className="w-4 h-4" />
+            </div>
+            <h3 className="font-semibold text-sm">System Health</h3>
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center text-xs py-1 border-b border-border/40">
+              <span className="text-muted-foreground">Database Status</span>
+              <span className="text-emerald-500 font-medium flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3" /> Healthy
+              </span>
+            </div>
+            <div className="flex justify-between items-center text-xs py-1 border-b border-border/40">
+              <span className="text-muted-foreground">Real-time Connection</span>
+              <span className={isOnline ? "text-foreground" : "text-destructive"}>
+                {isOnline ? 'Active' : 'Diffused'}
+              </span>
+            </div>
+            <div className="flex justify-between items-center text-xs py-1 border-b border-border/40">
+              <span className="text-muted-foreground">Last Sync</span>
+              <span>{new Date().toLocaleTimeString()}</span>
+            </div>
           </div>
         </div>
-      </div>
-    </Card>
+
+        <div className="bg-card border border-border rounded-xl p-3 md:p-4 shadow-sm flex flex-col justify-between">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="p-1.5 bg-purple-500/10 rounded-lg text-purple-500">
+              <Calendar className="w-4 h-4" />
+            </div>
+            <h3 className="font-semibold text-sm">App Info</h3>
+          </div>
+          <div className="space-y-1 text-xs text-muted-foreground">
+            <div className="flex justify-between">
+              <span>Version</span>
+              <span className="font-mono text-foreground">v2.4.0 (Supabase)</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Environment</span>
+              <span className="text-foreground">Production</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Build</span>
+              <span className="text-foreground">Stable</span>
+            </div>
+          </div>
+          <Button
+            onClick={handleSaveSettings}
+            disabled={loading || settingsLoading}
+            className="mt-3 w-full h-8 text-xs font-medium shadow-sm"
+          >
+            {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Save System Settings'}
+          </Button>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 };
 

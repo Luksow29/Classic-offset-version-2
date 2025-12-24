@@ -27,8 +27,8 @@ export default function SidebarControl() {
   const optionRefs = useRef([]);
 
   useEffect(() => {
-    function handleClick(e) {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !(ref.current as any).contains(e.target)) setOpen(false);
     }
     if (open) document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
@@ -36,11 +36,11 @@ export default function SidebarControl() {
 
   useEffect(() => {
     if (open && focusIdx >= 0 && optionRefs.current[focusIdx]) {
-      optionRefs.current[focusIdx].focus();
+      (optionRefs.current[focusIdx] as HTMLButtonElement).focus();
     }
   }, [open, focusIdx]);
 
-  function handleSelect(newMode) {
+  function handleSelect(newMode: string) {
     setMode(newMode);
     localStorage.setItem('sidebarMode', newMode);
     setOpen(false);
@@ -48,7 +48,7 @@ export default function SidebarControl() {
     window.dispatchEvent(new CustomEvent('sidebarModeChange', { detail: newMode }));
   }
 
-  function handleKeyDown(e) {
+  function handleKeyDown(e: React.KeyboardEvent) {
     if (!open) return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();

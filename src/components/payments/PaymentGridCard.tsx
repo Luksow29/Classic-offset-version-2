@@ -72,50 +72,50 @@ const PaymentGridCard: React.FC<PaymentGridCardProps> = ({ group, onView, onEdit
             layout
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="group relative bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col shadow-sm transition-all duration-300 hover:border-primary/50"
+            className="group relative bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col shadow-sm transition-all duration-300 hover:border-primary/50"
         >
-            <div className="p-5 flex-grow space-y-4">
-                {/* Header: Customer & Status */}
-                <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+            <div className="p-3 sm:p-5 flex-grow space-y-2 sm:space-y-4">
+                {/* Header: Customer & Status - Compact */}
+                <div className="flex justify-between items-start gap-2">
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs sm:text-sm shadow-sm flex-shrink-0">
                             {group.customer_name ? group.customer_name.charAt(0).toUpperCase() : 'U'}
                         </div>
-                        <div>
-                            <div className="font-bold text-gray-900 dark:text-white line-clamp-1">{group.customer_name || 'Unknown'}</div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                                {group.customer_phone && <><Phone size={10} /> {group.customer_phone}</>}
+                        <div className="min-w-0">
+                            <div className="font-bold text-sm sm:text-base text-gray-900 dark:text-white line-clamp-1">{group.customer_name || 'Unknown'}</div>
+                            <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 truncate">
+                                {group.customer_phone && <><Phone size={8} className="flex-shrink-0" /> {group.customer_phone}</>}
                             </div>
                         </div>
                     </div>
-                    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${status.color}`}>
+                    <div className={`flex items-center gap-1 px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold border flex-shrink-0 ${status.color}`}>
                         {status.label}
                     </div>
                 </div>
 
-                {/* Amount Summary */}
-                <div className="grid grid-cols-3 gap-2 text-center bg-gray-50 dark:bg-gray-700/30 p-3 rounded-xl">
+                {/* Amount Summary - Compact */}
+                <div className="grid grid-cols-3 gap-1 sm:gap-2 text-center bg-gray-50 dark:bg-gray-700/30 p-2 sm:p-3 rounded-lg sm:rounded-xl">
                     <div>
-                        <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-semibold">Total</div>
-                        <div className="text-sm font-bold text-gray-900 dark:text-white">₹{group.order_total_amount.toLocaleString()}</div>
+                        <div className="text-[8px] sm:text-[10px] text-gray-500 dark:text-gray-400 uppercase font-semibold">Total</div>
+                        <div className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white">₹{(group.order_total_amount / 1000).toFixed(0)}k</div>
                     </div>
-                    <div className="border-l border-gray-200 dark:border-gray-600 pl-2">
-                        <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-semibold">Paid</div>
-                        <div className="text-sm font-bold text-green-600 dark:text-green-400">₹{group.order_amount_paid.toLocaleString()}</div>
+                    <div className="border-l border-gray-200 dark:border-gray-600 pl-1 sm:pl-2">
+                        <div className="text-[8px] sm:text-[10px] text-gray-500 dark:text-gray-400 uppercase font-semibold">Paid</div>
+                        <div className="text-xs sm:text-sm font-bold text-green-600 dark:text-green-400">₹{(group.order_amount_paid / 1000).toFixed(0)}k</div>
                     </div>
-                    <div className="border-l border-gray-200 dark:border-gray-600 pl-2">
-                        <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-semibold">Due</div>
-                        <div className="text-sm font-bold text-red-600 dark:text-red-400">₹{group.order_balance_due.toLocaleString()}</div>
+                    <div className="border-l border-gray-200 dark:border-gray-600 pl-1 sm:pl-2">
+                        <div className="text-[8px] sm:text-[10px] text-gray-500 dark:text-gray-400 uppercase font-semibold">Due</div>
+                        <div className="text-xs sm:text-sm font-bold text-red-600 dark:text-red-400">₹{group.order_balance_due.toLocaleString()}</div>
                     </div>
                 </div>
 
-                {/* Info Row */}
-                <div className="flex justify-between items-center text-sm">
-                    <Link to={`/invoices/${group.order_id}`} className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300 hover:text-primary transition-colors bg-gray-50 dark:bg-gray-700/50 px-3 py-1.5 rounded-lg border border-gray-100 dark:border-gray-600">
-                        <span className="text-xs font-semibold">Order #{group.order_id}</span>
+                {/* Info Row - Compact */}
+                <div className="flex justify-between items-center text-xs sm:text-sm">
+                    <Link to={`/invoices/${group.order_id}`} className="flex items-center gap-1 text-gray-600 dark:text-gray-300 hover:text-primary transition-colors bg-gray-50 dark:bg-gray-700/50 px-2 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg border border-gray-100 dark:border-gray-600">
+                        <span className="text-[10px] sm:text-xs font-semibold">Order #{group.order_id}</span>
                     </Link>
-                    <div className="text-xs text-gray-500 bg-gray-50 dark:bg-gray-700/50 px-2 py-1 rounded-md">
-                        {group.payments.length} Txn{group.payments.length !== 1 ? 's' : ''}
+                    <div className="text-[10px] sm:text-xs text-gray-500 bg-gray-50 dark:bg-gray-700/50 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md">
+                        {group.payments.length} Txns
                     </div>
                 </div>
             </div>

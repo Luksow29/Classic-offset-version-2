@@ -1,27 +1,27 @@
 import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { collection, doc, limit, onSnapshot, orderBy, query, runTransaction, serverTimestamp } from 'firebase/firestore';
 
 import { supabase } from '@/lib/supabaseClient';
-import { db } from '@/lib/firebaseClient';
 import { useUser } from '@/context/UserContext';
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 type AdminNotificationType = 'support_message' | 'order_chat_message' | 'order_request';
 
 type AdminNotificationDoc = {
+  id: string;
   type: AdminNotificationType;
   title?: string;
   message: string;
-  route?: string;
-  relatedId?: string | number;
-  triggeredBy?: string;
-  timestamp: unknown;
-  read: boolean;
+  link_to?: string;
+  related_id?: string;
+  triggered_by?: string;
+  created_at: string;
+  is_read: boolean;
 };
 
 const ADMIN_ROLES = new Set(['owner', 'manager', 'office', 'designer', 'production', 'purchase']);
-const TOAST_NOTIFICATION_TYPES = new Set<AdminNotificationType>(['support_message', 'order_chat_message', 'order_request']);
+const TOAST_NOTIFICATION_TYPES = new Set<string>(['support_message', 'order_chat_message', 'order_request']);
 
 const truncate = (value: string, maxLen = 80) => {
   const text = value.trim();
@@ -29,22 +29,31 @@ const truncate = (value: string, maxLen = 80) => {
   return `${text.slice(0, maxLen - 1)}…`;
 };
 
-const createNotificationOnce = async (docId: string, data: Omit<AdminNotificationDoc, 'timestamp' | 'read'>) => {
-  const ref = doc(db, 'notifications', docId);
-  return runTransaction(db, async (tx) => {
-    const snap = await tx.get(ref);
-    if (snap.exists()) return false;
-    tx.set(ref, { ...data, timestamp: serverTimestamp(), read: false } satisfies AdminNotificationDoc);
+// Use upsert for deduplication
+const createNotificationOnce = async (docId: string, data: Omit<AdminNotificationDoc, 'created_at' | 'is_read'>) => {
+  try {
+    const { error } = await supabase
+      .from('admin_notifications')
+      .upsert({
+        id: docId,
+        ...data,
+        is_read: false,
+        created_at: new Date().toISOString()
+      }, { onConflict: 'id', ignoreDuplicates: true }); // ignoreDuplicates: true means if exists, do nothing
+      
+    if (error) throw error;
     return true;
-  });
+  } catch (err) {
+    console.warn('Failed to create notification:', err);
+    return false;
+  }
 };
 
 export const useAdminInAppNotifications = () => {
   const { user, userProfile } = useUser();
   const location = useLocation();
   const locationRef = useRef({ pathname: location.pathname, search: location.search });
-  const isFirestoreListenerReadyRef = useRef(false);
-  const seenNotificationIdsRef = useRef<Set<string>>(new Set());
+  const hasSubscribedRef = useRef(false);
 
   useEffect(() => {
     locationRef.current = { pathname: location.pathname, search: location.search };
@@ -52,40 +61,40 @@ export const useAdminInAppNotifications = () => {
 
   useEffect(() => {
     if (!user || !userProfile?.role || !ADMIN_ROLES.has(userProfile.role)) return;
+    if (hasSubscribedRef.current) return;
+    
+    hasSubscribedRef.current = true;
 
-    const notificationsQuery = query(collection(db, 'notifications'), orderBy('timestamp', 'desc'), limit(50));
-    const unsubscribeNotifications = onSnapshot(notificationsQuery, (snapshot) => {
-      if (!isFirestoreListenerReadyRef.current) {
-        snapshot.docs.forEach((d) => seenNotificationIdsRef.current.add(d.id));
-        isFirestoreListenerReadyRef.current = true;
-        return;
-      }
+    // Listen for NEW admin notifications to show toasts
+    const notificationChannel = supabase
+      .channel('admin_notifications_listener')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'admin_notifications',
+        },
+        (payload: RealtimePostgresChangesPayload<AdminNotificationDoc>) => {
+          const data = payload.new as AdminNotificationDoc;
+          if (!data || !data.type || !TOAST_NOTIFICATION_TYPES.has(data.type)) return;
 
-      snapshot.docChanges().forEach((change) => {
-        if (change.type !== 'added') return;
+          const title = data.title;
+          const message = data.message || 'New notification';
+          const toastText = title ? `${title} — ${message}` : message;
 
-        const id = change.doc.id;
-        if (seenNotificationIdsRef.current.has(id)) return;
-        seenNotificationIdsRef.current.add(id);
-
-        const data = change.doc.data() as Partial<AdminNotificationDoc> | undefined;
-        const type = data?.type as AdminNotificationType | undefined;
-        if (!type || !TOAST_NOTIFICATION_TYPES.has(type)) return;
-
-        const title = typeof data?.title === 'string' ? data.title : null;
-        const message = typeof data?.message === 'string' ? data.message : 'New notification';
-        const toastText = title ? `${title} — ${message}` : message;
-
-        if (type === 'order_request') {
-          toast.success(truncate(toastText, 140), { duration: 6000, position: 'top-center' });
-        } else {
-          toast(truncate(toastText, 140), { duration: 6000, position: 'top-center' });
+          if (data.type === 'order_request') {
+            toast.success(truncate(toastText, 140), { duration: 6000, position: 'top-center' });
+          } else {
+            toast(truncate(toastText, 140), { duration: 6000, position: 'top-center' });
+          }
         }
-      });
-    });
+      )
+      .subscribe();
 
+    // Listen for Support Messages to CREATE notifications
     const supportChannel = supabase
-      .channel('admin_support_in_app_notifications')
+      .channel('admin_support_trigger')
       .on(
         'postgres_changes',
         {
@@ -111,7 +120,7 @@ export const useAdminInAppNotifications = () => {
             customerName = (data as any)?.customer_name || customerName;
             subject = (data as any)?.subject || subject;
           } catch (err) {
-            console.warn('Failed to fetch support ticket summary for notification:', err);
+            console.warn('Failed to fetch support ticket summary:', err);
           }
 
           const preview = truncate(row.message, 100);
@@ -119,24 +128,22 @@ export const useAdminInAppNotifications = () => {
           const message = subject ? `${subject} — ${preview}` : preview;
           const docId = `support_messages_${row.id}`;
 
-          try {
-            await createNotificationOnce(docId, {
-              type: 'support_message',
-              title,
-              message,
-              route: '/customer-support',
-              relatedId: row.ticket_id,
-              triggeredBy: customerName,
-            });
-          } catch (err) {
-            console.error('Failed to create support notification:', err);
-          }
+          await createNotificationOnce(docId, {
+            id: docId,
+            type: 'support_message',
+            title,
+            message,
+            link_to: '/customer-support',
+            related_id: row.ticket_id,
+            triggered_by: customerName,
+          });
         }
       )
       .subscribe();
 
+    // Listen for Order Chat Messages to CREATE notifications
     const orderChatChannel = supabase
-      .channel('admin_order_chat_in_app_notifications')
+      .channel('admin_order_chat_trigger')
       .on(
         'postgres_changes',
         {
@@ -152,7 +159,7 @@ export const useAdminInAppNotifications = () => {
           if (!row) return;
 
           let title = 'Order Chat: New message';
-          let relatedId: string | number | undefined;
+          let relatedId: string | undefined;
 
           try {
             const { data } = await supabase
@@ -163,34 +170,32 @@ export const useAdminInAppNotifications = () => {
             const orderId = (data as any)?.order_id as number | undefined;
             if (orderId) {
               title = `Order Chat: Order #${orderId}`;
-              relatedId = orderId;
+              relatedId = String(orderId);
             }
           } catch (err) {
-            console.warn('Failed to fetch order chat thread for notification:', err);
+            console.warn('Fetched order chat thread failed:', err);
           }
 
           const content =
             row.message_type && row.message_type !== 'text' ? 'Sent an attachment' : truncate(row.content || 'New message', 100);
           const docId = `order_chat_messages_${row.id}`;
 
-          try {
-            await createNotificationOnce(docId, {
-              type: 'order_chat_message',
-              title,
-              message: content,
-              route: '/order-chat-admin',
-              relatedId: relatedId ?? row.thread_id,
-              triggeredBy: 'Customer',
-            });
-          } catch (err) {
-            console.error('Failed to create order chat notification:', err);
-          }
+          await createNotificationOnce(docId, {
+            id: docId,
+            type: 'order_chat_message',
+            title,
+            message: content,
+            link_to: '/order-chat-admin',
+            related_id: relatedId ?? row.thread_id,
+            triggered_by: 'Customer',
+          });
         }
       )
       .subscribe();
 
+    // Listen for Order Requests to CREATE notifications
     const orderRequestChannel = supabase
-      .channel('admin_order_request_in_app_notifications')
+      .channel('admin_order_request_trigger')
       .on(
         'postgres_changes',
         {
@@ -209,24 +214,22 @@ export const useAdminInAppNotifications = () => {
           const message = `New order request from ${customerName} ${quantity ? `(${quantity} ${orderType})` : ''}`.trim();
           const docId = `order_requests_${row.id}`;
 
-          try {
-            await createNotificationOnce(docId, {
-              type: 'order_request',
-              title: 'Order Request',
-              message,
-              route: '/admin/content?tab=order_requests',
-              relatedId: row.id,
-              triggeredBy: customerName,
-            });
-          } catch (err) {
-            console.error('Failed to create order request notification:', err);
-          }
+          await createNotificationOnce(docId, {
+            id: docId,
+            type: 'order_request',
+            title: 'Order Request',
+            message,
+            link_to: '/admin/content?tab=order_requests',
+            related_id: String(row.id),
+            triggered_by: customerName,
+          });
         }
       )
       .subscribe();
 
     return () => {
-      unsubscribeNotifications();
+      hasSubscribedRef.current = false;
+      supabase.removeChannel(notificationChannel);
       supabase.removeChannel(supportChannel);
       supabase.removeChannel(orderChatChannel);
       supabase.removeChannel(orderRequestChannel);

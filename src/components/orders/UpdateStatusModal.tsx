@@ -1,8 +1,7 @@
 // src/components/orders/UpdateStatusModal.tsx
 import React, { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { db } from '@/lib/firebaseClient';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+// Firebase imports removed
 import { logActivity } from '@/lib/activityLogger';
 import { useUser } from '@/context/UserContext';
 import Modal from '../ui/Modal';
@@ -84,19 +83,22 @@ const UpdateStatusModal: React.FC<Props> = ({ order, isOpen, onClose, onStatusUp
       console.error('[UpdateStatusModal] Error sending customer notification:', notifError);
     }
 
-    // Send notification to admin panel (Firebase)
+    // Send notification to admin panel (Supabase)
     try {
-      await addDoc(collection(db, "notifications"), {
-        orderId: order.order_id,
-        customerName: order.customer_name,
-        newStatus: newStatus,
+      await supabase.from("admin_notifications").insert({
+        related_id: order.order_id,
+        // customer_name is not in schema but derived from order or message usually. 
+        // We'll put details in 'message'
+        type: 'order_status_update',
+        title: 'Order Status Updated',
         message: `Order #${order.order_id} for ${order.customer_name} has been updated to "${newStatus}".`,
-        timestamp: serverTimestamp(),
-        read: false,
-        updatedBy: userName,
+        created_at: new Date().toISOString(),
+        is_read: false,
+        triggered_by: userName,
+        link_to: `/orders/${order.order_id}` // Useful for navigation
       });
-    } catch (firestoreError) {
-      console.error("Error adding notification to Firestore:", firestoreError);
+    } catch (notifError) {
+      console.error("Error adding notification to Supabase:", notifError);
     }
 
     const activityMessage = `Updated status of Order #${order.order_id} to "${newStatus}"`;
@@ -123,8 +125,8 @@ const UpdateStatusModal: React.FC<Props> = ({ order, isOpen, onClose, onStatusUp
               onClick={() => setNewStatus(name)}
               disabled={!canUpdateStatus || loading}
               className={`relative p-4 text-left rounded-xl border-2 transition-all duration-200 ${newStatus === name
-                  ? 'border-primary bg-primary/5 dark:bg-primary/10 ring-1 ring-primary'
-                  : 'border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-primary/50 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                ? 'border-primary bg-primary/5 dark:bg-primary/10 ring-1 ring-primary'
+                : 'border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-primary/50 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                 }`}
             >
               {newStatus === name && (

@@ -100,61 +100,62 @@ const DueSummary: React.FC = () => {
   }, [filteredOrders, groupedByCustomer]);
 
   return (
-    <div className="p-4 sm:p-6 space-y-6">
-      {/* Header & Actions */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Banknote className="w-8 h-8 text-primary" />
-            Due Summary Report
-          </h1>
-          <p className="text-muted-foreground mt-1">Track pending payments and outstanding balances.</p>
+    <div className="p-2 sm:p-4 lg:p-6 space-y-3 sm:space-y-6">
+      {/* Header & Actions - Compact on Mobile */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Banknote className="w-5 h-5 sm:w-8 sm:h-8 text-primary" />
+          <div>
+            <h1 className="text-lg sm:text-2xl font-bold text-foreground">Due Summary</h1>
+            <p className="text-[10px] sm:text-sm text-muted-foreground hidden sm:block">Track pending payments and outstanding balances.</p>
+          </div>
         </div>
-        <div className="flex items-center gap-2 no-print">
-          <Button variant="outline" onClick={() => window.location.reload()}>
-            Refresh
+        <div className="flex items-center gap-1 sm:gap-2 no-print">
+          <Button variant="outline" onClick={() => window.location.reload()} size="sm" className="text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-2">
+            <span className="hidden sm:inline">Refresh</span>
+            <span className="sm:hidden">↻</span>
           </Button>
-          <Button onClick={handlePrint} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-            <Printer className="mr-2 h-4 w-4" />
-            Print / Export
+          <Button onClick={handlePrint} className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-2" size="sm">
+            <Printer className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Print</span>
           </Button>
         </div>
       </div>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="p-6 border-l-4 border-l-rose-500 bg-gradient-to-br from-card to-rose-500/5">
+      {/* Stats Overview - Compact on Mobile */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 lg:gap-6">
+        <Card className="p-2 sm:p-4 lg:p-6 border-l-2 sm:border-l-4 border-l-rose-500 bg-gradient-to-br from-card to-rose-500/5 rounded-xl">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Total Outstanding</p>
-              <h3 className="text-3xl font-bold text-foreground mt-2">₹{summaryStats.totalDueOverall.toLocaleString('en-IN')}</h3>
+              <p className="text-[8px] sm:text-xs lg:text-sm font-medium text-muted-foreground uppercase">Outstanding</p>
+              <h3 className="text-sm sm:text-xl lg:text-3xl font-bold text-foreground mt-0.5 sm:mt-2">₹{(summaryStats.totalDueOverall / 1000).toFixed(0)}k</h3>
             </div>
-            <div className="p-3 bg-rose-100 dark:bg-rose-900/30 rounded-lg text-rose-600">
-              <Banknote size={24} />
+            <div className="p-1.5 sm:p-3 bg-rose-100 dark:bg-rose-900/30 rounded-lg text-rose-600">
+              <Banknote size={14} className="sm:w-6 sm:h-6" />
             </div>
           </div>
         </Card>
 
-        <Card className="p-6 border-l-4 border-l-amber-500 bg-gradient-to-br from-card to-amber-500/5">
+        <Card className="p-2 sm:p-4 lg:p-6 border-l-2 sm:border-l-4 border-l-amber-500 bg-gradient-to-br from-card to-amber-500/5 rounded-xl">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Customers with Dues</p>
-              <h3 className="text-3xl font-bold text-foreground mt-2">{summaryStats.totalCustomersWithDues}</h3>
+              <p className="text-[8px] sm:text-xs lg:text-sm font-medium text-muted-foreground uppercase">Customers</p>
+              <h3 className="text-sm sm:text-xl lg:text-3xl font-bold text-foreground mt-0.5 sm:mt-2">{summaryStats.totalCustomersWithDues}</h3>
             </div>
-            <div className="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg text-amber-600">
-              <Users size={24} />
+            <div className="p-1.5 sm:p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg text-amber-600">
+              <Users size={14} className="sm:w-6 sm:h-6" />
             </div>
           </div>
         </Card>
 
-        <Card className="p-6 border-l-4 border-l-blue-500 bg-gradient-to-br from-card to-blue-500/5">
+        <Card className="p-2 sm:p-4 lg:p-6 border-l-2 sm:border-l-4 border-l-blue-500 bg-gradient-to-br from-card to-blue-500/5 rounded-xl">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Pending Orders</p>
-              <h3 className="text-3xl font-bold text-foreground mt-2">{summaryStats.totalPendingOrders}</h3>
+              <p className="text-[8px] sm:text-xs lg:text-sm font-medium text-muted-foreground uppercase">Orders</p>
+              <h3 className="text-sm sm:text-xl lg:text-3xl font-bold text-foreground mt-0.5 sm:mt-2">{summaryStats.totalPendingOrders}</h3>
             </div>
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600">
-              <Package size={24} />
+            <div className="p-1.5 sm:p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600">
+              <Package size={14} className="sm:w-6 sm:h-6" />
             </div>
           </div>
         </Card>

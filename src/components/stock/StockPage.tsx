@@ -13,56 +13,59 @@ const StockPage: React.FC = () => {
   const [showUseModal, setShowUseModal] = useState(false);
 
   return (
-    <div className="space-y-6 px-4 py-6">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white mb-2 flex items-center gap-3">
-            <Package className="w-8 h-8 text-primary" />
-            Stock Management
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">
-            Manage inventory, track usage, and view transaction history.
-          </p>
+    <div className="space-y-3 sm:space-y-6 px-2 sm:px-4 py-3 sm:py-6">
+      {/* Header Section - Compact on Mobile */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Package className="w-5 h-5 sm:w-8 sm:h-8 text-primary" />
+          <div>
+            <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-800 dark:text-white">Stock</h1>
+            <p className="text-gray-600 dark:text-gray-400 text-[10px] sm:text-sm hidden sm:block">
+              Manage inventory and track usage.
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <Button onClick={() => setShowUseModal(true)} variant="outline" className="gap-2">
-            <Minus size={16} /> Record Usage
+        <div className="flex items-center gap-1 sm:gap-3">
+          <Button onClick={() => setShowUseModal(true)} variant="outline" className="gap-1 sm:gap-2 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm" size="sm">
+            <Minus size={12} className="sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Usage</span>
           </Button>
-          <Button onClick={() => setShowAddModal(true)} className="gap-2">
-            <Plus size={16} /> Add New Item
+          <Button onClick={() => setShowAddModal(true)} className="gap-1 sm:gap-2 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm" size="sm">
+            <Plus size={12} className="sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Add</span>
           </Button>
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs - Compact on Mobile */}
       <div className="border-b border-gray-200 dark:border-gray-700">
-        <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+        <nav className="-mb-px flex space-x-4 sm:space-x-8" aria-label="Tabs">
           <button
             onClick={() => setActiveTab('inventory')}
             className={`
-              whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2
+              whitespace-nowrap py-2 sm:py-4 px-1 border-b-2 font-medium text-[10px] sm:text-sm flex items-center gap-1 sm:gap-2
               ${activeTab === 'inventory'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }
             `}
           >
-            <LayoutDashboard size={18} />
-            Inventory Dashboard
+            <LayoutDashboard size={14} className="sm:w-[18px] sm:h-[18px]" />
+            <span className="hidden sm:inline">Inventory</span>
+            <span className="sm:hidden">Stock</span>
           </button>
           <button
             onClick={() => setActiveTab('history')}
             className={`
-              whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2
+              whitespace-nowrap py-2 sm:py-4 px-1 border-b-2 font-medium text-[10px] sm:text-sm flex items-center gap-1 sm:gap-2
               ${activeTab === 'history'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }
             `}
           >
-            <History size={18} />
-            Transaction History
+            <History size={14} className="sm:w-[18px] sm:h-[18px]" />
+            History
           </button>
         </nav>
       </div>

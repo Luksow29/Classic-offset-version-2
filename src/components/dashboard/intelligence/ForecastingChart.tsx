@@ -24,8 +24,8 @@ const ForecastingChart: React.FC<ForecastingChartProps> = ({ historical, forecas
 
     // Tag data points to distinguish history vs forecast
     const chartData = [
-        ...historical.map(d => ({ ...d, type: 'Historical', predicted: null, actual: d.value })),
-        ...forecast.map(d => ({ ...d, type: 'Forecast', predicted: d.value, actual: null }))
+        ...historical.map(d => ({ ...d, type: 'Historical', predicted: null as number | null, actual: d.value })),
+        ...forecast.map(d => ({ ...d, type: 'Forecast', predicted: d.value, actual: null as number | null }))
     ];
 
     /* 
@@ -45,15 +45,15 @@ const ForecastingChart: React.FC<ForecastingChartProps> = ({ historical, forecas
 
     // Simplified approach: Render Actual and Predicted as separate areas
     // For the 'Predicted' area to start where 'Actual' ends, we need to share the middle point.
-    const refinedData = [
-        ...historical.map(d => ({ name: d.date, actual: d.value, predicted: null })),
+    const refinedData: { name: string; actual: number | null; predicted: number | null }[] = [
+        ...historical.map((d): { name: string; actual: number | null; predicted: number | null } => ({ name: d.date, actual: d.value, predicted: null })),
         // Bridge point: The last historical point is also the start of the prediction line (visually)
         ...(historical.length > 0 ? [{
             name: historical[historical.length - 1].date,
             actual: historical[historical.length - 1].value,
             predicted: historical[historical.length - 1].value
         }] : []),
-        ...forecast.map(d => ({ name: d.date, actual: null, predicted: d.value }))
+        ...forecast.map((d): { name: string; actual: number | null; predicted: number | null } => ({ name: d.date, actual: null, predicted: d.value }))
     ];
 
     // Remove duplicates based on date (name) just in case
@@ -76,7 +76,7 @@ const ForecastingChart: React.FC<ForecastingChartProps> = ({ historical, forecas
     };
 
     return (
-        <div className="w-full h-[300px]">
+        <div className="w-full h-full">
             <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
                     data={uniqueData}

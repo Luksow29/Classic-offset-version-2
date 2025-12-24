@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Menu, GalleryHorizontal, MessageCircle, Settings, Sparkles, Command } from 'lucide-react';
 import { useTheme } from '@/lib/ThemeProvider';
 import ProfileDropdown from '../ui/ProfileDropdown';
+import SafeImage from '../ui/SafeImage';
 import WhatsAppModal from '../WhatsAppModal';
 import { useUser } from '@/context/UserContext';
 import NotificationBell from './NotificationBell';
@@ -52,7 +53,7 @@ const TopHeader: React.FC<TopHeaderProps> = ({ onMenuClick }) => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4, delay: 0.1 }}
             >
-              <img
+              <SafeImage
                 src="/classic-offset-logo.jpg"
                 alt="Logo"
                 className="w-10 h-10 rounded-full object-cover shadow-sm"

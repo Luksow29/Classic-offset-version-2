@@ -10,8 +10,7 @@ import toast from 'react-hot-toast';
 import { useUser } from '@/context/UserContext';
 import CustomerTagging from './enhancements/CustomerTagging';
 import { logActivity } from '@/lib/activityLogger';
-import { db } from '@/lib/firebaseClient';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+// Firebase imports removed
 import { hasAnyStaffRole } from '@/lib/rbac';
 import { Customer } from '@/types';
 import { motion } from 'framer-motion';
@@ -138,13 +137,15 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ selectedCustomer, onSave, o
       // Create notification only for new customers
       if (!selectedCustomer && customerId) {
         try {
-          await addDoc(collection(db, "notifications"), {
+          await supabase.from('admin_notifications').insert({
             message: `New customer "${payload.name}" has been added.`,
             type: 'customer_created',
-            relatedId: customerId,
-            timestamp: serverTimestamp(),
-            read: false,
-            triggeredBy: userName,
+            title: 'New Customer',
+            related_id: customerId,
+            created_at: new Date().toISOString(),
+            is_read: false,
+            triggered_by: userName,
+            link_to: `/customers`
           });
         } catch (notifyError) {
           console.error('Notification error:', notifyError);

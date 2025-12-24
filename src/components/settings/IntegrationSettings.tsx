@@ -6,6 +6,7 @@ import { Plug, Check, ExternalLink, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '@/lib/supabaseClient';
 import { useUser } from '@/context/UserContext';
+import SafeImage from '../ui/SafeImage';
 
 interface Integration {
   id: string;
@@ -47,7 +48,7 @@ const IntegrationSettings: React.FC = () => {
             id: 'whatsapp',
             name: 'WhatsApp Business API',
             description: 'Send automated messages and notifications to customers via WhatsApp',
-            icon: <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" className="h-8 w-8" />,
+            icon: <SafeImage src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" className="h-8 w-8" />,
             connected: false,
             status: undefined
           },
@@ -55,21 +56,21 @@ const IntegrationSettings: React.FC = () => {
             id: 'google',
             name: 'Google Calendar',
             description: 'Sync your orders and appointments with Google Calendar',
-            icon: <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg" alt="Google Calendar" className="h-8 w-8" />,
+            icon: <SafeImage src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg" alt="Google Calendar" className="h-8 w-8" />,
             connected: false
           },
           {
             id: 'stripe',
             name: 'Stripe',
             description: 'Process online payments securely with Stripe',
-            icon: <img src="https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg" alt="Stripe" className="h-8 w-8" />,
+            icon: <SafeImage src="https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg" alt="Stripe" className="h-8 w-8" />,
             connected: false
           },
           {
             id: 'firebase',
             name: 'Firebase',
             description: 'Real-time notifications and data synchronization',
-            icon: <img src="https://www.gstatic.com/devrel-devsite/prod/v2f6fb68338062e7c16672db62c4ab042dcb9bfbacf2fa51b6959426b203a4d8a/firebase/images/touchicon-180.png" alt="Firebase" className="h-8 w-8" />,
+            icon: <SafeImage src="https://www.gstatic.com/devrel-devsite/prod/v2f6fb68338062e7c16672db62c4ab042dcb9bfbacf2fa51b6959426b203a4d8a/firebase/images/touchicon-180.png" alt="Firebase" className="h-8 w-8" />,
             connected: true,
             status: 'active'
           },
@@ -77,7 +78,7 @@ const IntegrationSettings: React.FC = () => {
             id: 'supabase',
             name: 'Supabase',
             description: 'Database and authentication services',
-            icon: <img src="https://supabase.com/favicon/favicon-196x196.png" alt="Supabase" className="h-8 w-8" />,
+            icon: <SafeImage src="https://supabase.com/favicon/favicon-196x196.png" alt="Supabase" className="h-8 w-8" />,
             connected: true,
             status: 'active'
           },
@@ -85,7 +86,7 @@ const IntegrationSettings: React.FC = () => {
             id: 'gemini',
             name: 'Google Gemini AI',
             description: 'AI-powered insights and automation',
-            icon: <img src="https://lh3.googleusercontent.com/vCwOBfHYvNVsYPpYJ51GaWpZ3SzrjGQHgD_HYzfFpuO5Jb_k-3YUJZWFHXJTxaT_Wg=w240-h480-rw" alt="Gemini" className="h-8 w-8" />,
+            icon: <SafeImage src="https://lh3.googleusercontent.com/vCwOBfHYvNVsYPpYJ51GaWpZ3SzrjGQHgD_HYzfFpuO5Jb_k-3YUJZWFHXJTxaT_Wg=w240-h480-rw" alt="Gemini" className="h-8 w-8" />,
             connected: true,
             status: 'active'
           }
