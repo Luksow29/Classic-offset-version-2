@@ -177,43 +177,46 @@ export const usePushNotifications = (userId?: string) => {
         }
       };
 
-      // Save subscription to database (using existing schema)
+      // Save subscription on server (Edge Function → push_subscriptions.subscription_details)
       try {
-        const { error: dbError } = await supabase
-          .from('push_subscriptions')
-          .upsert({
-            user_id: userId,
-            user_type: 'customer', // or detect based on user role
-            endpoint: subscription.endpoint,
-            p256dh_key: subscriptionData.keys.p256dh,
-            auth_key: subscriptionData.keys.auth,
-            browser_info: {
-              userAgent: navigator.userAgent,
-              platform: navigator.platform,
-              language: navigator.language,
-            },
-            is_active: true,
-          }, {
-            onConflict: 'endpoint',
-            ignoreDuplicates: false
-          });
-
-        if (dbError) {
-          console.error('Failed to save subscription to database:', dbError);
-          throw dbError;
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) {
+          throw new Error('Missing session access token');
         }
 
-        console.log('Subscription saved to database successfully');
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-notifications/subscribe`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+              subscription: subscriptionData,
+              userId,
+            }),
+          }
+        );
 
-        // Also keep in localStorage as backup for offline support
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}));
+          throw new Error(payload?.error || payload?.message || 'Failed to store subscription on server');
+        }
+
+        // Keep in localStorage as backup for offline support
         localStorage.setItem('pushSubscription', JSON.stringify({
           ...subscriptionData,
-          userId: userId,
+          userId,
           timestamp: new Date().toISOString()
         }));
-      } catch (error) {
-        console.error('Error saving subscription to database:', error);
-        throw error;
+      } catch (err) {
+        console.error('Error storing subscription on server:', err);
+        try {
+          await subscription.unsubscribe();
+        } catch { }
+        localStorage.removeItem('pushSubscription');
+        throw err;
       }
 
       setState(prev => ({
@@ -262,22 +265,22 @@ export const usePushNotifications = (userId?: string) => {
         }
       }
 
-      // Remove from database
+      // Remove/deactivate on server (Edge Function)
       if (currentEndpoint) {
         try {
-          const { error: dbError } = await supabase
-            .from('push_subscriptions')
-            .update({ is_active: false })
-            .eq('endpoint', currentEndpoint)
-            .eq('user_id', userId);
-
-          if (dbError) {
-            console.error('Failed to deactivate subscription in database:', dbError);
-          } else {
-            console.log('Subscription deactivated in database successfully');
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.access_token) {
+            await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-notifications/unsubscribe`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+              },
+              body: JSON.stringify({ userId, endpoint: currentEndpoint }),
+            });
           }
         } catch (error) {
-          console.error('Error updating subscription in database:', error);
+          console.error('Error unsubscribing on server:', error);
         }
       }
 

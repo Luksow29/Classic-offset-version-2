@@ -221,8 +221,25 @@ const OrderRequestsTable = () => {
 
       return newOrder;
     },
-    onSuccess: () => {
+    onSuccess: async (newOrder) => {
       toast.success('Order request approved and order created!');
+
+      // --- NOTIFY CUSTOMER ---
+      if (newOrder?.customer_id) {
+        try {
+          const { sendOrderUpdateNotification } = await import('@/lib/customerNotifications');
+          await sendOrderUpdateNotification(
+            newOrder.customer_id,
+            newOrder.id,
+            'created',
+            `Your order #${newOrder.id} has been successfully created and is now in production queue.`
+          );
+        } catch (notifyErr) {
+          console.error("Failed to notify customer:", notifyErr);
+        }
+      }
+      // -----------------------
+
       queryClient.invalidateQueries({ queryKey: ['orderRequests'] });
     },
     onError: (err: Error) => {

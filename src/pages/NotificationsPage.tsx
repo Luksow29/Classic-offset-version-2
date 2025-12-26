@@ -1,79 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import timeAgo from '@/lib/timeAgo';
 import { CheckCheck, Bell } from 'lucide-react';
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
+import { useNotifications, Notification } from '@/hooks/useNotifications';
 
-interface Notification {
-    id: string; // text ID
-    message: string;
-    type?: string;
-    title?: string;
-    link_to?: string; // mapped from route
-    related_id?: string; // mapped from relatedId/orderId
-    triggered_by?: string;
-    created_at: string;
-    is_read: boolean;
-    // Helper accessors for UI
+interface NotificationViewModel extends Notification {
     route?: string;
     orderId?: string;
     titleDisplay?: string;
 }
 
 const NotificationsPage: React.FC = () => {
-    const [notifications, setNotifications] = useState<Notification[]>([]);
+    const { notifications: rawNotifications, markAllAsRead, markAsRead } = useNotifications();
     const navigate = useNavigate();
 
-    useEffect(() => {
-        // Initial fetch
-        const fetchNotifications = async () => {
-            const { data } = await supabase
-                .from('admin_notifications')
-                .select('*')
-                .order('created_at', { ascending: false })
-                .limit(50);
+    // Map raw notifications to UI model
+    const notifications: NotificationViewModel[] = rawNotifications.map(n => ({
+        ...n,
+        route: n.link_to,
+        orderId: n.related_id,
+        titleDisplay: n.title
+    }));
 
-            if (data) {
-                setNotifications(data.map(mapNotification));
-            }
-        };
-
-        fetchNotifications();
-
-        // Subscribe to changes
-        const channel = supabase
-            .channel('admin_notifications_page')
-            .on(
-                'postgres_changes',
-                { event: '*', schema: 'public', table: 'admin_notifications' },
-                (payload) => {
-                    if (payload.eventType === 'INSERT') {
-                        setNotifications((prev) => [mapNotification(payload.new), ...prev]);
-                    } else if (payload.eventType === 'UPDATE') {
-                        setNotifications((prev) =>
-                            prev.map((n) => n.id === payload.new.id ? mapNotification(payload.new) : n)
-                        );
-                    }
-                }
-            )
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, []);
-
-    const mapNotification = (data: any): Notification => ({
-        ...data,
-        route: data.link_to || data.route, // fallback if legacy
-        orderId: data.related_id,
-        // Calculate title for UI if not present
-        titleDisplay: data.title
-    });
-
-    const getNotificationRoute = (notification: Notification) => {
+    const getNotificationRoute = (notification: NotificationViewModel) => {
         if (notification.route) return notification.route;
         if (notification.type === 'payment') return '/payments';
         if (notification.type === 'low_stock') return '/stock';
@@ -84,7 +35,7 @@ const NotificationsPage: React.FC = () => {
         return '/orders';
     };
 
-    const getNotificationTitle = (notification: Notification) => {
+    const getNotificationTitle = (notification: NotificationViewModel) => {
         if (notification.titleDisplay) return notification.titleDisplay;
         if (notification.title) return notification.title;
         if (notification.type === 'payment') return 'Payment';
@@ -98,31 +49,11 @@ const NotificationsPage: React.FC = () => {
     };
 
 
-    const handleNotificationClick = async (notification: Notification) => {
+    const handleNotificationClick = async (notification: NotificationViewModel) => {
         if (!notification.is_read) {
-            await supabase
-                .from('admin_notifications')
-                .update({ is_read: true })
-                .eq('id', notification.id);
-
-            // Optimistic update
-            setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n));
+            await markAsRead(notification.id);
         }
         navigate(getNotificationRoute(notification));
-    };
-
-    const markAllAsRead = async () => {
-        const unreadIds = notifications.filter(n => !n.is_read).map(n => n.id);
-        if (unreadIds.length === 0) return;
-
-        // Update in Supabase
-        await supabase
-            .from('admin_notifications')
-            .update({ is_read: true })
-            .in('id', unreadIds);
-
-        // Optimistic update
-        setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
     };
 
     return (

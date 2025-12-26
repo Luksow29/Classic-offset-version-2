@@ -612,7 +612,7 @@ const OrderChatAdminPage: React.FC = () => {
   }
 
   return (
-    <div className="h-screen bg-background flex flex-col">
+    <div className="h-full bg-background flex flex-col">
       {/* Header */}
       <div className="bg-primary text-primary-foreground p-3 md:p-4 shadow-md">
         <div className="flex justify-between items-center">
@@ -791,8 +791,8 @@ const OrderChatAdminPage: React.FC = () => {
                           )}
                           <div
                             className={`px-4 py-2 rounded-lg shadow-sm ${message.sender_type === 'admin'
-                                ? 'bg-primary text-primary-foreground rounded-br-sm'
-                                : 'bg-card text-card-foreground rounded-bl-sm border border-border'
+                              ? 'bg-primary text-primary-foreground rounded-br-sm'
+                              : 'bg-card text-card-foreground rounded-bl-sm border border-border'
                               }`}
                           >
                             <p className="text-sm leading-relaxed">{message.content}</p>

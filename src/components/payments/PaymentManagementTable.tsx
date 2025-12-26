@@ -484,122 +484,132 @@ const PaymentManagementTable: React.FC = () => {
   return (
     <>
       <Card className="overflow-hidden border-border/50 shadow-sm">
-        {/* Header - Compact on Mobile */}
-        <div className="p-2 sm:p-4 lg:p-6 border-b border-border/50 space-y-2 sm:space-y-4">
-          <div className="flex items-center justify-between gap-2">
+        {/* Header */}
+        <div className="p-4 sm:p-6 border-b border-border/50 space-y-6">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <div>
-              <h3 className="text-sm sm:text-lg font-bold flex items-center gap-1.5 text-foreground">
+              <h3 className="text-xl font-bold flex items-center gap-2 text-foreground">
                 Payment Activity
               </h3>
-              <p className="text-[10px] sm:text-sm text-muted-foreground hidden sm:block">Manage and track payment transactions</p>
+              <p className="text-sm text-muted-foreground mt-1">Manage and track all payment transactions</p>
             </div>
-            <div className="flex items-center gap-1 sm:gap-2">
-              <Button onClick={fetchPayments} variant="outline" size="sm" className="h-7 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm">
-                <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Refresh</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button onClick={fetchPayments} variant="outline" size="sm" className="h-9 transition-all hover:bg-muted">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Refresh
               </Button>
-              <Button onClick={exportToCSV} variant="outline" size="sm" className="h-7 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm">
-                <Download className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Export</span>
+              <Button onClick={exportToCSV} variant="outline" size="sm" className="h-9 transition-all hover:bg-muted">
+                <Download className="w-4 h-4 mr-2" />
+                Export
               </Button>
               {selectedPayments.length > 0 && (
-                <Button onClick={() => setShowBulkModal(true)} variant="destructive" size="sm" className="h-7 sm:h-9 px-2 sm:px-3 text-xs animate-in fade-in zoom-in duration-200">
-                  <Trash2 className="w-3 h-3 sm:hidden" />
-                  <span className="hidden sm:inline">Delete ({selectedPayments.length})</span>
+                <Button onClick={() => setShowBulkModal(true)} variant="destructive" size="sm" className="h-9 animate-in fade-in zoom-in duration-200">
+                  Delete Selected ({selectedPayments.length})
                 </Button>
               )}
             </div>
           </div>
 
-          {/* Filters - Ultra Compact on Mobile */}
-          <div className="bg-muted/30 p-1.5 sm:p-3 rounded-lg sm:rounded-xl border border-border/50 space-y-1.5 sm:space-y-0 sm:grid sm:grid-cols-12 sm:gap-3 sm:items-center">
-            {/* Row 1: Search + Status */}
-            <div className="flex gap-1.5 sm:contents">
-              <div className="flex-1 sm:col-span-4 relative group">
-                <Search className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground absolute top-1/2 left-2 sm:left-3 -translate-y-1/2 group-focus-within:text-primary transition-colors" />
-                <Input
-                  id="search-payments"
-                  placeholder="Search..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-6 sm:pl-9 h-7 sm:h-9 text-[11px] sm:text-sm border-border/50 bg-background focus:ring-1 focus:ring-primary/20 transition-all"
-                />
-              </div>
-
-              <div className="w-24 sm:w-auto sm:col-span-2">
-                <Select
-                  id="status-filter"
-                  label=""
-                  options={[
-                    { value: 'Paid', label: 'Paid' },
-                    { value: 'Partial', label: 'Partial' },
-                    { value: 'Due', label: 'Due' },
-                    { value: 'Overdue', label: 'Overdue' }
-                  ]}
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  placeholder="All"
-                  className="h-7 sm:h-9 text-[11px] sm:text-sm bg-background border-border/50"
-                />
-              </div>
+          {/* Filters */}
+          {/* New Filter Bar */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center bg-muted/30 p-3 rounded-xl border border-border/50">
+            <div className="md:col-span-4 relative group">
+              <Search className="w-4 h-4 text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2 group-focus-within:text-primary transition-colors" />
+              <Input
+                id="search-payments"
+                placeholder="Search customer, order ID..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-9 border-border/50 bg-background focus:ring-1 focus:ring-primary/20 transition-all"
+              />
             </div>
 
-            {/* Desktop Only: Date Filter */}
-            <div className="sm:col-span-2 hidden sm:block">
+            <div className="md:col-span-2">
+              <Select
+                id="status-filter"
+                label=""
+                options={[
+                  { value: 'Paid', label: 'Paid' },
+                  { value: 'Partial', label: 'Partial' },
+                  { value: 'Due', label: 'Due' },
+                  { value: 'Overdue', label: 'Overdue' }
+                ]}
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                placeholder="All Status"
+                className="h-9 bg-background border-border/50"
+              />
+            </div>
+
+            <div className="md:col-span-2">
               <Input
                 id="date-filter"
                 type="month"
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="h-9 text-sm border-border/50 bg-background"
+                className="h-9 border-border/50 bg-background"
               />
             </div>
 
-            {/* Row 2: Min/Max + View Toggle */}
-            <div className="flex gap-1.5 items-center sm:contents">
-              <div className="flex gap-1 flex-1 sm:col-span-3 sm:gap-2">
-                <Input
-                  id="min-amount"
-                  type="number"
-                  placeholder="Min ₹"
-                  value={amountFilter.min}
-                  onChange={(e) => setAmountFilter({ ...amountFilter, min: e.target.value })}
-                  className="h-7 sm:h-9 text-[11px] sm:text-sm border-border/50 bg-background"
-                />
-                <Input
-                  id="max-amount"
-                  type="number"
-                  placeholder="Max ₹"
-                  value={amountFilter.max}
-                  onChange={(e) => setAmountFilter({ ...amountFilter, max: e.target.value })}
-                  className="h-7 sm:h-9 text-[11px] sm:text-sm border-border/50 bg-background"
-                />
+            <div className="md:col-span-3 flex gap-2">
+              <Input
+                id="min-amount"
+                type="number"
+                placeholder="Min ₹"
+                value={amountFilter.min}
+                onChange={(e) => setAmountFilter({ ...amountFilter, min: e.target.value })}
+                className="h-9 border-border/50 bg-background"
+              />
+              <Input
+                id="max-amount"
+                type="number"
+                placeholder="Max ₹"
+                value={amountFilter.max}
+                onChange={(e) => setAmountFilter({ ...amountFilter, max: e.target.value })}
+                className="h-9 border-border/50 bg-background"
+              />
+            </div>
+
+            <div className="md:col-span-1 flex justify-end gap-2">
+              <div className="flex items-center bg-white dark:bg-gray-800 p-1 rounded-lg border border-border/50">
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-1.5 rounded-md transition-all ${viewMode === 'list'
+                    ? 'bg-primary/10 text-primary shadow-sm'
+                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                    }`}
+                  title="List View"
+                >
+                  <List size={16} />
+                </button>
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-1.5 rounded-md transition-all ${viewMode === 'grid'
+                    ? 'bg-primary/10 text-primary shadow-sm'
+                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                    }`}
+                  title="Grid View"
+                >
+                  <LayoutGrid size={16} />
+                </button>
               </div>
 
-              <div className="sm:col-span-1 flex justify-end">
-                <div className="flex items-center bg-white dark:bg-gray-800 p-0.5 rounded border border-border/50">
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`p-1 rounded transition-all ${viewMode === 'list'
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-gray-400 hover:text-gray-600'
-                      }`}
-                    title="List View"
-                  >
-                    <List size={12} className="sm:w-4 sm:h-4" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={`p-1 rounded transition-all ${viewMode === 'grid'
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-gray-400 hover:text-gray-600'
-                      }`}
-                    title="Grid View"
-                  >
-                    <LayoutGrid size={12} className="sm:w-4 sm:h-4" />
-                  </button>
-                </div>
-              </div>
+              {(searchQuery || statusFilter || dateFilter || amountFilter.min || amountFilter.max) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setStatusFilter('');
+                    setDateFilter('');
+                    setAmountFilter({ min: '', max: '' });
+                  }}
+                  className="h-9 w-9 p-0 rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors"
+                  title="Clear filters"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              )}
             </div>
           </div>
         </div>

@@ -6,6 +6,8 @@ import CustomerLayout from './CustomerLayout';
 import { supabase } from '@/services/supabase/client';
 import { Tables } from '@/services/supabase/types';
 import { useSupportNotifications } from '@/features/support/hooks/useSupportNotifications';
+import { useCustomerPushNotifications } from '@/features/notifications/hooks/useCustomerPushNotifications';
+import { NotificationProvider } from '@/features/notifications/context/NotificationContext';
 
 type Customer = Tables<'customers'>;
 
@@ -17,6 +19,8 @@ const ProtectedLayout: React.FC = () => {
 
   // Global support chat notifications
   useSupportNotifications(customer?.id || null);
+  // Global order chat push notifications
+  useCustomerPushNotifications(user?.id);
 
   useEffect(() => {
     let isMounted = true;
@@ -47,7 +51,7 @@ const ProtectedLayout: React.FC = () => {
         if (error && error.code !== 'PGRST116') { // Ignore 'not found' errors
           throw error;
         }
-        
+
         if (isMounted) {
           setCustomer(customerData || null);
         }
@@ -96,9 +100,11 @@ const ProtectedLayout: React.FC = () => {
   }
 
   return (
-    <CustomerLayout>
-      <Outlet context={{ user, customer }} />
-    </CustomerLayout>
+    <NotificationProvider>
+      <CustomerLayout>
+        <Outlet context={{ user, customer }} />
+      </CustomerLayout>
+    </NotificationProvider>
   );
 };
 

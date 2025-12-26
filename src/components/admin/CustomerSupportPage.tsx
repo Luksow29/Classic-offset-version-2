@@ -6,13 +6,13 @@ import Input from '@/components/ui/Input';
 import type { Database } from '@/types/supabase';
 import { useUser } from '@/context/UserContext';
 import toast from 'react-hot-toast';
-import { 
-  MessageCircle, 
-  Send, 
-  Phone, 
-  Mail, 
-  Clock, 
-  CheckCircle2, 
+import {
+  MessageCircle,
+  Send,
+  Phone,
+  Mail,
+  Clock,
+  CheckCircle2,
   CheckCircle,
   User,
   AlertCircle,
@@ -119,7 +119,7 @@ const CustomerSupportPage: React.FC = () => {
           console.log('Admin: New message received:', payload);
           const newMessage = payload.new as SupportMessage;
           setMessages(prev => (prev.some(msg => msg.id === newMessage.id) ? prev : [...prev, newMessage]));
-          
+
           // Mark as read if it's from customer
           if (newMessage.sender_type === 'customer') {
             console.log('Admin: Marking customer message as read');
@@ -139,7 +139,7 @@ const CustomerSupportPage: React.FC = () => {
   const fetchTickets = async () => {
     try {
       console.log('Admin: Loading tickets with filter:', statusFilter);
-      
+
       let query = supabase
         .from('support_tickets_summary')
         .select('*')
@@ -169,7 +169,7 @@ const CustomerSupportPage: React.FC = () => {
   const fetchMessages = async (ticketId: string) => {
     try {
       console.log('Admin: Loading messages for ticket:', ticketId);
-      
+
       const { data, error } = await supabase
         .from('support_messages')
         .select('*')
@@ -180,7 +180,7 @@ const CustomerSupportPage: React.FC = () => {
         console.error('Admin: Error loading messages:', error);
         throw error;
       }
-      
+
       console.log('Admin: Loaded messages:', data);
       setMessages(data || []);
     } catch (error) {
@@ -210,10 +210,10 @@ const CustomerSupportPage: React.FC = () => {
         p_ticket_id: ticketId,
         p_reader_type: 'admin'
       });
-      
+
       // Update local ticket state
-      setTickets(prev => prev.map(ticket => 
-        ticket.id === ticketId 
+      setTickets(prev => prev.map(ticket =>
+        ticket.id === ticketId
           ? { ...ticket, unread_admin_count: 0 }
           : ticket
       ));
@@ -235,7 +235,7 @@ const CustomerSupportPage: React.FC = () => {
 
     console.log('Admin: Sending message:', newMessage.trim());
     setSending(true);
-    
+
     try {
       const currentUserId = user.id;
 
@@ -280,7 +280,7 @@ const CustomerSupportPage: React.FC = () => {
     try {
       const { error } = await supabase
         .from('support_tickets')
-        .update({ 
+        .update({
           status: newStatus,
           updated_at: new Date().toISOString(),
           ...(newStatus === 'resolved' ? { resolved_at: new Date().toISOString() } : {})
@@ -291,7 +291,7 @@ const CustomerSupportPage: React.FC = () => {
 
       toast.success('Ticket status updated');
       fetchTickets();
-      
+
       if (selectedTicket?.id === ticketId) {
         setSelectedTicket(prev => prev ? { ...prev, status: newStatus as any } : null);
       }
@@ -309,7 +309,7 @@ const CustomerSupportPage: React.FC = () => {
       resolved: { color: 'bg-green-100 text-green-800', label: 'Resolved' },
       closed: { color: 'bg-gray-100 text-gray-800', label: 'Closed' }
     };
-    
+
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.open;
     return <Badge className={config.color}>{config.label}</Badge>;
   };
@@ -321,7 +321,7 @@ const CustomerSupportPage: React.FC = () => {
       high: { color: 'bg-orange-100 text-orange-800', label: 'High' },
       urgent: { color: 'bg-red-100 text-red-800', label: 'Urgent' }
     };
-    
+
     const config = priorityConfig[priority as keyof typeof priorityConfig] || priorityConfig.medium;
     return <Badge className={config.color}>{config.label}</Badge>;
   };
@@ -344,7 +344,7 @@ const CustomerSupportPage: React.FC = () => {
   }
 
   return (
-    <div className="h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+    <div className="h-full bg-gray-50 dark:bg-gray-900 flex flex-col">
       {/* WhatsApp-style Header */}
       <div className="bg-green-600 dark:bg-green-700 text-white p-3 md:p-4 shadow-md">
         <div className="flex justify-between items-center">
@@ -387,9 +387,8 @@ const CustomerSupportPage: React.FC = () => {
                 {tickets.map((ticket) => (
                   <div
                     key={ticket.id}
-                    className={`p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                      selectedTicket?.id === ticket.id ? 'bg-green-50 dark:bg-green-900/30 border-r-4 border-green-500 dark:border-green-400' : ''
-                    }`}
+                    className={`p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${selectedTicket?.id === ticket.id ? 'bg-green-50 dark:bg-green-900/30 border-r-4 border-green-500 dark:border-green-400' : ''
+                      }`}
                     onClick={() => setSelectedTicket(ticket)}
                   >
                     {/* Customer Avatar and Info */}
@@ -416,19 +415,18 @@ const CustomerSupportPage: React.FC = () => {
                         <p className="text-sm text-gray-600 dark:text-gray-300 truncate mb-1">{ticket.subject}</p>
                         {ticket.last_message && (
                           <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                            {ticket.last_message.length > 50 
+                            {ticket.last_message.length > 50
                               ? ticket.last_message.substring(0, 50) + '...'
                               : ticket.last_message
                             }
                           </p>
                         )}
                         <div className="flex items-center gap-2 mt-2">
-                          <div className={`h-2 w-2 rounded-full ${
-                            ticket.status === 'open' ? 'bg-blue-400 dark:bg-blue-500' :
-                            ticket.status === 'in_progress' ? 'bg-yellow-400 dark:bg-yellow-500' :
-                            ticket.status === 'waiting_customer' ? 'bg-orange-400 dark:bg-orange-500' :
-                            ticket.status === 'resolved' ? 'bg-green-400 dark:bg-green-500' : 'bg-gray-400 dark:bg-gray-500'
-                          }`}></div>
+                          <div className={`h-2 w-2 rounded-full ${ticket.status === 'open' ? 'bg-blue-400 dark:bg-blue-500' :
+                              ticket.status === 'in_progress' ? 'bg-yellow-400 dark:bg-yellow-500' :
+                                ticket.status === 'waiting_customer' ? 'bg-orange-400 dark:bg-orange-500' :
+                                  ticket.status === 'resolved' ? 'bg-green-400 dark:bg-green-500' : 'bg-gray-400 dark:bg-gray-500'
+                            }`}></div>
                           <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
                             {ticket.status.replace('_', ' ')}
                           </span>
@@ -472,31 +470,30 @@ const CustomerSupportPage: React.FC = () => {
                       <div className="flex items-center gap-1 md:gap-2 text-xs md:text-sm text-gray-500 dark:text-gray-400">
                         <span className="truncate max-w-[120px] md:max-w-none">{selectedTicket.subject}</span>
                         <span className="hidden md:inline">•</span>
-                        <div className={`h-2 w-2 rounded-full flex-shrink-0 ${
-                          selectedTicket.status === 'open' ? 'bg-blue-400 dark:bg-blue-500' :
-                          selectedTicket.status === 'in_progress' ? 'bg-green-400 dark:bg-green-500' :
-                          selectedTicket.status === 'waiting_customer' ? 'bg-orange-400 dark:bg-orange-500' :
-                          selectedTicket.status === 'resolved' ? 'bg-gray-400 dark:bg-gray-500' : 'bg-gray-400 dark:bg-gray-500'
-                        }`}></div>
+                        <div className={`h-2 w-2 rounded-full flex-shrink-0 ${selectedTicket.status === 'open' ? 'bg-blue-400 dark:bg-blue-500' :
+                            selectedTicket.status === 'in_progress' ? 'bg-green-400 dark:bg-green-500' :
+                              selectedTicket.status === 'waiting_customer' ? 'bg-orange-400 dark:bg-orange-500' :
+                                selectedTicket.status === 'resolved' ? 'bg-gray-400 dark:bg-gray-500' : 'bg-gray-400 dark:bg-gray-500'
+                          }`}></div>
                         <span className="capitalize text-xs">{selectedTicket.status.replace('_', ' ')}</span>
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Quick Actions */}
                   <div className="flex items-center gap-1 md:gap-2">
                     {customer && (
                       <>
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="sm"
                           className="text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 p-1 md:p-2"
                           onClick={() => window.open(`tel:${customer.phone}`, '_self')}
                         >
                           <Phone className="h-3 w-3 md:h-4 md:w-4" />
                         </Button>
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="sm"
                           className="text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 p-1 md:p-2 hidden md:inline-flex"
                           onClick={() => window.open(`mailto:${customer.email}`, '_blank')}
@@ -505,7 +502,7 @@ const CustomerSupportPage: React.FC = () => {
                         </Button>
                       </>
                     )}
-                    
+
                     {/* Status Update Dropdown */}
                     <select
                       value={selectedTicket.status}
@@ -532,25 +529,22 @@ const CustomerSupportPage: React.FC = () => {
                         key={message.id}
                         className={`flex ${message.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}
                       >
-                        <div className={`max-w-[70%] ${
-                          message.sender_type === 'admin' ? '' : 'flex items-end gap-2'
-                        }`}>
+                        <div className={`max-w-[70%] ${message.sender_type === 'admin' ? '' : 'flex items-end gap-2'
+                          }`}>
                           {message.sender_type === 'customer' && (
                             <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 dark:from-blue-500 dark:to-blue-700 flex items-center justify-center text-white text-xs font-semibold mb-1">
                               {customer?.name?.charAt(0) || 'C'}
                             </div>
                           )}
                           <div
-                            className={`px-4 py-2 rounded-lg shadow-sm ${
-                              message.sender_type === 'admin'
+                            className={`px-4 py-2 rounded-lg shadow-sm ${message.sender_type === 'admin'
                                 ? 'bg-green-500 dark:bg-green-600 text-white rounded-br-sm'
                                 : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-bl-sm border border-gray-200 dark:border-gray-600'
-                            }`}
+                              }`}
                           >
                             <p className="text-sm leading-relaxed">{message.message}</p>
-                            <div className={`flex items-center justify-end gap-1 mt-1 text-xs ${
-                              message.sender_type === 'admin' ? 'text-green-100 dark:text-green-200' : 'text-gray-500 dark:text-gray-400'
-                            }`}>
+                            <div className={`flex items-center justify-end gap-1 mt-1 text-xs ${message.sender_type === 'admin' ? 'text-green-100 dark:text-green-200' : 'text-gray-500 dark:text-gray-400'
+                              }`}>
                               <span>
                                 {new Date(message.created_at).toLocaleTimeString('en-IN', {
                                   hour: '2-digit',
@@ -595,8 +589,8 @@ const CustomerSupportPage: React.FC = () => {
                           className="pr-12 py-3 rounded-full border-gray-300 dark:border-gray-600 focus:border-green-500 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         />
                       </div>
-                      <Button 
-                        onClick={sendMessage} 
+                      <Button
+                        onClick={sendMessage}
                         disabled={sending || !newMessage.trim()}
                         className="h-12 w-12 rounded-full bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 p-0 flex items-center justify-center"
                       >
@@ -625,7 +619,7 @@ const CustomerSupportPage: React.FC = () => {
                   Welcome to Customer Support
                 </h3>
                 <p className="text-gray-500 dark:text-gray-400 max-w-md">
-                  Select a conversation from the sidebar to start chatting with customers. 
+                  Select a conversation from the sidebar to start chatting with customers.
                   All your support tickets will appear here.
                 </p>
               </div>

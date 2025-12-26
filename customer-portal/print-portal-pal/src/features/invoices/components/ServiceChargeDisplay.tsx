@@ -6,10 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
 import { Separator } from '@/shared/components/ui/separator';
-import { 
-  CheckCircle, 
-  XCircle, 
-  Calculator, 
+import {
+  CheckCircle,
+  XCircle,
+  Calculator,
   IndianRupee,
   Clock,
   AlertCircle
@@ -56,10 +56,39 @@ const ServiceChargeDisplay: React.FC<ServiceChargeDisplayProps> = ({
         })
         .eq('id', order.id)
         .eq('pricing_status', 'quoted'); // Only allow if currently quoted
-      
+
       if (error) throw error;
     },
     onSuccess: () => {
+
+      // --- TRIGGER ADMIN NOTIFICATION ---
+      try {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session?.access_token) {
+            const requestId = order.id;
+            const amount = order.total_amount;
+
+            fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-notifications/notify-admins`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+              },
+              body: JSON.stringify({
+                title: 'Quote Accepted',
+                body: `Quote for Request #${requestId} (₹${amount}) was accepted.`,
+                data: {
+                  url: `/admin/content?tab=order_requests&id=${requestId}`
+                }
+              })
+            }).catch(err => console.error("Failed to notify admins:", err));
+          }
+        });
+      } catch (e) {
+        console.error("Notify error", e);
+      }
+      // ----------------------------------
+
       toast({
         title: "Quote Accepted",
         description: "Your quote has been accepted. The admin will process your order shortly.",
@@ -86,7 +115,7 @@ const ServiceChargeDisplay: React.FC<ServiceChargeDisplayProps> = ({
         })
         .eq('id', order.id)
         .eq('pricing_status', 'quoted'); // Only allow if currently quoted
-      
+
       if (error) throw error;
     },
     onSuccess: () => {
@@ -131,7 +160,7 @@ const ServiceChargeDisplay: React.FC<ServiceChargeDisplayProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        
+
         {/* Original Amount */}
         <div className="flex justify-between items-center">
           <span className="text-sm text-muted-foreground">Original Amount:</span>
@@ -179,7 +208,7 @@ const ServiceChargeDisplay: React.FC<ServiceChargeDisplayProps> = ({
             <div className="flex items-start gap-1">
               <AlertCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />
               <span>
-                Additional charges have been added based on your requirements. 
+                Additional charges have been added based on your requirements.
                 Total service charges: ₹{totalServiceCharges.toLocaleString('en-IN')}
               </span>
             </div>

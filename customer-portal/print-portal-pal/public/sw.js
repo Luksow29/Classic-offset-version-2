@@ -118,37 +118,46 @@ self.addEventListener('push', (event) => {
     actions: []
   };
 
-  if (event.data) {
-    try {
-      const pushData = event.data.json();
-      console.log('SW: Push data:', pushData);
-      
-      notificationData = {
-        title: pushData.title || notificationData.title,
-        body: pushData.message || pushData.body || notificationData.body,
-        icon: pushData.icon || notificationData.icon,
-        badge: pushData.badge || notificationData.badge,
-        tag: pushData.tag || pushData.type || notificationData.tag,
-        data: {
-          url: pushData.url || '/',
-          orderId: pushData.order_id,
-          notificationId: pushData.id,
-          type: pushData.type,
-          timestamp: Date.now()
-        },
-        actions: pushData.actions || getDefaultActions(pushData.type),
-        requireInteraction: pushData.priority === 'urgent',
-        silent: pushData.priority === 'low',
-        vibrate: pushData.priority === 'urgent' ? [200, 100, 200] : [100],
-        timestamp: Date.now()
-      };
+	  if (event.data) {
+	    try {
+	      const pushData = event.data.json();
+	      console.log('SW: Push data:', pushData);
+	      
+	      const embeddedData = (pushData && typeof pushData.data === 'object' && pushData.data !== null)
+	        ? pushData.data
+	        : {};
 
-      // Add order-specific actions
-      if (pushData.order_id) {
-        notificationData.actions.unshift({
-          action: 'view_order',
-          title: 'View Order',
-          icon: '/icons/view.png'
+	      const url = pushData.url || embeddedData.url || '/';
+	      const orderId = pushData.order_id || embeddedData.orderId || embeddedData.order_id;
+	      const notificationId = pushData.id || embeddedData.notificationId || embeddedData.notification_id;
+	      const type = pushData.type || embeddedData.type;
+	      
+	      notificationData = {
+	        title: pushData.title || notificationData.title,
+	        body: pushData.message || pushData.body || notificationData.body,
+	        icon: pushData.icon || notificationData.icon,
+	        badge: pushData.badge || notificationData.badge,
+	        tag: pushData.tag || type || notificationData.tag,
+	        data: {
+	          url,
+	          orderId,
+	          notificationId,
+	          type,
+	          timestamp: Date.now()
+	        },
+	        actions: pushData.actions || getDefaultActions(type),
+	        requireInteraction: pushData.priority === 'urgent',
+	        silent: pushData.priority === 'low',
+	        vibrate: pushData.priority === 'urgent' ? [200, 100, 200] : [100],
+	        timestamp: Date.now()
+	      };
+
+	      // Add order-specific actions
+	      if (orderId) {
+	        notificationData.actions.unshift({
+	          action: 'view_order',
+	          title: 'View Order',
+	          icon: '/icons/view.png'
         });
       }
 
@@ -187,21 +196,13 @@ self.addEventListener('notificationclick', (event) => {
   // Close the notification
   notification.close();
 
-  // Handle different actions
-  let url = '/';
-  
-  if (action === 'view_order' && data.orderId) {
-    url = `/orders/${data.orderId}`;
-  } else if (action === 'view_chat' && data.orderId) {
-    url = `/orders/${data.orderId}/chat`;
-  } else if (action === 'view_payment' && data.orderId) {
-    url = `/orders/${data.orderId}/payment`;
-  } else if (action === 'dismiss') {
-    // Just close the notification
-    return;
-  } else if (data.url) {
-    url = data.url;
-  }
+	  // Handle different actions
+	  let url = (typeof data.url === 'string' && data.url) ? data.url : '/';
+	  
+	  if (action === 'dismiss') {
+	    // Just close the notification
+	    return;
+	  }
 
   // Focus existing window or open new one
   const clientPromise = clients.matchAll({

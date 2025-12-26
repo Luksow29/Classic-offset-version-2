@@ -30,7 +30,7 @@ const CustomerLayout: React.FC<CustomerLayoutProps> = ({ children }) => {
     const saved = localStorage.getItem('customerSidebarCollapsed');
     return saved ? JSON.parse(saved) : false;
   });
-  
+
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   // Save sidebar state to localStorage
@@ -54,18 +54,18 @@ const CustomerLayout: React.FC<CustomerLayoutProps> = ({ children }) => {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="min-h-screen flex bg-background w-full overflow-x-hidden">
       <ScrollToTop />
-      
+
       {/* --- Desktop Sidebar (Permanent) --- */}
       {/* Hidden on screens smaller than 1024px (lg) */}
       <div className="hidden lg:flex lg:flex-shrink-0">
-          <CustomerSidebar 
-            isDocked={true}
-            isCollapsed={isDockCollapsed}
-            setIsCollapsed={setIsDockCollapsed}
-            onClose={() => {}} // Not needed for docked sidebar
-          />
+        <CustomerSidebar
+          isDocked={true}
+          isCollapsed={isDockCollapsed}
+          setIsCollapsed={setIsDockCollapsed}
+          onClose={() => { }} // Not needed for docked sidebar
+        />
       </div>
 
       {/* --- Mobile Sidebar (Overlay with Backdrop) --- */}
@@ -82,7 +82,7 @@ const CustomerLayout: React.FC<CustomerLayoutProps> = ({ children }) => {
               aria-hidden="true"
               onClick={() => setSidebarOpen(false)}
             />
-          
+
             {/* Sidebar */}
             <motion.div
               ref={sidebarRef}
@@ -93,7 +93,7 @@ const CustomerLayout: React.FC<CustomerLayoutProps> = ({ children }) => {
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
               className="fixed inset-y-0 left-0 z-40 lg:hidden"
             >
-              <CustomerSidebar 
+              <CustomerSidebar
                 isDocked={false}
                 isCollapsed={false}
                 onClose={() => setSidebarOpen(false)}
@@ -106,7 +106,7 @@ const CustomerLayout: React.FC<CustomerLayoutProps> = ({ children }) => {
       {/* --- Main Content Area --- */}
       <div className="flex-1 flex flex-col min-w-0">
         <CustomerTopHeader onMenuClick={() => setSidebarOpen(true)} />
-        
+
         <main className="flex-1 overflow-y-auto custom-scrollbar main-content">
           <div className="py-6">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">

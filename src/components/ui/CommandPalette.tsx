@@ -2,22 +2,22 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Command as CommandIcon, 
-  Search, 
-  ShoppingCart, 
-  Package, 
-  Users, 
-  TrendingUp, 
-  DollarSign, 
-  Settings, 
-  FileText, 
-  Phone, 
-  Calendar, 
-  BarChart3, 
-  Shield, 
-  Sparkles, 
-  MessageSquare, 
+import {
+  Command as CommandIcon,
+  Search,
+  ShoppingCart,
+  Package,
+  Users,
+  TrendingUp,
+  DollarSign,
+  Settings,
+  FileText,
+  Phone,
+  Calendar,
+  BarChart3,
+  Shield,
+  Sparkles,
+  MessageSquare,
   Gift,
   Clock,
   PlusCircle,
@@ -213,9 +213,9 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose }) => {
   // Filter commands based on search query
   const filteredCommands = useMemo(() => {
     if (!searchQuery.trim()) return allCommands;
-    
+
     const query = searchQuery.toLowerCase();
-    return allCommands.filter(command => 
+    return allCommands.filter(command =>
       command.title.toLowerCase().includes(query) ||
       command.subtitle?.toLowerCase().includes(query) ||
       command.keywords.some(keyword => keyword.toLowerCase().includes(query))
@@ -242,13 +242,13 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose }) => {
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
-          setSelectedIndex(prev => 
+          setSelectedIndex(prev =>
             prev < filteredCommands.length - 1 ? prev + 1 : 0
           );
           break;
         case 'ArrowUp':
           e.preventDefault();
-          setSelectedIndex(prev => 
+          setSelectedIndex(prev =>
             prev > 0 ? prev - 1 : filteredCommands.length - 1
           );
           break;
@@ -305,15 +305,15 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose }) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
         onClick={onClose}
       >
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: -20 }}
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: -20 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{ duration: 0.15 }}
-          className="absolute top-4 sm:top-[10%] md:top-[15%] left-1/2 transform -translate-x-1/2 w-full max-w-sm sm:max-w-xl md:max-w-2xl mx-3 sm:mx-4"
+          className="w-full max-w-sm sm:max-w-xl md:max-w-2xl"
           onClick={e => e.stopPropagation()}
         >
           <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-xl shadow-2xl overflow-hidden">
@@ -337,7 +337,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose }) => {
             </div>
 
             {/* Commands List */}
-            <div 
+            <div
               ref={listRef}
               className="max-h-64 sm:max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600"
             >
@@ -354,13 +354,12 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose }) => {
                     {commands.map((command, index) => {
                       const globalIndex = filteredCommands.indexOf(command);
                       const isSelected = globalIndex === selectedIndex;
-                      
+
                       return (
                         <motion.button
                           key={command.id}
-                          className={`w-full flex items-center px-3 sm:px-4 py-3 text-left hover:bg-gray-100/50 dark:hover:bg-gray-700/50 transition-colors ${
-                            isSelected ? 'bg-blue-50/50 dark:bg-blue-900/20 border-r-2 border-blue-500' : ''
-                          }`}
+                          className={`w-full flex items-center px-3 sm:px-4 py-3 text-left hover:bg-gray-100/50 dark:hover:bg-gray-700/50 transition-colors ${isSelected ? 'bg-blue-50/50 dark:bg-blue-900/20 border-r-2 border-blue-500' : ''
+                            }`}
                           onClick={() => handleCommandClick(command)}
                           whileHover={{ x: 4 }}
                           transition={{ duration: 0.1 }}

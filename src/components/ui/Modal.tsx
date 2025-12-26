@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from './Button';
@@ -14,32 +15,41 @@ interface ModalProps {
   showCloseButton?: boolean;
 }
 
-const Modal: React.FC<ModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  title, 
-  children, 
-  size = 'md', 
+const Modal: React.FC<ModalProps> = ({
+  isOpen,
+  onClose,
+  title,
+  children,
+  size = 'md',
   className = '',
   showCloseButton = true
 }) => {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
     };
-    
+
     if (isOpen) {
       document.addEventListener('keydown', handleEsc);
       // Prevent scrolling on the body when modal is open
       document.body.style.overflow = 'hidden';
     }
-    
+
     return () => {
       document.removeEventListener('keydown', handleEsc);
       // Restore scrolling when modal is closed
       document.body.style.overflow = '';
     };
   }, [isOpen, onClose]);
+
+  if (!mounted) return null;
 
   const sizeClasses = {
     sm: 'max-w-sm',
@@ -51,11 +61,11 @@ const Modal: React.FC<ModalProps> = ({
     'full': 'max-w-[95vw] max-h-[95vh]'
   };
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center"
+        <div
+          className="fixed inset-0 z-[150] flex items-center justify-center"
           aria-labelledby="modal-title"
           role="dialog"
           aria-modal="true"
@@ -69,7 +79,7 @@ const Modal: React.FC<ModalProps> = ({
             onClick={onClose}
             className="fixed inset-0 bg-black/60 backdrop-blur-sm"
           />
-          
+
           {/* Modal Panel */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -93,10 +103,10 @@ const Modal: React.FC<ModalProps> = ({
                   {title}
                 </h2>
                 {showCloseButton && (
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={onClose} 
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onClose}
                     aria-label="Close modal"
                     className="rounded-full h-8 w-8 p-0 hover:bg-muted"
                   >
@@ -105,7 +115,7 @@ const Modal: React.FC<ModalProps> = ({
                 )}
               </div>
             )}
-            
+
             {/* Content */}
             <div className="flex-grow p-4 sm:p-6 overflow-y-auto custom-scrollbar">
               {children}
@@ -113,7 +123,8 @@ const Modal: React.FC<ModalProps> = ({
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };
 

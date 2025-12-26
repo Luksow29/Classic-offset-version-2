@@ -253,6 +253,7 @@ const Dashboard: React.FC = () => {
         category?: string;
         description?: string;
         unit_price: number;
+        image_url?: string;
     }
 
     const handleProductSave = async (productData: ProductData) => {
@@ -343,6 +344,67 @@ const Dashboard: React.FC = () => {
                         {/* ... */}
                     </div>
                     {/* ... Modals ... */}
+                    {isOrderModalOpen && (
+                        <Modal
+                            isOpen={isOrderModalOpen}
+                            onClose={() => setIsOrderModalOpen(false)}
+                            title="Create New Order"
+                        >
+                            <OrderForm
+                                onSuccess={() => {
+                                    setIsOrderModalOpen(false);
+                                    refreshDashboard();
+                                }}
+                            />
+                        </Modal>
+                    )}
+
+                    {isCustomerModalOpen && (
+                        <Modal
+                            isOpen={isCustomerModalOpen}
+                            onClose={() => setIsCustomerModalOpen(false)}
+                            title="Add New Customer"
+                        >
+                            <CustomerForm
+                                onSave={() => {
+                                    setIsCustomerModalOpen(false);
+                                    refreshDashboard();
+                                }}
+                                onCancel={() => setIsCustomerModalOpen(false)}
+                                selectedCustomer={null}
+                            />
+                        </Modal>
+                    )}
+
+                    {isPaymentModalOpen && (
+                        <Modal
+                            isOpen={isPaymentModalOpen}
+                            onClose={() => setIsPaymentModalOpen(false)}
+                            title="Record Payment"
+                        >
+                            <PaymentForm
+                                onSuccess={() => {
+                                    setIsPaymentModalOpen(false);
+                                    refreshDashboard();
+                                }}
+                            />
+                        </Modal>
+                    )}
+
+                    {isProductModalOpen && (
+                        <Modal
+                            isOpen={isProductModalOpen}
+                            onClose={() => setIsProductModalOpen(false)}
+                            title="Add New Product"
+                        >
+                            <ProductForm
+                                onSave={handleProductSave}
+                                onCancel={() => setIsProductModalOpen(false)}
+                                editingProduct={null}
+                                isLoading={false}
+                            />
+                        </Modal>
+                    )}
 
                     {/* ... */}
 

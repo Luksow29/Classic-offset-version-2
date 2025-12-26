@@ -18,6 +18,7 @@ export default defineConfig({
         // Workbox's production minification uses Rollup+Terser; disable it for compatibility.
         mode: 'development',
         disableDevLogs: true,
+        clientsClaim: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
           {

@@ -5,6 +5,7 @@ import { toast } from 'react-hot-toast';
 import { Plus, X, Calculator, IndianRupee } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import { sendQuoteNotification } from '@/lib/customerNotifications';
 
 interface ServiceCharge {
   id: string;
@@ -64,9 +65,9 @@ const ServiceChargeManager: React.FC<ServiceChargeManagerProps> = ({
       const updatedCharges = [...existingCharges, newCharge];
 
       // Recalculate final total on the client (originalAmount + sum(updatedCharges))
-  const sumCharges = updatedCharges.reduce((s, c: any) => s + (Number(c.amount) || 0), 0);
-  // Always base admin total on original amount to avoid double-counting existing charges
-  const newAdminTotal = Number(originalAmount || 0) + sumCharges;
+      const sumCharges = updatedCharges.reduce((s, c: any) => s + (Number(c.amount) || 0), 0);
+      // Always base admin total on original amount to avoid double-counting existing charges
+      const newAdminTotal = Number(originalAmount || 0) + sumCharges;
 
       const { error: updateError } = await supabase
         .from('order_requests')
@@ -104,9 +105,9 @@ const ServiceChargeManager: React.FC<ServiceChargeManagerProps> = ({
 
       const existingCharges: any[] = Array.isArray(rows?.service_charges) ? rows!.service_charges as any[] : [];
       const updatedCharges = existingCharges.filter((c: any) => c.id !== chargeId);
-  const sumCharges = updatedCharges.reduce((s, c: any) => s + (Number(c.amount) || 0), 0);
-  // Always base admin total on original amount to avoid double-counting existing charges
-  const newAdminTotal = Number(originalAmount || 0) + sumCharges;
+      const sumCharges = updatedCharges.reduce((s, c: any) => s + (Number(c.amount) || 0), 0);
+      // Always base admin total on original amount to avoid double-counting existing charges
+      const newAdminTotal = Number(originalAmount || 0) + sumCharges;
       const newPricingStatus = updatedCharges.length === 0 ? 'pending' : 'quoted';
 
       const { error: updateError } = await supabase
@@ -142,7 +143,49 @@ const ServiceChargeManager: React.FC<ServiceChargeManagerProps> = ({
         .in('pricing_status', ['pending', 'quoted']);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Send notification to customer
+      // Send notification to customer
+      try {
+        // Fetch the customer's AUTH user_id, not just the customer table id
+        const { data: request } = await supabase
+          .from('order_requests')
+          .select(`
+            customer:customers (
+              user_id
+            )
+          `)
+          .eq('id', requestId)
+          .single();
+
+        // Cast to any to avoid TS errors with complex joined response types
+        const customerData = (request as any)?.customer;
+        const customerUserId = Array.isArray(customerData)
+          ? customerData[0]?.user_id
+          : customerData?.user_id;
+
+        if (customerUserId) {
+          toast.loading(`Debug: Sending to User ${customerUserId}...`); // Temporary debug
+          const result = await sendQuoteNotification(
+            customerUserId,
+            requestId,
+            finalTotal
+          );
+          if (!result.success) {
+            console.error("Notification API failed:", result.error);
+            toast.error(`Debug: API failed - ${result.error}`);
+          } else {
+            toast.success(`Debug: Alert sent to User ${customerUserId.substring(0, 6)}...`);
+          }
+        } else {
+          console.warn("Could not find customer user_id for request", requestId);
+          toast.error(`Debug: NO USER ID FOUND for Customer. Check 'customers' table.`);
+        }
+      } catch (err: any) {
+        console.error("Failed to send quote notification:", err);
+        toast.error(`Debug: Notification logic error - ${err.message}`);
+      }
+
       toast.success('Quote sent to customer');
       onChargesUpdated();
       queryClient.invalidateQueries({ queryKey: ['orderRequests'] });
@@ -161,7 +204,7 @@ const ServiceChargeManager: React.FC<ServiceChargeManagerProps> = ({
       toast.error('Amount must be greater than 0');
       return;
     }
-    
+
     addChargeMutation.mutate({
       description: newCharge.description,
       amount: parseFloat(newCharge.amount),
@@ -314,18 +357,25 @@ const ServiceChargeManager: React.FC<ServiceChargeManagerProps> = ({
           >
             {sendQuoteMutation.isPending ? 'Sending Quote...' : 'Send Updated Quote to Customer'}
           </Button>
+
+          {/* DEBUG INFO - REMOVE BEFORE PROD */}
+          <div className="mt-2 p-2 bg-yellow-100 text-xs font-mono break-all rounded text-left">
+            <strong>Debug Info:</strong><br />
+            Req ID: {requestId}<br />
+            Status: {pricingStatus}<br />
+            {/* We need to fetch this to show it, but for now let's just show what we have access to */}
+          </div>
         </div>
       )}
 
       {/* Status Badge */}
       <div className="text-xs text-center">
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-          pricingStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${pricingStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
           pricingStatus === 'quoted' ? 'bg-blue-100 text-blue-800' :
-          pricingStatus === 'accepted' ? 'bg-green-100 text-green-800' :
-          pricingStatus === 'rejected' ? 'bg-red-100 text-red-800' :
-          'bg-gray-100 text-gray-800'
-        }`}>
+            pricingStatus === 'accepted' ? 'bg-green-100 text-green-800' :
+              pricingStatus === 'rejected' ? 'bg-red-100 text-red-800' :
+                'bg-gray-100 text-gray-800'
+          }`}>
           Status: {pricingStatus.charAt(0).toUpperCase() + pricingStatus.slice(1)}
         </span>
       </div>

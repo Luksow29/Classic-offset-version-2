@@ -93,9 +93,14 @@ export function usePWA() {
 
       // Handle controller change (reload when new SW takes over)
       const handleControllerChange = () => {
-        // window.location.reload(); // Removed to prevent infinite loop in Chrome
-        console.log('Controller changed, new SW active');
+        if (!refreshing) {
+             console.log('Controller changed, new SW active, reloading...');
+             window.location.reload();
+             refreshing = true;
+        }
       };
+      
+      let refreshing = false; // Prevent double-reload if multiple events fire
       
       navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
 

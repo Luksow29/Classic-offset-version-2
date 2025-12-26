@@ -9,6 +9,8 @@ import { useTheme } from '@/lib/ThemeProvider';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useCommandPalette } from '@/hooks/useCommandPalette';
 import { useAdminInAppNotifications } from '@/hooks/useAdminInAppNotifications';
+import { useNotificationContext } from '@/context/NotificationContext';
+import toast from 'react-hot-toast';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -62,6 +64,46 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       setSidebarOpen(false);
     }
   }, [location.pathname]);
+
+  // Prompt for Push Notifications
+  const { isPushEnabled, enablePush, pushPermission } = useNotificationContext();
+  useEffect(() => {
+    // Only prompt if supported and not yet granted/denied (default)
+    // and if user is logged in (implied by this being a protected layout usually, but Layout is generic)
+    // We can check local storage to avoid spamming if they dismissed it "permanently" in our UI logic (optional)
+    if (pushPermission === 'default') {
+      const toastId = toast(
+        (t) => (
+          <div className="flex flex-col gap-2">
+            <span className="font-medium">Enable Desktop Notifications?</span>
+            <span className="text-xs opacity-90">Get instant alerts for new orders and messages.</span>
+            <div className="flex gap-2 mt-1">
+              <button
+                onClick={() => {
+                  toast.dismiss(t.id);
+                  enablePush();
+                }}
+                className="bg-primary text-primary-foreground text-xs px-3 py-1.5 rounded-md font-medium hover:bg-primary/90"
+              >
+                Enable
+              </button>
+              <button
+                onClick={() => toast.dismiss(t.id)}
+                className="bg-secondary text-secondary-foreground text-xs px-3 py-1.5 rounded-md font-medium hover:bg-secondary/80"
+              >
+                Later
+              </button>
+            </div>
+          </div>
+        ),
+        {
+          duration: 10000, // Show for 10s
+          position: 'bottom-right',
+          id: 'push-permission-prompt', // Prevent duplicates
+        }
+      );
+    }
+  }, [pushPermission, enablePush]);
 
   const isCommunicationRoute = location.pathname.startsWith('/communication');
 
@@ -128,8 +170,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               key={isCommunicationRoute ? 'comm-layout' : location.pathname}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="flex-1 w-full"
-              style={{ height: 'calc(100vh - 4rem)' }}
+              className="flex-1 w-full h-full"
+              // style={{ height: 'calc(100vh - 4rem)' }} removed to fix overflow
+
               transition={{ duration: 0.3 }}
             >
               {children}

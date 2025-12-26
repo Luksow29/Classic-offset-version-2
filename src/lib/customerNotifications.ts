@@ -193,3 +193,47 @@ export async function sendMessageNotification(
     linkTo
   });
 }
+/**
+ * Send notification to ALL admins
+ * Used for New Requests and Quote Acceptances
+ */
+export async function sendAdminNotification(
+  title: string,
+  message: string,
+  linkTo?: string,
+  relatedId?: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    // 1. Insert into Admin Notifications Table (for In-App)
+    // Note: The Admin hook listens to 'order_requests' table changes, but NOT direct 'admin_notifications' inserts unless we set that up.
+    // However, for immediate feedback, we can rely on the Realtime hook we saw in `useAdminInAppNotifications`
+    // OR we can explicitly insert here if `admin_notifications` is used for history.
+    
+    // For now, we will focus on the PUSH notification, as the In-App is handled by the `order_requests` trigger in `useAdminInAppNotifications`.
+    
+    if (session?.access_token) {
+      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-notifications/notify-admins`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          title,
+          body: message,
+          data: { 
+            url: linkTo || '/admin',
+            relatedId
+          }
+        })
+      });
+      return { success: true };
+    }
+    return { success: false, error: 'No session' };
+  } catch (error) {
+    console.error('[sendAdminNotification] Failed:', error);
+    return { success: false, error: 'Failed to send admin notification' };
+  }
+}

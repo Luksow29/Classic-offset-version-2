@@ -219,6 +219,44 @@ const CustomerOrderRequestForm: React.FC<CustomerOrderRequestProps> = ({ custome
             toast({ title: "Submission Failed", description: `An error occurred: ${error.message}`, variant: "destructive" });
         } else {
             toast({ title: "Success!", description: "Your order request has been submitted for review." });
+
+            // Create notification for Customer (because we removed the trigger)
+            try {
+                await supabase.from('notifications').insert({
+                    user_id: customer.user_id,
+                    type: 'order_update',
+                    title: 'Order Request Submitted ✅',
+                    message: `Your order request has been submitted successfully. Our team will review and respond within 24 hours. Order Type: ${values.orderType}, Qty: ${values.quantity}, Delivery: ${values.deliveryDate ? values.deliveryDate.toISOString() : 'N/A'}`,
+                    is_read: false,
+                    link_to: '/customer-portal/requests', // Assuming this is the correct path
+                });
+            } catch (err) {
+                console.error("Failed to create customer notification:", err);
+            }
+
+            // Notify Admins via Push
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session?.access_token) {
+                    fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-notifications/notify-admins`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${session.access_token}`
+                        },
+                        body: JSON.stringify({
+                            title: 'New Order Request',
+                            body: `New request from ${customer.name} (x${values.quantity} ${values.orderType})`,
+                            data: {
+                                url: `/admin/content?tab=order_requests&id=${data.id}`
+                            }
+                        })
+                    }).catch(err => console.error("Failed to notify admins (push):", err));
+                }
+            } catch (e) {
+                console.error("Notify error", e);
+            }
+
             form.reset();
         }
     };

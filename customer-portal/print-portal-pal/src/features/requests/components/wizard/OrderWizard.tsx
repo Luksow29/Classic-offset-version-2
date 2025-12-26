@@ -133,6 +133,36 @@ const OrderWizard: React.FC<OrderWizardProps> = ({ customer, onComplete }) => {
             }
 
             toast.success("Order request submitted successfully!");
+
+            // --- TRIGGER ADMIN NOTIFICATION ---
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session?.access_token) {
+                    // Determine title/message
+                    const customerName = customer.name || 'Customer';
+                    const orderType = formData.orderType || 'Order';
+                    const quantity = formData.quantity ? `x${formData.quantity}` : '';
+
+                    fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-notifications/notify-admins`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${session.access_token}`
+                        },
+                        body: JSON.stringify({
+                            title: 'New Order Request',
+                            body: `${customerName} requested ${quantity} ${orderType}`,
+                            data: {
+                                url: `/admin/content?tab=order_requests`
+                            }
+                        })
+                    }).catch(err => console.error("Failed to notify admins:", err));
+                }
+            } catch (notifyError) {
+                console.error("Notification error:", notifyError);
+            }
+            // ----------------------------------
+
             if (onComplete) {
                 onComplete();
             } else {
@@ -160,11 +190,10 @@ const OrderWizard: React.FC<OrderWizardProps> = ({ customer, onComplete }) => {
                                         backgroundColor: currentStep >= step.id ? '#3b82f6' : '#e2e8f0',
                                         scale: currentStep === step.id ? 1.1 : 1
                                     }}
-                                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${
-                                        currentStep >= step.id 
-                                            ? 'text-white' 
+                                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${currentStep >= step.id
+                                            ? 'text-white'
                                             : 'text-slate-500 dark:text-slate-400'
-                                    }`}
+                                        }`}
                                 >
                                     {currentStep > step.id ? (
                                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -174,20 +203,18 @@ const OrderWizard: React.FC<OrderWizardProps> = ({ customer, onComplete }) => {
                                         step.id
                                     )}
                                 </motion.div>
-                                <span className={`mt-2 text-xs font-medium hidden sm:block ${
-                                    currentStep >= step.id 
-                                        ? 'text-blue-600 dark:text-blue-400' 
+                                <span className={`mt-2 text-xs font-medium hidden sm:block ${currentStep >= step.id
+                                        ? 'text-blue-600 dark:text-blue-400'
                                         : 'text-slate-400'
-                                }`}>
+                                    }`}>
                                     {step.title}
                                 </span>
                             </div>
                             {index < steps.length - 1 && (
-                                <div className={`w-8 sm:w-16 h-0.5 mx-2 transition-colors ${
-                                    currentStep > step.id 
-                                        ? 'bg-blue-500' 
+                                <div className={`w-8 sm:w-16 h-0.5 mx-2 transition-colors ${currentStep > step.id
+                                        ? 'bg-blue-500'
                                         : 'bg-slate-200 dark:bg-slate-700'
-                                }`} />
+                                    }`} />
                             )}
                         </div>
                     ))}

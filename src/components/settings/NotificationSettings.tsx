@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 import React, { useState, useEffect } from 'react';
 import Card from '../ui/Card';
 import { useUser } from '@/context/UserContext';
@@ -6,12 +6,15 @@ import { Bell, Mail, MessageSquare, AlertCircle, Clock, ShoppingBag, DollarSign,
 import { useSettings } from '@/context/SettingsContext';
 import { Loader2 } from 'lucide-react';
 import Button from '../ui/Button';
+import { useNotificationContext } from '@/context/NotificationContext';
+import { supabase } from '@/lib/supabaseClient';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
 const NotificationSettings: React.FC = () => {
   const { user } = useUser();
   const { settings, updateSettings, loading } = useSettings();
+  const { isPushEnabled, enablePush, disablePush } = useNotificationContext();
   const [saving, setSaving] = useState(false);
 
   // Local state for notification preferences
@@ -88,6 +91,55 @@ const NotificationSettings: React.FC = () => {
     visible: { opacity: 1, x: 0 }
   };
 
+  const handleTestPush = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      if (!token) {
+        toast.error("You must be logged in to test notifications");
+        return;
+      }
+
+      const promise = fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/push-notifications/send-notification`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          userId: user?.id,
+          title: "Test Notification",
+          body: "This is a test notification from Settings.",
+          data: { url: '/settings' }
+        })
+      }).then(async res => {
+        const text = await res.text();
+        console.log("Test Push Response:", res.status, text);
+
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          throw new Error(`Server Error (${res.status}): ${text}`);
+        }
+
+        if (!res.ok || !data.success) throw new Error(data.message || data.error || "Failed");
+        return data;
+      });
+
+      await toast.promise(promise, {
+        loading: 'Sending test...',
+        success: 'Test Sent! Check your notifications',
+        error: (err) => `Failed: ${err.message}`
+      });
+
+    } catch (error: any) {
+      console.error("Test push failed:", error);
+      toast.error("Failed to initiate test");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-40">
@@ -139,9 +191,19 @@ const NotificationSettings: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
         {/* Left Column: Channels */}
         <div className="space-y-3">
-          <div className="flex items-center gap-2 mb-2">
-            <Bell className="w-3.5 h-3.5 text-muted-foreground" />
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Channels</h3>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Bell className="w-3.5 h-3.5 text-muted-foreground" />
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Channels</h3>
+            </div>
+            {isPushEnabled && (
+              <button
+                onClick={handleTestPush}
+                className="text-xs text-primary hover:underline"
+              >
+                Test Push
+              </button>
+            )}
           </div>
           <div className="bg-card border border-border rounded-xl p-1 md:p-2 divide-y divide-border/50">
             <NotificationItem
@@ -154,9 +216,15 @@ const NotificationSettings: React.FC = () => {
             <NotificationItem
               icon={Bell}
               title="Push"
-              subtitle="In-app notifications."
-              checked={localSettings.pushNotifications}
-              onChange={() => setLocalSettings(prev => ({ ...prev, pushNotifications: !prev.pushNotifications }))}
+              subtitle={isPushEnabled ? "Active on this device" : "Enable for this device"}
+              checked={isPushEnabled}
+              onChange={async () => {
+                if (isPushEnabled) {
+                  await disablePush();
+                } else {
+                  await enablePush();
+                }
+              }}
             />
             <NotificationItem
               icon={Phone}

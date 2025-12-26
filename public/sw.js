@@ -62,6 +62,11 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
+  // Ignore non-GET requests to Supabase (let browser handle them)
+  if (url.hostname.includes('supabase') && request.method !== 'GET') {
+    return;
+  }
+
   // Handle API requests (GET only for caching)
   if ((url.pathname.includes('/rest/v1/') || url.hostname.includes('supabase')) && request.method === 'GET') {
     event.respondWith(
@@ -129,20 +134,29 @@ self.addEventListener('push', (event) => {
       const pushData = event.data.json();
       console.log('SW: Push data:', pushData);
 
+      const embeddedData = (pushData && typeof pushData.data === 'object' && pushData.data !== null)
+        ? pushData.data
+        : {};
+
+      const url = pushData.url || embeddedData.url || '/';
+      const orderId = pushData.order_id || embeddedData.orderId || embeddedData.order_id;
+      const notificationId = pushData.id || embeddedData.notificationId || embeddedData.notification_id;
+      const type = pushData.type || embeddedData.type;
+
       notificationData = {
         title: pushData.title || notificationData.title,
         body: pushData.message || pushData.body || notificationData.body,
         icon: pushData.icon || notificationData.icon,
         badge: pushData.badge || notificationData.badge,
-        tag: pushData.tag || pushData.type || notificationData.tag,
+        tag: pushData.tag || type || notificationData.tag,
         data: {
-          url: pushData.url || '/',
-          orderId: pushData.order_id,
-          notificationId: pushData.id,
-          type: pushData.type,
+          url,
+          orderId,
+          notificationId,
+          type,
           timestamp: Date.now()
         },
-        actions: pushData.actions || getDefaultActions(pushData.type),
+        actions: pushData.actions || getDefaultActions(type),
         requireInteraction: pushData.priority === 'urgent',
         silent: pushData.priority === 'low',
         vibrate: pushData.priority === 'urgent' ? [200, 100, 200] : [100],
@@ -150,7 +164,7 @@ self.addEventListener('push', (event) => {
       };
 
       // Add order-specific actions
-      if (pushData.order_id) {
+      if (orderId) {
         notificationData.actions.unshift({
           action: 'view_order',
           title: 'View Order',
@@ -194,19 +208,11 @@ self.addEventListener('notificationclick', (event) => {
   notification.close();
 
   // Handle different actions
-  let url = '/';
+  let url = (typeof data.url === 'string' && data.url) ? data.url : '/';
 
-  if (action === 'view_order' && data.orderId) {
-    url = `/orders/${data.orderId}`;
-  } else if (action === 'view_chat' && data.orderId) {
-    url = `/orders/${data.orderId}/chat`;
-  } else if (action === 'view_payment' && data.orderId) {
-    url = `/orders/${data.orderId}/payment`;
-  } else if (action === 'dismiss') {
+  if (action === 'dismiss') {
     // Just close the notification
     return;
-  } else if (data.url) {
-    url = data.url;
   }
 
   // Focus existing window or open new one
