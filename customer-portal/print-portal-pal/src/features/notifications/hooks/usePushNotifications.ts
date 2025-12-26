@@ -168,10 +168,11 @@ export const usePushNotifications = (userId?: string) => {
 
       console.log('Push subscription created:', subscription);
 
-      // Create subscription data object for storage
+      // Use the browser-provided JSON shape (avoids base64/base64url encoding issues)
+      const subscriptionJson = subscription.toJSON() as { endpoint?: string; keys?: { p256dh?: string; auth?: string } };
       const subscriptionData = {
-        endpoint: subscription.endpoint,
-        keys: {
+        endpoint: subscriptionJson.endpoint || subscription.endpoint,
+        keys: subscriptionJson.keys || {
           p256dh: btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(subscription.getKey('p256dh')!)))),
           auth: btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(subscription.getKey('auth')!))))
         }

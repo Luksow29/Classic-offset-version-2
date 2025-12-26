@@ -10,12 +10,15 @@ export default defineConfig({
         react(),
         VitePWA({
             registerType: 'prompt', // prompt for update instead of autoUpdate to prevent unexpected reloads
+            injectRegister: null, // we register our custom `/sw.js` manually (it contains push handlers)
+            filename: 'pwa-sw.js', // avoid overwriting `public/sw.js` during build
             includeAssets: ['icons/*.png', 'robots.txt', 'manifest.json'],
             manifest: false, // Use static manifest.json from public folder
             workbox: {
                 // Workbox's production minification uses Rollup+Terser; disable it for compatibility.
                 mode: 'development',
                 disableDevLogs: true,
+                clientsClaim: true,
                 globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
                 runtimeCaching: [
                     {

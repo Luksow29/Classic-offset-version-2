@@ -144,17 +144,22 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
                 .channel(`customer-notifications-${user.id}`)
                 .on('postgres_changes',
                     {
-                        event: 'INSERT',
+                        event: '*',
                         schema: 'public',
                         table: 'notifications',
                         filter: `user_id=eq.${user.id}`
                     },
                     (payload) => {
-                        const newNotification = payload.new as Notification;
+                        if (!isMounted) return;
 
-                        if (isMounted) {
-                            setNotifications(prev => [newNotification, ...prev]);
-                            setUnreadCount(prev => prev + 1);
+                        if (payload.eventType === 'INSERT') {
+                            const newNotification = payload.new as Notification;
+
+                            setNotifications(prev => {
+                                const next = [newNotification, ...prev];
+                                setUnreadCount(next.filter(n => !n.is_read).length);
+                                return next;
+                            });
 
                             // In-App Toast
                             toast({
@@ -167,7 +172,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
                             // Play Sound
                             playBeep();
 
-                            // Browser Push
+                            // Browser Push (in-tab)
                             if ('Notification' in window && Notification.permission === 'granted') {
                                 try {
                                     const browserNotification = new window.Notification(newNotification.title, {
@@ -190,6 +195,20 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
                                     console.error('Browser notification failed:', error);
                                 }
                             }
+                        } else if (payload.eventType === 'UPDATE') {
+                            const updated = payload.new as Notification;
+                            setNotifications(prev => {
+                                const next = prev.map(n => n.id === updated.id ? updated : n);
+                                setUnreadCount(next.filter(n => !n.is_read).length);
+                                return next;
+                            });
+                        } else if (payload.eventType === 'DELETE') {
+                            const deleted = payload.old as Notification;
+                            setNotifications(prev => {
+                                const next = prev.filter(n => n.id !== deleted.id);
+                                setUnreadCount(next.filter(n => !n.is_read).length);
+                                return next;
+                            });
                         }
                     }
                 )

@@ -182,20 +182,34 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             .channel(channelName)
             .on(
                 'postgres_changes',
-                {
-                    event: '*', // Listen for INSERT and UPDATE
-                    schema: 'public',
-                    table: tableName,
-                    filter: filter,
-                },
+                filter
+                    ? {
+                        event: '*', // Listen for INSERT and UPDATE
+                        schema: 'public',
+                        table: tableName,
+                        filter,
+                    }
+                    : {
+                        event: '*', // Listen for INSERT and UPDATE
+                        schema: 'public',
+                        table: tableName,
+                    },
                 (payload) => {
                     console.log('[NotificationContext] Realtime event:', payload);
 
                     if (payload.eventType === 'INSERT') {
                         const newNotif = { ...payload.new, id: String(payload.new.id) } as Notification;
 
-                        setNotifications(prev => [newNotif, ...prev]);
-                        setUnreadCount(prev => prev + 1);
+                        if (isAdmin && !isValidUUID(newNotif.id)) {
+                            console.warn('[NotificationContext] Ignoring INSERT with invalid admin UUID:', newNotif.id);
+                            return;
+                        }
+
+                        setNotifications(prev => {
+                            const next = [newNotif, ...prev];
+                            setUnreadCount(next.filter(n => !n.is_read).length);
+                            return next;
+                        });
 
                         // Toast and Sound
                         if (TOAST_NOTIFICATION_TYPES.has(newNotif.type) || !isAdmin) {
@@ -225,11 +239,20 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                             // This ensures the admin gets notified even if the tab is not focused
                             if ('Notification' in window && Notification.permission === 'granted') {
                                 try {
-                                    new Notification(title, {
+                                    const url = newNotif.link_to || '/notifications';
+                                    const browserNotification = new Notification(title, {
                                         body: message,
                                         icon: `${window.location.origin}/icons/icon-192x192.png`,
                                         tag: `admin-notif-${newNotif.id}`
                                     });
+                                    browserNotification.onclick = () => {
+                                        try {
+                                            window.focus();
+                                            window.location.href = url;
+                                        } finally {
+                                            browserNotification.close();
+                                        }
+                                    };
                                 } catch (e) {
                                     console.error("Error showing browser notification:", e);
                                 }
@@ -239,17 +262,15 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
                     else if (payload.eventType === 'UPDATE') {
                         const updatedNotif = { ...payload.new, id: String(payload.new.id) } as Notification;
-                        setNotifications(prev => prev.map(n => n.id === updatedNotif.id ? updatedNotif : n));
+                        if (isAdmin && !isValidUUID(updatedNotif.id)) {
+                            console.warn('[NotificationContext] Ignoring UPDATE with invalid admin UUID:', updatedNotif.id);
+                            return;
+                        }
 
-                        // Recalculate unread count carefully or just subtract if read status flipped
-                        // But relying on state is safer:
-                        setNotifications(currentNotifs => {
-                            // We need to calc unread count based on the *new* state of this notification
-                            // vs the *old* state in the array is hard inside the setter.
-                            // Easier to just re-scan the array after update.
-                            const newNotifs = currentNotifs.map(n => n.id === updatedNotif.id ? updatedNotif : n);
-                            setUnreadCount(newNotifs.filter(n => !n.is_read).length);
-                            return newNotifs;
+                        setNotifications(prev => {
+                            const next = prev.map(n => n.id === updatedNotif.id ? updatedNotif : n);
+                            setUnreadCount(next.filter(n => !n.is_read).length);
+                            return next;
                         });
                     }
                 }

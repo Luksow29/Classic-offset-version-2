@@ -25,12 +25,15 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: null, // we register our custom `/sw.js` manually (it contains push handlers)
+      filename: 'pwa-sw.js', // avoid overwriting `public/sw.js` during build
       includeAssets: ['favicon.ico', 'icons/*.png', 'robots.txt'],
       manifest: false, // Use static manifest.json from public folder
       workbox: {
         // Workbox's production minification uses Rollup+Terser; disable it for compatibility.
         mode: 'development',
         disableDevLogs: true,
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
           {

@@ -276,7 +276,8 @@ serve(async (req) => {
           throw adminError;
       }
       
-      const targetRoles = ['owner', 'admin', 'manager', 'office', 'production', 'designer'];
+      // Include canonical staff roles + legacy aliases found in this repo.
+      const targetRoles = ['owner', 'admin', 'manager', 'office', 'production', 'designer', 'purchase', 'staff'];
       
       const admins = staffUsers?.filter(u => {
           const r = u.role?.toLowerCase().trim();
